@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm", "wheel", "cffi"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deciphon_api"
+authors = [{ name = "Danilo Horta", email = "danilo.horta@pm.me" }]
+license = { file = "LICENSE" }
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+requires-python = ">=3.8"
+dependencies = ["fastapi", "uvicorn", "cffi", "python-multipart"]
+
+[project.urls]
+Home = "http://github.com/EBI-Metagenomics/deciphon-api"
+
+[tool.setuptools_scm]
+write_to = "deciphon_api/_version.py"

@@ -7,4 +7,6 @@ from . import exception
 from .app import app
 from ._version import __version__
 
+__name__ = "deciphon_api"
+
 __all__ = ["app", "sched", "db", "seq", "job", "exception", "prod", "__version__"]

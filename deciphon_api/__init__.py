@@ -20,3 +20,8 @@ __all__ = [
     "app",
     "__name__",
 ]
+
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}

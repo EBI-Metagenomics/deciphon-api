@@ -1,5 +1,6 @@
 from fastapi import Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import List
 from starlette.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -15,9 +16,9 @@ from .rc import Code, RC, ReturnData
 
 
 class DB(BaseModel):
-    id: int = 0
-    xxh64: int = 0
-    filename: str = ""
+    id: int = Field(..., gt=0)
+    xxh64: int = Field(..., title="XXH64 file hash")
+    filename: str = Field(...)
 
     @classmethod
     def from_cdata(cls, cdb):
@@ -26,6 +27,34 @@ class DB(BaseModel):
             xxh64=int(cdb[0].xxh64),
             filename=ffi.string(cdb[0].filename).decode(),
         )
+
+
+@ffi.def_extern()
+def db_set_cb(cdb, arg):
+    dbs = ffi.from_handle(arg)
+    dbs.append(DB.from_cdata(cdb))
+
+
+@app.get(
+    "/dbs",
+    summary="get database list",
+    response_model=List[DB],
+    status_code=HTTP_200_OK,
+    responses={
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+    },
+)
+def get_db_list():
+    cdb = ffi.new("struct sched_db *")
+    cdb[0].id = 0
+
+    dbs: List[DB] = []
+    rc = RC(lib.sched_db_get_all(lib.db_set_cb, cdb, ffi.new_handle(dbs)))
+
+    if rc != RC.DONE:
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+
+    return dbs
 
 
 @app.get(

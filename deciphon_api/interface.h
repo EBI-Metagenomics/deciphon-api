@@ -17,9 +17,15 @@ enum rc
     RC_EPARSE,
 };
 
+struct sched_db;
+struct sched_job;
+struct sched_prod;
+struct sched_seq;
+
 extern "Python" void prod_set_cb(struct sched_prod *prod, void *arg);
 extern "Python" void seq_set_cb(struct sched_seq *seq, void *arg);
 extern "Python" void logger_cb(char const *msg, void *arg);
+extern "Python" void db_set_cb(struct sched_db *db, void *arg);
 
 enum limits
 {
@@ -52,9 +58,12 @@ struct sched_db
     char filename[FILENAME_SIZE];
 };
 
+typedef void(sched_db_set_cb)(struct sched_db *db, void *arg);
+
 void sched_db_init(struct sched_db *db);
 enum rc sched_db_get(struct sched_db *db);
 enum rc sched_db_add(struct sched_db *db, char const *filename);
+enum rc sched_db_get_all(sched_db_set_cb cb, struct sched_db *db, void *arg);
 
 enum sched_job_state
 {
@@ -78,9 +87,6 @@ struct sched_job
     int64_t exec_started;
     int64_t exec_ended;
 };
-
-struct sched_prod;
-struct sched_seq;
 
 typedef void(sched_seq_set_cb)(struct sched_seq *seq, void *arg);
 typedef void(sched_prod_set_cb)(struct sched_prod *prod, void *arg);

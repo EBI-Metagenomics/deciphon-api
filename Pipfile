@@ -12,6 +12,7 @@ setuptools = "*"
 setuptools-scm = "*"
 build = "*"
 pep517 = "*"
+deciphon-api = {editable = true, path = "."}
 
 [dev-packages]
 pytest = "*"

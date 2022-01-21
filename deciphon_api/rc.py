@@ -1,39 +1,38 @@
 from enum import Enum, IntEnum
+
 from pydantic import BaseModel
+
 from .logger import logger
 
 
 class RC(IntEnum):
-    RC_DONE = 0
-    RC_END = 1
-    RC_NEXT = 2
-    RC_NOTFOUND = 3
-    RC_EFAIL = 4
-    RC_EINVAL = 5
-    RC_EIO = 6
-    RC_ENOMEM = 7
-    RC_EPARSE = 8
+    DONE = 0
+    END = 1
+    NEXT = 2
+    NOTFOUND = 3
+    EFAIL = 4
+    EINVAL = 5
+    EIO = 6
+    ENOMEM = 7
+    EPARSE = 8
 
 
-class ReturnCode(str, Enum):
-    RC_DONE = "done"
-    RC_END = "end"
-    RC_NEXT = "next"
-    RC_NOTFOUND = "notfound"
-    RC_EFAIL = "efail"
-    RC_EINVAL = "einval"
-    RC_EIO = "eio"
-    RC_ENOMEM = "enomem"
-    RC_EPARSE = "eparse"
-
-    class Config:
-        use_enum_values = True
+class Code(str, Enum):
+    DONE = "done"
+    END = "end"
+    NEXT = "next"
+    NOTFOUND = "notfound"
+    EFAIL = "efail"
+    EINVAL = "einval"
+    EIO = "eio"
+    ENOMEM = "enomem"
+    EPARSE = "eparse"
 
 
 class ReturnData(BaseModel):
-    rc: ReturnCode = ReturnCode.RC_DONE
-    error: str = ""
+    rc: Code = Code.DONE
+    msg: str = ""
 
 
-def return_data(rc):
-    return ReturnData(rc=ReturnCode[RC(rc).name], error=logger.pop())
+def retdata(rc: RC) -> ReturnData:
+    return ReturnData(rc=Code[RC(rc).name], msg=logger.pop())

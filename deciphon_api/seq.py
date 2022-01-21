@@ -1,9 +1,16 @@
-from fastapi import HTTPException, status
 from pydantic import BaseModel
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+)
 
+from ._app import app
 from .csched import ffi, lib
-from .app import app
-from .rc import ReturnCode, return_data
+from .exception import DCPException
+from .rc import Code, RC, ReturnData
+
+__all__ = ["Seq"]
 
 
 class Seq(BaseModel):
@@ -12,27 +19,36 @@ class Seq(BaseModel):
     name: str = ""
     data: str = ""
 
+    @classmethod
+    def from_cdata(cls, cseq):
+        return cls(
+            id=int(cseq[0].id),
+            job_id=int(cseq[0].job_id),
+            name=ffi.string(cseq[0].name).decode(),
+            data=ffi.string(cseq[0].data).decode(),
+        )
 
-def create_seq(cseq) -> Seq:
-    seq = Seq()
-    seq.id = int(cseq[0].id)
-    seq.job_id = int(cseq[0].job_id)
-    seq.name = ffi.string(cseq[0].name).decode()
-    seq.data = ffi.string(cseq[0].data).decode()
-    return seq
 
-
-@app.get("/seqs/{seq_id}")
+@app.get(
+    "/seqs/{seq_id}",
+    summary="get sequence",
+    response_model=Seq,
+    status_code=HTTP_200_OK,
+    responses={
+        HTTP_404_NOT_FOUND: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+    },
+)
 def get_seq(seq_id: int):
     cseq = ffi.new("struct sched_seq *")
     cseq[0].id = seq_id
 
-    rd = return_data(lib.sched_get_seq(cseq))
+    rc = RC(lib.sched_seq_get(cseq))
 
-    if rd.rc == ReturnCode.RC_NOTFOUND:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, rd)
+    if rc == RC.NOTFOUND:
+        raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "sequence not found")
 
-    if rd.rc != ReturnCode.RC_DONE:
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, rd)
+    if rc != RC.DONE:
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
-    return create_seq(cseq)
+    return Seq.from_cdata(cseq)

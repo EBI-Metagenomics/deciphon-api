@@ -1,11 +1,9 @@
-from typing import List
-
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 
-from .app import app
+from ._app import app
 from .csched import ffi, lib
-from .rc import RC, return_data
+from .rc import RC, retdata
 
 
 class Prod(BaseModel):
@@ -103,12 +101,12 @@ def get_prod(prod_id: int):
     cprod = ffi.new("struct sched_prod *")
     cprod[0].id = prod_id
 
-    rd = return_data(lib.sched_get_prod(cprod))
+    rd = retdata(lib.sched_prod_get(cprod))
 
-    if rd.rc == RC.RC_NOTFOUND:
+    if rd.rc == RC.NOTFOUND:
         raise HTTPException(status.HTTP_404_NOT_FOUND, rd)
 
-    if rd.rc != RC.RC_DONE:
+    if rd.rc != RC.DONE:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, rd)
 
     return create_prod(cprod)

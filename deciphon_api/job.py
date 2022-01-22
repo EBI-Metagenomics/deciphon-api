@@ -2,7 +2,7 @@ from enum import Enum
 import os
 from typing import List
 
-from fastapi import Body, File, HTTPException, UploadFile, status
+from fastapi import Body, File, UploadFile
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from starlette.status import (
@@ -20,8 +20,8 @@ from ._app import app
 from .csched import ffi, lib
 from .exception import DCPException
 from .prod import Prod, create_prod
-from .prod import ProdIn, get_prod, prod_in_example
 from .rc import Code, RC, ReturnData
+from .result_utils import JobResult, make_fasta
 from .seq import Seq
 
 
@@ -273,6 +273,63 @@ def get_job_prods(job_id: int):
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return prods
+
+
+@app.get(
+    "/jobs/{job_id}/prods/gff",
+    summary="get products as gff",
+    response_class=PlainTextResponse,
+    status_code=HTTP_200_OK,
+    responses={
+        HTTP_404_NOT_FOUND: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+    },
+)
+def get_job_prods_as_gff(job_id: int):
+    job = get_job(job_id)
+
+    if job.state != JobState.done:
+        raise DCPException(
+            HTTP_404_NOT_FOUND,
+            Code.EINVAL,
+            f"invalid job state ({job.state}) for the request",
+        )
+
+    prods: List[Prod] = get_job_prods(job_id)
+    seqs: List[Seq] = get_job_seqs(job_id)
+    return JobResult(job, prods, seqs).gff()
+
+
+class FastaType(str, Enum):
+    state = "state"
+    frag = "frag"
+    codon = "codon"
+    amino = "amino"
+
+
+@app.get(
+    "/jobs/{job_id}/prods/fasta/{fasta_type}",
+    summary="get products as codon sequences",
+    response_class=PlainTextResponse,
+    status_code=HTTP_200_OK,
+    responses={
+        HTTP_404_NOT_FOUND: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+    },
+)
+def get_job_prods_as_codon(job_id: int, fasta_type: FastaType):
+    job = get_job(job_id)
+
+    if job.state != JobState.done:
+        raise DCPException(
+            HTTP_404_NOT_FOUND,
+            Code.EINVAL,
+            f"invalid job state ({job.state}) for the request",
+        )
+
+    prods: List[Prod] = get_job_prods(job_id)
+    seqs: List[Seq] = get_job_seqs(job_id)
+    return JobResult(job, prods, seqs).fasta(fasta_type.name)
 
 
 @ffi.def_extern()

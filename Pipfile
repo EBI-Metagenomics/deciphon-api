@@ -12,7 +12,8 @@ setuptools = "*"
 setuptools-scm = "*"
 build = "*"
 pep517 = "*"
-deciphon-api = {editable = true, path = "."}
+biopython = "*"
+bcbio-gff = "*"
 
 [dev-packages]
 pytest = "*"

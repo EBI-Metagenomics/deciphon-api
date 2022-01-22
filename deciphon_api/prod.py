@@ -1,9 +1,14 @@
-from fastapi import HTTPException, status
 from pydantic import BaseModel
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+)
 
 from ._app import app
 from .csched import ffi, lib
-from .rc import RC, retdata
+from .exception import DCPException
+from .rc import Code, RC, ReturnData
 
 
 class Prod(BaseModel):
@@ -96,17 +101,26 @@ def create_prod_in(cprod) -> ProdIn:
     )
 
 
-@app.get("/prods/{prod_id}")
+@app.get(
+    "/prods/{prod_id}",
+    summary="get product",
+    response_model=Prod,
+    status_code=HTTP_200_OK,
+    responses={
+        HTTP_404_NOT_FOUND: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+    },
+)
 def get_prod(prod_id: int):
     cprod = ffi.new("struct sched_prod *")
     cprod[0].id = prod_id
 
-    rd = retdata(lib.sched_prod_get(cprod))
+    rc = RC(lib.sched_prod_get(cprod))
 
-    if rd.rc == RC.NOTFOUND:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, rd)
+    if rc == RC.NOTFOUND:
+        raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "product not found")
 
-    if rd.rc != RC.DONE:
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, rd)
+    if rc != RC.DONE:
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return create_prod(cprod)

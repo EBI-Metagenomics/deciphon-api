@@ -102,7 +102,10 @@ def db_exists(filename: str):
     description="the file must reside at the sched working directory",
     response_model=DB,
     status_code=HTTP_201_CREATED,
-    responses={HTTP_409_CONFLICT: {"model": ReturnData}},
+    responses={
+        HTTP_409_CONFLICT: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+    },
 )
 def post_db(
     filename: str = Query(..., example="pfam24.dcp", description="database filename")

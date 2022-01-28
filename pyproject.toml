@@ -10,12 +10,12 @@ classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
 requires-python = ">=3.8"
 dependencies = [
-    "fastapi",
-    "uvicorn",
-    "cffi",
-    "python-multipart",
-    "biopython",
-    "bcbio-gff",
+  "fastapi",
+  "uvicorn",
+  "cffi",
+  "python-multipart",
+  "biopython",
+  "bcbio-gff",
 ]
 
 [project.urls]

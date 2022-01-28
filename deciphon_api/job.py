@@ -1,5 +1,5 @@
-from enum import Enum
 import os
+from enum import Enum
 from typing import List
 
 from fastapi import Body, File, UploadFile
@@ -20,7 +20,7 @@ from ._app import app
 from .csched import ffi, lib
 from .exception import DCPException
 from .prod import Prod, create_prod
-from .rc import Code, RC, ReturnData
+from .rc import RC, Code, ReturnData
 from .result_utils import JobResult, make_fasta
 from .seq import Seq
 

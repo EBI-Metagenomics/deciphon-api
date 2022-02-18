@@ -1,8 +1,8 @@
 FILE *fdopen(int, const char *);
 int fclose(FILE *);
 
-typedef void logger_print_t(char const *msg, void *arg);
-void logger_setup(logger_print_t *print, void *arg);
+typedef void sched_logger_print_t(char const *msg, void *arg);
+void sched_logger_setup(sched_logger_print_t *print, void *arg);
 
 enum sched_rc
 {

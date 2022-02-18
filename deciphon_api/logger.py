@@ -23,4 +23,4 @@ def logger_cb(msg, arg):
 
 
 logger = Logger()
-lib.logger_setup(lib.logger_cb, logger.handle)
+lib.sched_logger_setup(lib.logger_cb, logger.handle)

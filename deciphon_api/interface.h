@@ -4,17 +4,16 @@ int fclose(FILE *);
 typedef void logger_print_t(char const *msg, void *arg);
 void logger_setup(logger_print_t *print, void *arg);
 
-enum rc
+enum sched_rc
 {
-    RC_DONE,
-    RC_END,
-    RC_NEXT,
-    RC_NOTFOUND,
-    RC_EFAIL,
-    RC_EINVAL,
-    RC_EIO,
-    RC_ENOMEM,
-    RC_EPARSE,
+    SCHED_OK,
+    SCHED_END,
+    SCHED_NOTFOUND,
+    SCHED_EFAIL,
+    SCHED_EIO,
+    SCHED_EINVAL,
+    SCHED_ENOMEM,
+    SCHED_EPARSE,
 };
 
 struct sched_db;
@@ -27,24 +26,18 @@ extern "Python" void seq_set_cb(struct sched_seq *seq, void *arg);
 extern "Python" void logger_cb(char const *msg, void *arg);
 extern "Python" void db_set_cb(struct sched_db *db, void *arg);
 
-enum limits
+enum sched_limits
 {
     ABC_NAME_SIZE = 16,
-    BITS_PER_PROFILE_TYPEID = 16,
     FILENAME_SIZE = 128,
     JOB_ERROR_SIZE = 256,
     JOB_STATE_SIZE = 5,
     MATCH_SIZE = 5 * (1024 * 1024),
-    MAX_NPROFILES = (1 << 20),
     MAX_NUM_THREADS = 64,
-    NUM_PARTITIONS = 64,
     NUM_SEQS_PER_JOB = 64,
     PATH_SIZE = 4096,
-    PROFILE_ACC_SIZE = 32,
     PROFILE_NAME_SIZE = 64,
     PROFILE_TYPEID_SIZE = 16,
-    PROF_NAME_SIZE = 256,
-    PROTEIN_MODEL_CORE_SIZE_MAX = 2048,
     SEQ_NAME_SIZE = 256,
     SEQ_SIZE = (1024 * 1024),
     VERSION_SIZE = 16,
@@ -60,10 +53,10 @@ struct sched_db
 
 typedef void(sched_db_set_cb)(struct sched_db *db, void *arg);
 
-void sched_db_init(struct sched_db *db);
-enum rc sched_db_get(struct sched_db *db);
-enum rc sched_db_add(struct sched_db *db, char const *filename);
-enum rc sched_db_get_all(sched_db_set_cb cb, struct sched_db *db, void *arg);
+enum sched_rc sched_db_get(struct sched_db *db);
+enum sched_rc sched_db_add(struct sched_db *db, char const *filename);
+enum sched_rc sched_db_get_all(sched_db_set_cb cb, struct sched_db *db,
+                               void *arg);
 
 enum sched_job_state
 {
@@ -94,25 +87,25 @@ typedef void(sched_prod_set_cb)(struct sched_prod *prod, void *arg);
 void sched_job_init(struct sched_job *job, int64_t db_id, bool multi_hits,
                     bool hmmer3_compat);
 
-enum rc sched_job_get_seqs(int64_t job_id, sched_seq_set_cb cb,
-                           struct sched_seq *seq, void *arg);
+enum sched_rc sched_job_get_seqs(int64_t job_id, sched_seq_set_cb cb,
+                                 struct sched_seq *seq, void *arg);
 
-enum rc sched_job_get_prods(int64_t job_id, sched_prod_set_cb cb,
-                            struct sched_prod *prod, void *arg);
+enum sched_rc sched_job_get_prods(int64_t job_id, sched_prod_set_cb cb,
+                                  struct sched_prod *prod, void *arg);
 
-enum rc sched_job_get(struct sched_job *job);
+enum sched_rc sched_job_get(struct sched_job *job);
 
-enum rc sched_job_set_run(int64_t job_id);
-enum rc sched_job_set_fail(int64_t job_id, char const *msg);
-enum rc sched_job_set_done(int64_t job_id);
+enum sched_rc sched_job_set_run(int64_t job_id);
+enum sched_rc sched_job_set_fail(int64_t job_id, char const *msg);
+enum sched_rc sched_job_set_done(int64_t job_id);
 
-enum rc sched_job_begin_submission(struct sched_job *job);
+enum sched_rc sched_job_begin_submission(struct sched_job *job);
 void sched_job_add_seq(struct sched_job *job, char const *name,
                        char const *data);
-enum rc sched_job_rollback_submission(struct sched_job *job);
-enum rc sched_job_end_submission(struct sched_job *job);
+enum sched_rc sched_job_rollback_submission(struct sched_job *job);
+enum sched_rc sched_job_end_submission(struct sched_job *job);
 
-enum rc sched_job_next_pend(struct sched_job *job);
+enum sched_rc sched_job_next_pend(struct sched_job *job);
 
 struct sched_prod
 {
@@ -135,21 +128,13 @@ struct sched_prod
 
 typedef int(sched_prod_write_match_cb)(FILE *fp, void const *match);
 
-void sched_prod_init(struct sched_prod *prod, int64_t job_id);
-enum rc sched_prod_get(struct sched_prod *prod);
-enum rc sched_prod_add(struct sched_prod *prod);
-enum rc sched_prod_add_file(FILE *fp);
+enum sched_rc sched_prod_get(struct sched_prod *prod);
+enum sched_rc sched_prod_add(struct sched_prod *prod);
+enum sched_rc sched_prod_add_file(FILE *fp);
 
-enum rc sched_prod_write_begin(struct sched_prod const *prod,
-                               unsigned file_num);
-enum rc sched_prod_write_match(sched_prod_write_match_cb *cb, void const *match,
-                               unsigned file_num);
-enum rc sched_prod_write_match_sep(unsigned file_num);
-enum rc sched_prod_write_end(unsigned file_num);
-
-enum rc sched_setup(char const *filepath);
-enum rc sched_open(void);
-enum rc sched_close(void);
+enum sched_rc sched_setup(char const *filepath);
+enum sched_rc sched_open(void);
+enum sched_rc sched_close(void);
 
 struct sched_seq
 {
@@ -159,7 +144,5 @@ struct sched_seq
     char data[SEQ_SIZE];
 };
 
-void sched_seq_init(struct sched_seq *seq, int64_t job_id, char const *name,
-                    char const *data);
-enum rc sched_seq_next(struct sched_seq *seq);
-enum rc sched_seq_get(struct sched_seq *seq);
+enum sched_rc sched_seq_next(struct sched_seq *seq);
+enum sched_rc sched_seq_get(struct sched_seq *seq);

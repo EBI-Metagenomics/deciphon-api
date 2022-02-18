@@ -229,6 +229,8 @@ def post_job(job: JobIn = Body(..., example=job_in_example)):
     cjob[0].multi_hits = job.multi_hits
     cjob[0].hmmer3_compat = job.hmmer3_compat
 
+    # TODO: implement try-catch all to call sched_job_rollback_submission
+    # in case of cancel/failure.
     rc = RC(lib.sched_job_begin_submission(cjob))
     if rc != RC.DONE:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])

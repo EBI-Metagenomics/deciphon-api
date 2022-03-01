@@ -21,7 +21,7 @@ from .csched import ffi, lib
 from .exception import DCPException
 from .prod import Prod, create_prod
 from .rc import RC, Code, ReturnData
-from .result_utils import JobResult, make_fasta
+from .result_utils import JobResult
 from .seq import Seq
 
 
@@ -138,7 +138,7 @@ def get_next_pend_job():
     if rc == RC.NOTFOUND:
         raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "pending job not found")
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return Job.from_cdata(cjob)
@@ -163,7 +163,7 @@ def get_job(job_id: int):
     if rc == RC.NOTFOUND:
         raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return Job.from_cdata(cjob)
@@ -191,21 +191,21 @@ def update_job(job_id: int, state: JobState, error: str):
     if job.state == JobState.pend and state == JobState.run:
 
         rc = RC(lib.sched_job_set_run(job_id))
-        if rc != RC.DONE:
+        if rc != RC.OK:
             raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
         return get_job(job_id)
 
     elif job.state == JobState.run and state == JobState.done:
 
         rc = RC(lib.sched_job_set_done(job_id))
-        if rc != RC.DONE:
+        if rc != RC.OK:
             raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
         return get_job(job_id)
 
     elif job.state == JobState.run and state == JobState.fail:
 
         rc = RC(lib.sched_job_set_fail(job_id, error.encode()))
-        if rc != RC.DONE:
+        if rc != RC.OK:
             raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
         return get_job(job_id)
 
@@ -232,14 +232,14 @@ def post_job(job: JobIn = Body(..., example=job_in_example)):
     # TODO: implement try-catch all to call sched_job_rollback_submission
     # in case of cancel/failure.
     rc = RC(lib.sched_job_begin_submission(cjob))
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     for seq in job.seqs:
         lib.sched_job_add_seq(cjob, seq.name.encode(), seq.data.encode())
 
     rc = RC(lib.sched_job_end_submission(cjob))
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return Job.from_cdata(cjob)
@@ -271,7 +271,7 @@ def get_job_prods(job_id: int):
     if rc == RC.NOTFOUND:
         raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return prods
@@ -359,7 +359,7 @@ def get_next_job_seq(job_id: int, seq_id: int):
     if rc == RC.NOTFOUND:
         raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "next sequence not found")
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return Seq.from_cdata(cseq)
@@ -383,7 +383,7 @@ def get_job_seqs(job_id: int):
     if rc == RC.NOTFOUND:
         raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return seqs
@@ -417,7 +417,7 @@ def upload_prods_file(prods_file: UploadFile = File(...)):
     if rc == RC.EPARSE:
         raise DCPException(HTTP_400_BAD_REQUEST, Code[rc.name], "parse error")
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return ReturnData(rc=Code[rc.name], msg="")
@@ -429,7 +429,7 @@ def upload_prods_file(prods_file: UploadFile = File(...)):
 #     cprod[0].job_id = job_id
 #     rc = RC(lib.sched_prod_add(cprod))
 #
-#     if rc != RC.DONE:
+#     if rc != RC.OK:
 #         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 #
 #     return get_prod(int(cprod[0].id))

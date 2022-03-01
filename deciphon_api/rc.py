@@ -6,31 +6,29 @@ from .logger import logger
 
 
 class RC(IntEnum):
-    DONE = 0
+    OK = 0
     END = 1
-    NEXT = 2
-    NOTFOUND = 3
-    EFAIL = 4
+    NOTFOUND = 2
+    EFAIL = 3
+    EIO = 4
     EINVAL = 5
-    EIO = 6
-    ENOMEM = 7
-    EPARSE = 8
+    ENOMEM = 6
+    EPARSE = 7
 
 
 class Code(str, Enum):
-    DONE = "done"
+    OK = "ok"
     END = "end"
-    NEXT = "next"
     NOTFOUND = "notfound"
     EFAIL = "efail"
-    EINVAL = "einval"
     EIO = "eio"
+    EINVAL = "einval"
     ENOMEM = "enomem"
     EPARSE = "eparse"
 
 
 class ReturnData(BaseModel):
-    rc: Code = Code.DONE
+    rc: Code = Code.OK
     msg: str = ""
 
 

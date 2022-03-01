@@ -1,6 +1,7 @@
+from typing import List
+
 from fastapi import Query
 from pydantic import BaseModel, Field
-from typing import List
 from starlette.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -12,7 +13,7 @@ from starlette.status import (
 from ._app import app
 from .csched import ffi, lib
 from .exception import DCPException
-from .rc import Code, RC, ReturnData
+from .rc import RC, Code, ReturnData
 
 
 class DB(BaseModel):
@@ -51,7 +52,7 @@ def get_db_list():
     dbs: List[DB] = []
     rc = RC(lib.sched_db_get_all(lib.db_set_cb, cdb, ffi.new_handle(dbs)))
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return dbs
@@ -76,7 +77,7 @@ def get_db(db_id: int):
     if rc == RC.NOTFOUND:
         raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "database not found")
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return DB.from_cdata(cdb)
@@ -87,7 +88,7 @@ def db_exists(filename: str):
     cdb[0].filename = filename.encode()
     rc = RC(lib.sched_db_get(cdb))
 
-    if rc == RC.DONE:
+    if rc == RC.OK:
         return True
 
     if rc == RC.NOTFOUND:
@@ -121,7 +122,7 @@ def post_db(
     cdb[0].filename = filename.encode()
     rc = RC(lib.sched_db_add(cdb, filename.encode()))
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return DB.from_cdata(cdb)

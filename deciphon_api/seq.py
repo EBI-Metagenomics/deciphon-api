@@ -8,7 +8,7 @@ from starlette.status import (
 from ._app import app
 from .csched import ffi, lib
 from .exception import DCPException
-from .rc import Code, RC, ReturnData
+from .rc import RC, Code, ReturnData
 
 __all__ = ["Seq"]
 
@@ -48,7 +48,7 @@ def get_seq(seq_id: int):
     if rc == RC.NOTFOUND:
         raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "sequence not found")
 
-    if rc != RC.DONE:
+    if rc != RC.OK:
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return Seq.from_cdata(cseq)

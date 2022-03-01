@@ -1,9 +1,4 @@
-from . import sched
-from . import job
-from . import db
-from . import seq
-from . import prod
-from . import exception
+from . import db, exception, job, prod, sched, seq
 from ._app import app
 from ._version import version as __version__
 

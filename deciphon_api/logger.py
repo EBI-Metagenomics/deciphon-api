@@ -1,4 +1,4 @@
-from .csched import lib, ffi
+from .csched import ffi, lib
 
 
 class Logger:

@@ -1,5 +1,4 @@
 import dataclasses
-from enum import Enum
 import io
 from typing import List
 

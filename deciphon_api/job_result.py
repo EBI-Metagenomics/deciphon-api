@@ -7,8 +7,12 @@ from Bio import SeqIO
 from Bio.Seq import Seq as BioSeq
 from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio.SeqRecord import SeqRecord
+from starlette.status import HTTP_404_NOT_FOUND
 
+from .exception import DCPException
+from .job import Job, JobState
 from .prod import Prod
+from .rc import Code
 from .seq import Seq
 
 EPSILON = "0.01"
@@ -47,6 +51,21 @@ class JobResult:
 
         for prod in self.prods:
             self._make_hits(prod)
+
+    @classmethod
+    def from_id(cls, job_id: int):
+        job = Job.from_id(job_id)
+
+        if job.state != JobState.done:
+            raise DCPException(
+                HTTP_404_NOT_FOUND,
+                Code.EINVAL,
+                f"invalid job state ({job.state}) for the request",
+            )
+
+        prods: List[Prod] = job.prods()
+        seqs: List[Seq] = job.seqs()
+        return cls(job, prods, seqs).gff()
 
     def _make_hits(self, prod):
         hit_start = 0

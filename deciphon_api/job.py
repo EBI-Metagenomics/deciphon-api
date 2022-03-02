@@ -1,27 +1,21 @@
-import os
 from enum import Enum
 from typing import List
 
-from fastapi import Body, File, UploadFile
-from fastapi.responses import PlainTextResponse
+from fastapi import Body
 from pydantic import BaseModel
 from starlette.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from . import examples
 from ._app import app
 from .csched import ffi, lib
 from .exception import DCPException
-from .prod import Prod, create_prod
+from .job_result import JobResult
+from .prod import Prod
 from .rc import RC, Code, ReturnData
-from .result_utils import JobResult
 from .seq import Seq
 
 
@@ -58,6 +52,60 @@ class Job(BaseModel):
             exec_started=int(cjob[0].exec_started),
             exec_ended=int(cjob[0].exec_ended),
         )
+
+    @classmethod
+    def from_id(cls, job_id: int):
+        cjob = ffi.new("struct sched_job *")
+        cjob[0].id = job_id
+
+        rc = RC(lib.sched_job_get(cjob))
+
+        if rc == RC.NOTFOUND:
+            raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
+
+        if rc != RC.OK:
+            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+
+        return Job.from_cdata(cjob)
+
+    def prods(self) -> List[Prod]:
+        cprod = ffi.new("struct sched_prod *")
+        prods: List[Prod] = []
+        rc = RC(
+            lib.sched_job_get_prods(
+                self.id, lib.append_prod_callback, cprod, ffi.new_handle(prods)
+            )
+        )
+
+        if rc == RC.NOTFOUND:
+            raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
+
+        if rc != RC.OK:
+            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+
+        return prods
+
+    def seqs(self) -> List[Seq]:
+        cseq = ffi.new("struct sched_seq *")
+        seqs: List[Seq] = []
+
+        rc = RC(
+            lib.sched_job_get_seqs(self.id, lib.seq_set_cb, cseq, ffi.new_handle(seqs))
+        )
+        assert rc != RC.END
+
+        if rc == RC.NOTFOUND:
+            raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
+
+        if rc != RC.OK:
+            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+
+        return seqs
+
+    def result(self) -> JobResult:
+        prods: List[Prod] = self.prods()
+        seqs: List[Seq] = self.seqs()
+        return JobResult(self, prods, seqs)
 
 
 class SeqIn(BaseModel):
@@ -122,29 +170,6 @@ job_in_example = JobIn(
 
 
 @app.get(
-    "/jobs/next_pend",
-    summary="get next pending job",
-    response_model=Job,
-    status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
-    },
-)
-def get_next_pend_job():
-    cjob = ffi.new("struct sched_job *")
-    rc = RC(lib.sched_job_next_pend(cjob))
-
-    if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "pending job not found")
-
-    if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
-
-    return Job.from_cdata(cjob)
-
-
-@app.get(
     "/jobs/{job_id}",
     summary="get job",
     response_model=Job,
@@ -154,7 +179,7 @@ def get_next_pend_job():
         HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
     },
 )
-def get_job(job_id: int):
+def get_jobs(job_id: int):
     cjob = ffi.new("struct sched_job *")
     cjob[0].id = job_id
 
@@ -167,49 +192,6 @@ def get_job(job_id: int):
         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
 
     return Job.from_cdata(cjob)
-
-
-@app.patch(
-    "/jobs/{job_id}",
-    summary="get job",
-    response_model=Job,
-    status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
-        HTTP_403_FORBIDDEN: {"model": ReturnData},
-    },
-)
-def update_job(job_id: int, state: JobState, error: str):
-    job = get_job(job_id)
-
-    if job.state == state:
-        raise DCPException(
-            HTTP_403_FORBIDDEN, Code.EINVAL, "redundant job state update"
-        )
-
-    if job.state == JobState.pend and state == JobState.run:
-
-        rc = RC(lib.sched_job_set_run(job_id))
-        if rc != RC.OK:
-            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
-        return get_job(job_id)
-
-    elif job.state == JobState.run and state == JobState.done:
-
-        rc = RC(lib.sched_job_set_done(job_id))
-        if rc != RC.OK:
-            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
-        return get_job(job_id)
-
-    elif job.state == JobState.run and state == JobState.fail:
-
-        rc = RC(lib.sched_job_set_fail(job_id, error.encode()))
-        if rc != RC.OK:
-            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
-        return get_job(job_id)
-
-    raise DCPException(HTTP_403_FORBIDDEN, Code.EINVAL, "invalid job state update")
 
 
 @app.post(
@@ -246,181 +228,15 @@ def post_job(job: JobIn = Body(..., example=job_in_example)):
 
 
 @ffi.def_extern()
-def prod_set_cb(cprod, arg):
+def append_prod_callback(cprod, arg):
     prods = ffi.from_handle(arg)
-    prods.append(create_prod(cprod))
-
-
-@app.get(
-    "/jobs/{job_id}/prods",
-    summary="get products",
-    response_model=List[Prod],
-    status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
-    },
-)
-def get_job_prods(job_id: int):
-    cprod = ffi.new("struct sched_prod *")
-    prods: List[Prod] = []
-    rc = RC(
-        lib.sched_job_get_prods(job_id, lib.prod_set_cb, cprod, ffi.new_handle(prods))
-    )
-
-    if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
-
-    if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
-
-    return prods
-
-
-@app.get(
-    "/jobs/{job_id}/prods/gff",
-    summary="get products as gff",
-    response_class=PlainTextResponse,
-    status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
-    },
-)
-def get_job_prods_as_gff(job_id: int):
-    job = get_job(job_id)
-
-    if job.state != JobState.done:
-        raise DCPException(
-            HTTP_404_NOT_FOUND,
-            Code.EINVAL,
-            f"invalid job state ({job.state}) for the request",
-        )
-
-    prods: List[Prod] = get_job_prods(job_id)
-    seqs: List[Seq] = get_job_seqs(job_id)
-    return JobResult(job, prods, seqs).gff()
-
-
-class FastaType(str, Enum):
-    state = "state"
-    frag = "frag"
-    codon = "codon"
-    amino = "amino"
-
-
-@app.get(
-    "/jobs/{job_id}/prods/fasta/{fasta_type}",
-    summary="get products as codon sequences",
-    response_class=PlainTextResponse,
-    status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
-    },
-)
-def get_job_prods_as_codon(job_id: int, fasta_type: FastaType):
-    job = get_job(job_id)
-
-    if job.state != JobState.done:
-        raise DCPException(
-            HTTP_404_NOT_FOUND,
-            Code.EINVAL,
-            f"invalid job state ({job.state}) for the request",
-        )
-
-    prods: List[Prod] = get_job_prods(job_id)
-    seqs: List[Seq] = get_job_seqs(job_id)
-    return JobResult(job, prods, seqs).fasta(fasta_type.name)
+    prods.append(Prod.from_cdata(cprod))
 
 
 @ffi.def_extern()
 def seq_set_cb(cseq, arg):
     seqs = ffi.from_handle(arg)
     seqs.append(Seq.from_cdata(cseq))
-
-
-@app.get(
-    "/jobs/{job_id}/seqs/next/{seq_id}",
-    summary="get next sequence",
-    response_model=Seq,
-    status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
-    },
-)
-def get_next_job_seq(job_id: int, seq_id: int):
-    cseq = ffi.new("struct sched_seq *")
-    cseq[0].id = seq_id
-    cseq[0].job_id = job_id
-    rc = RC(lib.sched_seq_next(cseq))
-
-    if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "next sequence not found")
-
-    if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
-
-    return Seq.from_cdata(cseq)
-
-
-@app.get(
-    "/jobs/{job_id}/seqs",
-    summary="get all sequences of a job",
-    response_model=List[Seq],
-    status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
-    },
-)
-def get_job_seqs(job_id: int):
-    cseq = ffi.new("struct sched_seq *")
-    seqs: List[Seq] = []
-    rc = RC(lib.sched_job_get_seqs(job_id, lib.seq_set_cb, cseq, ffi.new_handle(seqs)))
-
-    if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
-
-    if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
-
-    return seqs
-
-
-@app.get("/prods/upload/example", response_class=PlainTextResponse)
-def upload_prods_file_example():
-    return examples.prods_file
-
-
-@app.post(
-    "/prods/upload",
-    summary="upload a text/tab-separated-values file of products",
-    response_model=ReturnData,
-    status_code=HTTP_201_CREATED,
-    responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
-        HTTP_409_CONFLICT: {"model": ReturnData},
-        HTTP_400_BAD_REQUEST: {"model": ReturnData},
-    },
-)
-def upload_prods_file(prods_file: UploadFile = File(...)):
-    prods_file.file.flush()
-    fd = os.dup(prods_file.file.fileno())
-    fp = lib.fdopen(fd, b"rb")
-    rc = RC(lib.sched_prod_add_file(fp))
-
-    if rc == RC.EINVAL:
-        raise DCPException(HTTP_409_CONFLICT, Code[rc.name], "constraint violation")
-
-    if rc == RC.EPARSE:
-        raise DCPException(HTTP_400_BAD_REQUEST, Code[rc.name], "parse error")
-
-    if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
-
-    return ReturnData(rc=Code[rc.name], msg="")
 
 
 # @app.post("/jobs/{job_id}/prods")

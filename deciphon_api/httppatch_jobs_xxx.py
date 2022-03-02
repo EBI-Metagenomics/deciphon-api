@@ -1,0 +1,55 @@
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+)
+
+from ._app import app
+from .csched import lib
+from .exception import DCPException
+from .job import Job, JobState
+from .rc import RC, Code, ReturnData
+
+
+@app.patch(
+    "/jobs/{job_id}",
+    summary="get job",
+    response_model=Job,
+    status_code=HTTP_200_OK,
+    responses={
+        HTTP_404_NOT_FOUND: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_403_FORBIDDEN: {"model": ReturnData},
+    },
+)
+def httppatch_jobs_xxx(job_id: int, state: JobState, error: str):
+    job = Job.from_id(job_id)
+
+    if job.state == state:
+        raise DCPException(
+            HTTP_403_FORBIDDEN, Code.EINVAL, "redundant job state update"
+        )
+
+    if job.state == JobState.pend and state == JobState.run:
+
+        rc = RC(lib.sched_job_set_run(job_id))
+        if rc != RC.OK:
+            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        return Job.from_id(job_id)
+
+    elif job.state == JobState.run and state == JobState.done:
+
+        rc = RC(lib.sched_job_set_done(job_id))
+        if rc != RC.OK:
+            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        return Job.from_id(job_id)
+
+    elif job.state == JobState.run and state == JobState.fail:
+
+        rc = RC(lib.sched_job_set_fail(job_id, error.encode()))
+        if rc != RC.OK:
+            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        return Job.from_id(job_id)
+
+    raise DCPException(HTTP_403_FORBIDDEN, Code.EINVAL, "invalid job state update")

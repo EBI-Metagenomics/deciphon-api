@@ -12,7 +12,7 @@ from ._app import app
 from .csched import lib
 from .exception import DCPException
 from .rc import RC, StrRC
-from .response import ErrorResponse
+from ._types import ErrorResponse
 
 
 @app.post(

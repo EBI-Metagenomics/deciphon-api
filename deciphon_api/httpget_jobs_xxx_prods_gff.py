@@ -13,7 +13,7 @@ from .job import Job, JobResult, JobState
 from .prod import Prod
 from .rc import StrRC
 from .seq import Seq
-from .response import ErrorResponse
+from ._types import ErrorResponse
 
 
 @app.get(

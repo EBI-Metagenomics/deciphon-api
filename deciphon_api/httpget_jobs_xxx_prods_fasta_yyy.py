@@ -10,7 +10,7 @@ from ._types import FastaType
 from .exception import DCPException
 from .job import Job, JobState
 from .rc import StrRC
-from .response import ErrorResponse
+from ._types import ErrorResponse
 
 
 @app.get(

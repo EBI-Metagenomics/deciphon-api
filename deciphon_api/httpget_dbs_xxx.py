@@ -9,7 +9,7 @@ from .csched import ffi, lib
 from .db import DB
 from .exception import DCPException
 from .rc import RC, StrRC
-from .response import ErrorResponse
+from ._types import ErrorResponse
 
 
 @app.get(

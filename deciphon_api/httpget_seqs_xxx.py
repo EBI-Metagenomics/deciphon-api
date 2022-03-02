@@ -6,7 +6,7 @@ from ._app import app
 from .csched import ffi, lib
 from .exception import DCPException
 from .rc import RC, StrRC
-from .response import ErrorResponse
+from ._types import ErrorResponse
 from .seq import Seq
 
 

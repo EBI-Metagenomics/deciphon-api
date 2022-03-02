@@ -6,7 +6,7 @@ from starlette.status import (
 
 from ._app import app
 from .job import Job
-from .response import ErrorResponse
+from ._types import ErrorResponse
 
 
 @app.get(

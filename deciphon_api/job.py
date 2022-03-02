@@ -16,7 +16,7 @@ from .exception import DCPException
 from .job_result import JobResult
 from .prod import Prod
 from .rc import RC, StrRC
-from .response import ErrorResponse
+from ._types import ErrorResponse
 from .seq import Seq
 
 

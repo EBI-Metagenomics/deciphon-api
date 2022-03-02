@@ -10,7 +10,7 @@ from .csched import lib
 from .exception import DCPException
 from .job import Job, JobState
 from .rc import RC, StrRC
-from .response import ErrorResponse
+from ._types import ErrorResponse
 
 
 @app.patch(

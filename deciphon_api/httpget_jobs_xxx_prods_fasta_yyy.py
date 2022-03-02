@@ -1,16 +1,14 @@
 from fastapi.responses import PlainTextResponse
 from starlette.status import (
     HTTP_200_OK,
-    HTTP_404_NOT_FOUND,
+    HTTP_412_PRECONDITION_FAILED,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
 from ._app import app
-from ._types import FastaType
-from .exception import DCPException
+from ._types import ErrorResponse, FastaType
+from .exception import EINVALException
 from .job import Job, JobState
-from .rc import StrRC
-from ._types import ErrorResponse
 
 
 @app.get(
@@ -19,7 +17,7 @@ from ._types import ErrorResponse
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_412_PRECONDITION_FAILED: {"model": ErrorResponse},
         HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
@@ -27,10 +25,6 @@ def httpget_jobs_xxx_prods_fasta_yyy(job_id: int, fasta_type: FastaType):
     job = Job.from_id(job_id)
 
     if job.state != JobState.done:
-        raise DCPException(
-            HTTP_404_NOT_FOUND,
-            StrRC.EINVAL,
-            f"invalid job state ({job.state}) for the request",
-        )
+        raise EINVALException(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
 
     return job.result().fasta(fasta_type.name)

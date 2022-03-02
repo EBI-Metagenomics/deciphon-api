@@ -5,11 +5,11 @@ from starlette.status import (
 )
 
 from ._app import app
+from ._types import ErrorResponse
 from .csched import ffi, lib
 from .db import DB
-from .exception import DCPException
-from .rc import RC, StrRC
-from ._types import ErrorResponse
+from .exception import create_exception
+from .rc import RC
 
 
 @app.get(
@@ -27,11 +27,12 @@ def httpget_dbs_xxx(db_id: int):
     cdb[0].id = db_id
 
     rc = RC(lib.sched_db_get(cdb))
+    assert rc != RC.END
 
     if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "database not found")
+        return []
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return DB.from_cdata(cdb)

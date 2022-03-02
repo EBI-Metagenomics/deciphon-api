@@ -3,11 +3,11 @@ from typing import List
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
 from ._app import app
-from .csched import ffi, lib
-from .exception import DCPException
-from .job import Job
-from .rc import RC, StrRC
 from ._types import ErrorResponse
+from .csched import ffi, lib
+from .exception import create_exception
+from .job import Job
+from .rc import RC
 
 
 @app.get(
@@ -29,6 +29,6 @@ def httpget_jobs_next_pend():
         return []
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return [Job.from_cdata(cjob)]

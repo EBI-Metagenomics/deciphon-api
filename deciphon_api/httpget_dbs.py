@@ -3,11 +3,11 @@ from typing import List
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
 from ._app import app
+from ._types import ErrorResponse
 from .csched import ffi, lib
 from .db import DB
-from .exception import DCPException
-from .rc import RC, StrRC
-from ._types import ErrorResponse
+from .exception import create_exception
+from .rc import RC
 
 
 @app.get(
@@ -25,8 +25,9 @@ def httpget_dbs():
 
     dbs: List[DB] = []
     rc = RC(lib.sched_db_get_all(lib.append_db_callback, cdb, ffi.new_handle(dbs)))
+    assert rc != RC.END
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return dbs

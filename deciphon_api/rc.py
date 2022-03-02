@@ -1,7 +1,5 @@
 from enum import Enum, IntEnum
 
-from pydantic import BaseModel
-
 __all__ = ["RC"]
 
 

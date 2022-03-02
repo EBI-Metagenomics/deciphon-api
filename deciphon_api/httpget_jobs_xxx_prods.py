@@ -7,11 +7,11 @@ from starlette.status import (
 )
 
 from ._app import app
-from .csched import ffi, lib
-from .exception import DCPException
-from .prod import Prod
-from .rc import RC, StrRC
 from ._types import ErrorResponse
+from .csched import ffi, lib
+from .exception import EINVALException, create_exception
+from .prod import Prod
+from .rc import RC
 
 
 @app.get(
@@ -26,17 +26,19 @@ from ._types import ErrorResponse
 )
 def httpget_jobs_xxx_prods(job_id: int):
     cprod = ffi.new("struct sched_prod *")
+
     prods: List[Prod] = []
     rc = RC(
         lib.sched_job_get_prods(
             job_id, lib.append_prod_callback, cprod, ffi.new_handle(prods)
         )
     )
+    assert rc != RC.END
 
     if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
+        raise EINVALException(HTTP_404_NOT_FOUND, "job not found")
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return prods

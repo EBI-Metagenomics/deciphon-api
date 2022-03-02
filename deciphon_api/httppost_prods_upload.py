@@ -9,10 +9,10 @@ from starlette.status import (
 )
 
 from ._app import app
-from .csched import lib
-from .exception import DCPException
-from .rc import RC, StrRC
 from ._types import ErrorResponse
+from .csched import lib
+from .exception import EINVALException, EPARSEException, create_exception
+from .rc import RC
 
 
 @app.post(
@@ -21,9 +21,9 @@ from ._types import ErrorResponse
     response_model=ErrorResponse,
     status_code=HTTP_201_CREATED,
     responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-        HTTP_409_CONFLICT: {"model": ErrorResponse},
         HTTP_400_BAD_REQUEST: {"model": ErrorResponse},
+        HTTP_409_CONFLICT: {"model": ErrorResponse},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def httppost_prods_upload(prods_file: UploadFile = File(...)):
@@ -33,12 +33,12 @@ def httppost_prods_upload(prods_file: UploadFile = File(...)):
     rc = RC(lib.sched_prod_add_file(fp))
 
     if rc == RC.EINVAL:
-        raise DCPException(HTTP_409_CONFLICT, StrRC[rc.name], "constraint violation")
+        raise EINVALException(HTTP_409_CONFLICT, "constraint violation")
 
     if rc == RC.EPARSE:
-        raise DCPException(HTTP_400_BAD_REQUEST, StrRC[rc.name], "parse error")
+        raise EPARSEException(HTTP_400_BAD_REQUEST, "failed to parse file")
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return ErrorResponse(rc=rc, msg="")

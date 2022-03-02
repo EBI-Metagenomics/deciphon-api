@@ -5,10 +5,10 @@ from starlette.status import (
 )
 
 from ._app import app
-from .csched import ffi, lib
-from .exception import DCPException
-from .rc import RC, StrRC
 from ._types import ErrorResponse
+from .csched import ffi, lib
+from .exception import EINVALException, create_exception
+from .rc import RC
 from .seq import Seq
 
 
@@ -28,10 +28,13 @@ def get_jobs_xxx_seqs_next_yyy(job_id: int, seq_id: int):
     cseq[0].job_id = job_id
     rc = RC(lib.sched_seq_next(cseq))
 
+    if rc == RC.END:
+        return []
+
     if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "next sequence not found")
+        raise EINVALException(HTTP_404_NOT_FOUND, "job not found")
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return Seq.from_cdata(cseq)

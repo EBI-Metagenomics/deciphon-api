@@ -6,11 +6,11 @@ from starlette.status import (
 )
 
 from ._app import app
+from ._types import ErrorResponse
 from .csched import ffi, lib
 from .db import DB
-from .exception import DCPException
-from .rc import RC, StrRC
-from ._types import ErrorResponse
+from .exception import EINVALException, create_exception
+from .rc import RC
 
 
 @app.post(
@@ -28,9 +28,8 @@ def httppost_dbs(
     filename: str = Query(..., example="pfam24.dcp", description="database filename")
 ):
     if DB.exists(filename):
-        raise DCPException(
+        raise EINVALException(
             HTTP_409_CONFLICT,
-            StrRC.EINVAL,
             "database already exists",
         )
 
@@ -39,6 +38,6 @@ def httppost_dbs(
     rc = RC(lib.sched_db_add(cdb, filename.encode()))
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return DB.from_cdata(cdb)

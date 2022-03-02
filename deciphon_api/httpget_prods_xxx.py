@@ -1,13 +1,17 @@
 from typing import List
 
-from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+)
 
 from ._app import app
-from .csched import ffi, lib
-from .exception import DCPException
-from .prod import Prod
-from .rc import RC, StrRC
 from ._types import ErrorResponse
+from .csched import ffi, lib
+from .exception import EINVALException, create_exception
+from .prod import Prod
+from .rc import RC
 
 
 @app.get(
@@ -27,9 +31,9 @@ def prods_xxx(prod_id: int):
     assert rc != RC.END
 
     if rc == RC.NOTFOUND:
-        return []
+        raise EINVALException(HTTP_404_NOT_FOUND, "prod not found")
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return [Prod.from_cdata(cprod)]

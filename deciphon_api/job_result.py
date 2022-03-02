@@ -7,11 +7,10 @@ from Bio import SeqIO
 from Bio.Seq import Seq as BioSeq
 from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio.SeqRecord import SeqRecord
-from starlette.status import HTTP_404_NOT_FOUND
+from starlette.status import HTTP_412_PRECONDITION_FAILED
 
-from .exception import DCPException
+from .exception import EINVALException
 from .prod import Prod
-from .rc import StrRC
 from .seq import Seq
 
 EPSILON = "0.01"
@@ -58,10 +57,8 @@ class JobResult:
         job = Job.from_id(job_id)
 
         if job.state != JobState.done:
-            raise DCPException(
-                HTTP_404_NOT_FOUND,
-                StrRC.EINVAL,
-                f"invalid job state ({job.state}) for the request",
+            raise EINVALException(
+                HTTP_412_PRECONDITION_FAILED, "job is not in done state"
             )
 
         prods: List[Prod] = job.prods()

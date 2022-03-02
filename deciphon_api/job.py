@@ -1,22 +1,14 @@
 from enum import Enum
 from typing import List
 
-from fastapi import Body
 from pydantic import BaseModel
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_404_NOT_FOUND,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-)
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
-from ._app import app
 from .csched import ffi, lib
-from .exception import DCPException
+from .exception import EINVALException, create_exception
 from .job_result import JobResult
 from .prod import Prod
-from .rc import RC, StrRC
-from ._types import ErrorResponse
+from .rc import RC
 from .seq import Seq
 
 
@@ -60,29 +52,32 @@ class Job(BaseModel):
         cjob[0].id = job_id
 
         rc = RC(lib.sched_job_get(cjob))
+        assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
+            raise EINVALException(HTTP_404_NOT_FOUND, "job not found")
 
         if rc != RC.OK:
-            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return Job.from_cdata(cjob)
 
     def prods(self) -> List[Prod]:
         cprod = ffi.new("struct sched_prod *")
         prods: List[Prod] = []
+
         rc = RC(
             lib.sched_job_get_prods(
                 self.id, lib.append_prod_callback, cprod, ffi.new_handle(prods)
             )
         )
+        assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
+            raise EINVALException(HTTP_404_NOT_FOUND, "job not found")
 
         if rc != RC.OK:
-            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return prods
 
@@ -98,10 +93,10 @@ class Job(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
+            raise EINVALException(HTTP_404_NOT_FOUND, "job not found")
 
         if rc != RC.OK:
-            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
+            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return seqs
 
@@ -172,64 +167,6 @@ job_in_example = JobIn(
 )
 
 
-@app.get(
-    "/jobs/{job_id}",
-    summary="get job",
-    response_model=Job,
-    status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
-)
-def get_jobs(job_id: int):
-    cjob = ffi.new("struct sched_job *")
-    cjob[0].id = job_id
-
-    rc = RC(lib.sched_job_get(cjob))
-
-    if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
-
-    if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
-
-    return Job.from_cdata(cjob)
-
-
-@app.post(
-    "/jobs",
-    summary="add job",
-    response_model=Job,
-    status_code=HTTP_201_CREATED,
-    responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
-)
-def post_job(job: JobIn = Body(..., example=job_in_example)):
-    cjob = ffi.new("struct sched_job *")
-
-    cjob[0].id = 0
-    cjob[0].db_id = job.db_id
-    cjob[0].multi_hits = job.multi_hits
-    cjob[0].hmmer3_compat = job.hmmer3_compat
-
-    # TODO: implement try-catch all to call sched_job_rollback_submission
-    # in case of cancel/failure.
-    rc = RC(lib.sched_job_begin_submission(cjob))
-    if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
-
-    for seq in job.seqs:
-        lib.sched_job_add_seq(cjob, seq.name.encode(), seq.data.encode())
-
-    rc = RC(lib.sched_job_end_submission(cjob))
-    if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
-
-    return Job.from_cdata(cjob)
-
-
 @ffi.def_extern()
 def append_prod_callback(cprod, arg):
     prods = ffi.from_handle(arg)
@@ -240,15 +177,3 @@ def append_prod_callback(cprod, arg):
 def append_seq_callback(cseq, arg):
     seqs = ffi.from_handle(arg)
     seqs.append(Seq.from_cdata(cseq))
-
-
-# @app.post("/jobs/{job_id}/prods")
-# def post_prod(job_id: int, prod_in: ProdIn = Body(None, example=prod_in_example)):
-#     cprod = prod_in._create_cdata()
-#     cprod[0].job_id = job_id
-#     rc = RC(lib.sched_prod_add(cprod))
-#
-#     if rc != RC.OK:
-#         raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
-#
-#     return get_prod(int(cprod[0].id))

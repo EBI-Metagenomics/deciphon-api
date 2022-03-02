@@ -1,4 +1,5 @@
 from . import (
+    httpget,
     httpget_dbs,
     httpget_dbs_xxx,
     httpget_jobs_next_pend,
@@ -13,17 +14,18 @@ from . import (
     httpget_seqs_xxx,
     httppatch_jobs_xxx,
     httppost_dbs,
+    httppost_jobs,
     httppost_prods_upload,
 )
 from ._app import app
+from ._name import name as __name__
 from ._version import version as __version__
-
-__name__ = "deciphon_api"
 
 __all__ = [
     "__name__",
     "__version__",
     "app",
+    "httpget",
     "httpget_dbs",
     "httpget_dbs_xxx",
     "httpget_jobs_next_pend",
@@ -38,10 +40,6 @@ __all__ = [
     "httpget_seqs_xxx",
     "httppatch_jobs_xxx",
     "httppost_dbs",
+    "httppost_jobs",
     "httppost_prods_upload",
 ]
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}

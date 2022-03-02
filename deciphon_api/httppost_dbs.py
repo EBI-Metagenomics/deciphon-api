@@ -1,4 +1,4 @@
-from fastapi import Query
+from pydantic import BaseModel
 from starlette.status import (
     HTTP_201_CREATED,
     HTTP_409_CONFLICT,
@@ -13,8 +13,12 @@ from .exception import EINVALException, create_exception
 from .rc import RC
 
 
+class DBFileName(BaseModel):
+    filename: str = "minifam.dcp"
+
+
 @app.post(
-    "/dbs",
+    "/dbs/",
     summary="add a new database",
     description="the file must reside at the sched working directory",
     response_model=DB,
@@ -24,20 +28,25 @@ from .rc import RC
         HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
-def httppost_dbs(
-    filename: str = Query(..., example="pfam24.dcp", description="database filename")
-):
-    if DB.exists(filename):
+def httppost_dbs(db: DBFileName):
+    print("ponto 1")
+    if DB.exists(db.filename):
         raise EINVALException(
             HTTP_409_CONFLICT,
             "database already exists",
         )
 
+    print(db.filename)
+    print(db.filename)
     cdb = ffi.new("struct sched_db *")
-    cdb[0].filename = filename.encode()
-    rc = RC(lib.sched_db_add(cdb, filename.encode()))
+    print("ponto 2")
+    cdb[0].filename = db.filename.encode()
+    print("ponto 3")
+    rc = RC(lib.sched_db_add(cdb, db.filename.encode()))
 
+    print("ponto 4")
     if rc != RC.OK:
         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
+    print("ponto 5")
     return DB.from_cdata(cdb)

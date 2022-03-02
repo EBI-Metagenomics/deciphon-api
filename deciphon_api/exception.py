@@ -1,8 +1,4 @@
-from fastapi import Request
-from fastapi.responses import JSONResponse
-
-from ._app import app
-from .rc import RC, StrRC
+from .rc import RC
 
 __all__ = [
     "DCPException",
@@ -63,11 +59,3 @@ def create_exception(http_code: int, rc: RC) -> DCPException:
     else:
         assert rc == RC.EPARSE
         return EPARSEException(http_code)
-
-
-@app.exception_handler(DCPException)
-def deciphon_exception_handler(_: Request, exc: DCPException):
-    return JSONResponse(
-        status_code=exc.http_code,
-        content={"rc": StrRC[exc.rc.name], "msg": exc.msg},
-    )

@@ -4,22 +4,25 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-fastapi = "*"
-uvicorn = "*"
+bcbio-gff = "*"
+biopython = "*"
+build = "*"
 cffi = "*"
+fastapi = "*"
+pep517 = "*"
+pooch = "*"
 python-multipart = "*"
 setuptools = "*"
 setuptools-scm = "*"
-build = "*"
-pep517 = "*"
-biopython = "*"
-bcbio-gff = "*"
+uvicorn = "*"
 
 [dev-packages]
-pytest = "*"
-pyright = "*"
 black = "*"
+deciphon-api = {editable = true, path = "."}
 isort = "*"
+pyright = "*"
+pytest = "*"
+requests = "*"
 
 [requires]
 python_version = "3.9"

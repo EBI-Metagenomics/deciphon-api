@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel
 
 from .csched import lib
-from .rc import Code, retdata
+from .rc import StrRC, retdata
 
 
 class JS(IntEnum):
@@ -36,21 +36,21 @@ class PendJob(BaseModel):
 def sched_setup():
     rd = retdata(lib.sched_setup(b"deciphon.sched"))
 
-    if rd.rc != Code.OK:
+    if rd.rc != StrRC.OK:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, rd)
 
 
 def sched_open():
     rd = retdata(lib.sched_open())
 
-    if rd.rc != Code.OK:
+    if rd.rc != StrRC.OK:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, rd)
 
 
 def sched_close():
     rd = retdata(lib.sched_close())
 
-    if rd.rc != Code.OK:
+    if rd.rc != StrRC.OK:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, rd)
 
     return rd

@@ -5,7 +5,8 @@ from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 from ._app import app
 from .csched import ffi, lib
 from .exception import DCPException
-from .rc import RC, Code, ReturnData
+from .rc import RC, StrRC
+from .response import ErrorResponse
 from .seq import Seq
 
 
@@ -15,7 +16,7 @@ from .seq import Seq
     response_model=List[Seq],
     status_code=HTTP_200_OK,
     responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def seqs_xxx(seq_id: int):
@@ -29,6 +30,6 @@ def seqs_xxx(seq_id: int):
         return []
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
     return Seq.from_cdata(cseq)

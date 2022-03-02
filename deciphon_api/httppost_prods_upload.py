@@ -11,18 +11,19 @@ from starlette.status import (
 from ._app import app
 from .csched import lib
 from .exception import DCPException
-from .rc import RC, Code, ReturnData
+from .rc import RC, StrRC
+from .response import ErrorResponse
 
 
 @app.post(
     "/prods/upload",
     summary="upload a text/tab-separated-values file of products",
-    response_model=ReturnData,
+    response_model=ErrorResponse,
     status_code=HTTP_201_CREATED,
     responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
-        HTTP_409_CONFLICT: {"model": ReturnData},
-        HTTP_400_BAD_REQUEST: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
+        HTTP_409_CONFLICT: {"model": ErrorResponse},
+        HTTP_400_BAD_REQUEST: {"model": ErrorResponse},
     },
 )
 def httppost_prods_upload(prods_file: UploadFile = File(...)):
@@ -32,12 +33,12 @@ def httppost_prods_upload(prods_file: UploadFile = File(...)):
     rc = RC(lib.sched_prod_add_file(fp))
 
     if rc == RC.EINVAL:
-        raise DCPException(HTTP_409_CONFLICT, Code[rc.name], "constraint violation")
+        raise DCPException(HTTP_409_CONFLICT, StrRC[rc.name], "constraint violation")
 
     if rc == RC.EPARSE:
-        raise DCPException(HTTP_400_BAD_REQUEST, Code[rc.name], "parse error")
+        raise DCPException(HTTP_400_BAD_REQUEST, StrRC[rc.name], "parse error")
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
-    return ReturnData(rc=Code[rc.name], msg="")
+    return ErrorResponse(rc=rc, msg="")

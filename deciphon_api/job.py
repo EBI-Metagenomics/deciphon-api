@@ -15,7 +15,8 @@ from .csched import ffi, lib
 from .exception import DCPException
 from .job_result import JobResult
 from .prod import Prod
-from .rc import RC, Code, ReturnData
+from .rc import RC, StrRC
+from .response import ErrorResponse
 from .seq import Seq
 
 
@@ -61,10 +62,10 @@ class Job(BaseModel):
         rc = RC(lib.sched_job_get(cjob))
 
         if rc == RC.NOTFOUND:
-            raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
+            raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
 
         if rc != RC.OK:
-            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
         return Job.from_cdata(cjob)
 
@@ -78,10 +79,10 @@ class Job(BaseModel):
         )
 
         if rc == RC.NOTFOUND:
-            raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
+            raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
 
         if rc != RC.OK:
-            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
         return prods
 
@@ -90,15 +91,17 @@ class Job(BaseModel):
         seqs: List[Seq] = []
 
         rc = RC(
-            lib.sched_job_get_seqs(self.id, lib.seq_set_cb, cseq, ffi.new_handle(seqs))
+            lib.sched_job_get_seqs(
+                self.id, lib.append_seq_callback, cseq, ffi.new_handle(seqs)
+            )
         )
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
+            raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
 
         if rc != RC.OK:
-            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+            raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
         return seqs
 
@@ -175,8 +178,8 @@ job_in_example = JobIn(
     response_model=Job,
     status_code=HTTP_200_OK,
     responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def get_jobs(job_id: int):
@@ -186,10 +189,10 @@ def get_jobs(job_id: int):
     rc = RC(lib.sched_job_get(cjob))
 
     if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
+        raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
     return Job.from_cdata(cjob)
 
@@ -200,7 +203,7 @@ def get_jobs(job_id: int):
     response_model=Job,
     status_code=HTTP_201_CREATED,
     responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def post_job(job: JobIn = Body(..., example=job_in_example)):
@@ -215,14 +218,14 @@ def post_job(job: JobIn = Body(..., example=job_in_example)):
     # in case of cancel/failure.
     rc = RC(lib.sched_job_begin_submission(cjob))
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
     for seq in job.seqs:
         lib.sched_job_add_seq(cjob, seq.name.encode(), seq.data.encode())
 
     rc = RC(lib.sched_job_end_submission(cjob))
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
     return Job.from_cdata(cjob)
 
@@ -234,7 +237,7 @@ def append_prod_callback(cprod, arg):
 
 
 @ffi.def_extern()
-def seq_set_cb(cseq, arg):
+def append_seq_callback(cseq, arg):
     seqs = ffi.from_handle(arg)
     seqs.append(Seq.from_cdata(cseq))
 

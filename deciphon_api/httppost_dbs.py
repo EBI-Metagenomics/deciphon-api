@@ -9,7 +9,8 @@ from ._app import app
 from .csched import ffi, lib
 from .db import DB
 from .exception import DCPException
-from .rc import RC, Code, ReturnData
+from .rc import RC, StrRC
+from .response import ErrorResponse
 
 
 @app.post(
@@ -19,8 +20,8 @@ from .rc import RC, Code, ReturnData
     response_model=DB,
     status_code=HTTP_201_CREATED,
     responses={
-        HTTP_409_CONFLICT: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_409_CONFLICT: {"model": ErrorResponse},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def httppost_dbs(
@@ -29,7 +30,7 @@ def httppost_dbs(
     if DB.exists(filename):
         raise DCPException(
             HTTP_409_CONFLICT,
-            Code.EINVAL,
+            StrRC.EINVAL,
             "database already exists",
         )
 
@@ -38,6 +39,6 @@ def httppost_dbs(
     rc = RC(lib.sched_db_add(cdb, filename.encode()))
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
     return DB.from_cdata(cdb)

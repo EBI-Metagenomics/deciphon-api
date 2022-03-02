@@ -10,7 +10,8 @@ from ._app import app
 from .csched import ffi, lib
 from .exception import DCPException
 from .prod import Prod
-from .rc import RC, Code, ReturnData
+from .rc import RC, StrRC
+from .response import ErrorResponse
 
 
 @app.get(
@@ -19,8 +20,8 @@ from .rc import RC, Code, ReturnData
     response_model=List[Prod],
     status_code=HTTP_200_OK,
     responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def httpget_jobs_xxx_prods(job_id: int):
@@ -33,9 +34,9 @@ def httpget_jobs_xxx_prods(job_id: int):
     )
 
     if rc == RC.NOTFOUND:
-        raise DCPException(HTTP_404_NOT_FOUND, Code[rc.name], "job not found")
+        raise DCPException(HTTP_404_NOT_FOUND, StrRC[rc.name], "job not found")
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
     return prods

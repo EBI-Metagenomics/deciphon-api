@@ -21,10 +21,10 @@ struct sched_job;
 struct sched_prod;
 struct sched_seq;
 
-extern "Python" void prod_set_cb(struct sched_prod *prod, void *arg);
-extern "Python" void seq_set_cb(struct sched_seq *seq, void *arg);
-extern "Python" void logger_cb(char const *msg, void *arg);
-extern "Python" void db_set_cb(struct sched_db *db, void *arg);
+extern "Python" void append_prod_callback(struct sched_prod *prod, void *arg);
+extern "Python" void append_seq_callback(struct sched_seq *seq, void *arg);
+extern "Python" void logger_callback(char const *msg, void *arg);
+extern "Python" void append_db_callback(struct sched_db *db, void *arg);
 
 enum sched_limits
 {

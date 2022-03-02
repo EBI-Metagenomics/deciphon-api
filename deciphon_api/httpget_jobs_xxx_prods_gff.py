@@ -11,8 +11,9 @@ from ._app import app
 from .exception import DCPException
 from .job import Job, JobResult, JobState
 from .prod import Prod
-from .rc import Code, ReturnData
+from .rc import StrRC
 from .seq import Seq
+from .response import ErrorResponse
 
 
 @app.get(
@@ -21,8 +22,8 @@ from .seq import Seq
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def httpget_jobs_xxx_prods_gff(job_id: int):
@@ -31,7 +32,7 @@ def httpget_jobs_xxx_prods_gff(job_id: int):
     if job.state != JobState.done:
         raise DCPException(
             HTTP_404_NOT_FOUND,
-            Code.EINVAL,
+            StrRC.EINVAL,
             f"invalid job state ({job.state}) for the request",
         )
 

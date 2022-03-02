@@ -6,7 +6,7 @@ from starlette.status import (
 
 from ._app import app
 from .job import Job
-from .rc import ReturnData
+from .response import ErrorResponse
 
 
 @app.get(
@@ -15,8 +15,8 @@ from .rc import ReturnData
     response_model=Job,
     status_code=HTTP_200_OK,
     responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def httpget_jobs_xxx(job_id: int):

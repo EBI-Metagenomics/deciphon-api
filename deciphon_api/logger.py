@@ -17,10 +17,10 @@ class Logger:
 
 
 @ffi.def_extern()
-def logger_cb(msg, arg):
+def logger_callback(msg, arg):
     logger: Logger = ffi.from_handle(arg)
     logger.put(ffi.string(msg).decode())
 
 
 logger = Logger()
-lib.sched_logger_setup(lib.logger_cb, logger.handle)
+lib.sched_logger_setup(lib.logger_callback, logger.handle)

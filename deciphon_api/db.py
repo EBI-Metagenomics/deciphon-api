@@ -3,7 +3,7 @@ from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from .csched import ffi, lib
 from .exception import DCPException
-from .rc import RC, Code
+from .rc import RC, StrRC
 
 __all__ = ["DB"]
 
@@ -33,7 +33,7 @@ class DB(BaseModel):
         if rc == RC.NOTFOUND:
             return False
 
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
 
 @ffi.def_extern()

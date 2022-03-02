@@ -9,7 +9,8 @@ from ._app import app
 from ._types import FastaType
 from .exception import DCPException
 from .job import Job, JobState
-from .rc import Code, ReturnData
+from .rc import StrRC
+from .response import ErrorResponse
 
 
 @app.get(
@@ -18,8 +19,8 @@ from .rc import Code, ReturnData
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses={
-        HTTP_404_NOT_FOUND: {"model": ReturnData},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def httpget_jobs_xxx_prods_fasta_yyy(job_id: int, fasta_type: FastaType):
@@ -28,7 +29,7 @@ def httpget_jobs_xxx_prods_fasta_yyy(job_id: int, fasta_type: FastaType):
     if job.state != JobState.done:
         raise DCPException(
             HTTP_404_NOT_FOUND,
-            Code.EINVAL,
+            StrRC.EINVAL,
             f"invalid job state ({job.state}) for the request",
         )
 

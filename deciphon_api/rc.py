@@ -2,7 +2,7 @@ from enum import Enum, IntEnum
 
 from pydantic import BaseModel
 
-from .logger import logger
+__all__ = ["RC"]
 
 
 class RC(IntEnum):
@@ -16,7 +16,7 @@ class RC(IntEnum):
     EPARSE = 7
 
 
-class Code(str, Enum):
+class StrRC(str, Enum):
     OK = "ok"
     END = "end"
     NOTFOUND = "notfound"
@@ -25,12 +25,3 @@ class Code(str, Enum):
     EINVAL = "einval"
     ENOMEM = "enomem"
     EPARSE = "eparse"
-
-
-class ReturnData(BaseModel):
-    rc: Code = Code.OK
-    msg: str = ""
-
-
-def retdata(rc: RC) -> ReturnData:
-    return ReturnData(rc=Code[RC(rc).name], msg=logger.pop())

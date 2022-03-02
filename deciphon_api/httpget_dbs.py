@@ -6,7 +6,8 @@ from ._app import app
 from .csched import ffi, lib
 from .db import DB
 from .exception import DCPException
-from .rc import RC, Code, ReturnData
+from .rc import RC, StrRC
+from .response import ErrorResponse
 
 
 @app.get(
@@ -15,7 +16,7 @@ from .rc import RC, Code, ReturnData
     response_model=List[DB],
     status_code=HTTP_200_OK,
     responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def httpget_dbs():
@@ -26,6 +27,6 @@ def httpget_dbs():
     rc = RC(lib.sched_db_get_all(lib.append_db_callback, cdb, ffi.new_handle(dbs)))
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
     return dbs

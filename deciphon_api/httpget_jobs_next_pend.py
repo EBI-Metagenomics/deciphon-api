@@ -6,7 +6,8 @@ from ._app import app
 from .csched import ffi, lib
 from .exception import DCPException
 from .job import Job
-from .rc import RC, Code, ReturnData
+from .rc import RC, StrRC
+from .response import ErrorResponse
 
 
 @app.get(
@@ -15,7 +16,7 @@ from .rc import RC, Code, ReturnData
     response_model=List[Job],
     status_code=HTTP_200_OK,
     responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ReturnData},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
 def httpget_jobs_next_pend():
@@ -28,6 +29,6 @@ def httpget_jobs_next_pend():
         return []
 
     if rc != RC.OK:
-        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, Code[rc.name])
+        raise DCPException(HTTP_500_INTERNAL_SERVER_ERROR, StrRC[rc.name])
 
     return [Job.from_cdata(cjob)]

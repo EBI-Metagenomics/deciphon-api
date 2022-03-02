@@ -10,9 +10,8 @@ from Bio.SeqRecord import SeqRecord
 from starlette.status import HTTP_404_NOT_FOUND
 
 from .exception import DCPException
-from .job import Job, JobState
 from .prod import Prod
-from .rc import Code
+from .rc import StrRC
 from .seq import Seq
 
 EPSILON = "0.01"
@@ -54,12 +53,14 @@ class JobResult:
 
     @classmethod
     def from_id(cls, job_id: int):
+        from .job import Job, JobState
+
         job = Job.from_id(job_id)
 
         if job.state != JobState.done:
             raise DCPException(
                 HTTP_404_NOT_FOUND,
-                Code.EINVAL,
+                StrRC.EINVAL,
                 f"invalid job state ({job.state}) for the request",
             )
 

@@ -2,8 +2,8 @@ from pydantic import BaseModel
 
 from .csched import ffi
 
-
 __all__ = ["Prod", "ProdIn"]
+
 
 class Prod(BaseModel):
     id: int = 0

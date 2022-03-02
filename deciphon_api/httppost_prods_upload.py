@@ -18,7 +18,7 @@ from .rc import RC
 @app.post(
     "/prods/upload",
     summary="upload a text/tab-separated-values file of products",
-    response_model=ErrorResponse,
+    # response_model=ErrorResponse,
     status_code=HTTP_201_CREATED,
     responses={
         HTTP_400_BAD_REQUEST: {"model": ErrorResponse},
@@ -41,4 +41,4 @@ def httppost_prods_upload(prods_file: UploadFile = File(...)):
     if rc != RC.OK:
         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
-    return ErrorResponse(rc=rc, msg="")
+    return {}

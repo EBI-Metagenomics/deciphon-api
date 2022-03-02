@@ -2,7 +2,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from .rc import StrRC, RC
+from .rc import RC, StrRC
 
 __all__ = ["ErrorResponse", "FastaType"]
 

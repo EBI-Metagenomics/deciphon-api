@@ -28,7 +28,7 @@ router = APIRouter()
     "/dbs/",
     summary="add a new database",
     description="the file must reside at the sched working directory",
-    response_model=List[DB],
+    response_model=DB,
     status_code=HTTP_201_CREATED,
     responses={
         HTTP_409_CONFLICT: {"model": ErrorResponse},
@@ -55,4 +55,4 @@ def httppost_dbs(db: DBFileName):
     if rc != RC.OK:
         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
-    return [DB.from_cdata(cdb)]
+    return DB.from_cdata(cdb)

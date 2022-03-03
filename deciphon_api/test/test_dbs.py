@@ -15,13 +15,11 @@ def test_httppost_dbs(app: FastAPI):
         response = client.post("/dbs/", json={"filename": "minifam.hmm"})
 
     assert response.status_code == 201
-    assert response.json() == [
-        {
-            "filename": "minifam.hmm",
-            "id": 1,
-            "xxh64": -8445839449675891342,
-        }
-    ]
+    assert response.json() == {
+        "filename": "minifam.hmm",
+        "id": 1,
+        "xxh64": -8445839449675891342,
+    }
 
 
 def test_httppost_dbs_notfound(app: FastAPI):

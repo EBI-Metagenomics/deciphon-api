@@ -11,7 +11,7 @@ from .prod import Prod
 from .rc import RC
 from .seq import Seq
 
-__all__ = ["JobPost"]
+__all__ = ["Job", "JobPatch", "JobPost"]
 
 
 class JobState(str, Enum):
@@ -106,6 +106,11 @@ class Job(BaseModel):
         prods: List[Prod] = self.prods()
         seqs: List[Seq] = self.seqs()
         return JobResult(self, prods, seqs)
+
+
+class JobPatch(BaseModel):
+    state: JobState = JobState.pend
+    error: str = ""
 
 
 class SeqPost(BaseModel):

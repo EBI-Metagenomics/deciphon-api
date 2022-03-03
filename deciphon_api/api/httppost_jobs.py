@@ -1,4 +1,5 @@
 from typing import List
+
 from fastapi import APIRouter, Body
 from starlette.status import (
     HTTP_201_CREATED,
@@ -19,7 +20,7 @@ router = APIRouter()
 @router.post(
     "/jobs/",
     summary="add job",
-    response_model=List[Job],
+    response_model=Job,
     status_code=HTTP_201_CREATED,
     responses={
         HTTP_404_NOT_FOUND: {"model": ErrorResponse},
@@ -52,4 +53,4 @@ def post_job(job: JobPost = Body(..., example=JobPost.example())):
     if rc != RC.OK:
         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
-    return [Job.from_cdata(cjob)]
+    return Job.from_cdata(cjob)

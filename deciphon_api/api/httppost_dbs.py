@@ -46,8 +46,6 @@ def httppost_dbs(db: DBFileName):
             "database already exists",
         )
 
-    print(db.filename)
-    print(db.filename)
     cdb = ffi.new("struct sched_db *")
     cdb[0].filename = db.filename.encode()
     rc = RC(lib.sched_db_add(cdb, db.filename.encode()))

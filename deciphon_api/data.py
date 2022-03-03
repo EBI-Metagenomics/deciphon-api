@@ -1,3 +1,4 @@
+import importlib.resources
 from enum import Enum
 from pathlib import Path
 
@@ -25,3 +26,9 @@ def filepath(file_name: FileName) -> Path:
     name = f"{file_name.value}.bz2"
     fp = GOODBOY.fetch(name, processor=pooch.Decompress("bzip2", file_name.value))
     return Path(fp)
+
+
+def prods_file() -> str:
+    import deciphon_api
+
+    return importlib.resources.read_text(deciphon_api, "prods_file.tsv")

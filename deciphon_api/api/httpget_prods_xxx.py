@@ -25,7 +25,7 @@ router = APIRouter()
         HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
 )
-def prods_xxx(prod_id: int):
+def httpget_prods_xxx(prod_id: int):
     cprod = ffi.new("struct sched_prod *")
     cprod[0].id = prod_id
 

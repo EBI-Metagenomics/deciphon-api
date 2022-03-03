@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 from .csched import ffi
 
-__all__ = ["Prod"]
+__all__ = ["Prod", "ProdID"]
 
 
 class Prod(BaseModel):
@@ -36,3 +36,7 @@ class Prod(BaseModel):
             version=ffi.string(cprod[0].version).decode(),
             match=ffi.string(cprod[0].match).decode(),
         )
+
+
+class ProdID(BaseModel):
+    id: int = 0

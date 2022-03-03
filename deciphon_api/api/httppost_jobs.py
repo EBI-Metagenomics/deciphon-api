@@ -1,15 +1,16 @@
-from fastapi import Body
+from fastapi import APIRouter, Body
 from starlette.status import HTTP_201_CREATED, HTTP_500_INTERNAL_SERVER_ERROR
 
-from ._app import app
-from ._types import ErrorResponse
-from .csched import ffi, lib
-from .exception import create_exception
-from .job import Job, JobIn, job_in_example
-from .rc import RC
+from .._types import ErrorResponse
+from ..csched import ffi, lib
+from ..exception import create_exception
+from ..job import Job, JobIn, job_in_example
+from ..rc import RC
+
+router = APIRouter()
 
 
-@app.post(
+@router.post(
     "/jobs",
     summary="add job",
     response_model=Job,

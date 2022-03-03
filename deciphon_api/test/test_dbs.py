@@ -1,19 +1,15 @@
 import os
 import shutil
-from pathlib import Path
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+import deciphon_api.data as data
 
-def test_httppost_dbs(tmp_path: Path):
-    os.chdir(tmp_path)
 
-    import deciphon_api.data as data
-    from deciphon_api import app
-
+def test_httppost_dbs(app: FastAPI):
     minifam = data.filepath(data.FileName.minifam)
     shutil.copy(minifam, os.getcwd())
-    print(os.getcwd())
 
     with TestClient(app) as client:
         response = client.post("/dbs/", json={"filename": "minifam.hmm"})
@@ -22,4 +18,14 @@ def test_httppost_dbs(tmp_path: Path):
             "filename": "minifam.hmm",
             "id": 1,
             "xxh64": -8445839449675891342,
+        }
+
+
+def test_httppost_dbs_notfound(app: FastAPI):
+    with TestClient(app) as client:
+        response = client.post("/dbs/", json={"filename": "notfound.hmm"})
+        assert response.status_code == 412
+        assert response.json() == {
+            "rc": "einval",
+            "msg": "file not found",
         }

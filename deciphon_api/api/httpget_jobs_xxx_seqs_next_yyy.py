@@ -1,18 +1,20 @@
+from fastapi import APIRouter
 from starlette.status import (
     HTTP_200_OK,
     HTTP_404_NOT_FOUND,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from ._app import app
-from ._types import ErrorResponse
-from .csched import ffi, lib
-from .exception import EINVALException, create_exception
-from .rc import RC
-from .seq import Seq
+from .._types import ErrorResponse
+from ..csched import ffi, lib
+from ..exception import EINVALException, create_exception
+from ..rc import RC
+from ..seq import Seq
+
+router = APIRouter()
 
 
-@app.get(
+@router.get(
     "/jobs/{job_id}/seqs/next/{seq_id}",
     summary="get next sequence",
     response_model=Seq,

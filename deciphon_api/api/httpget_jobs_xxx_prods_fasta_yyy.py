@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
 from starlette.status import (
     HTTP_200_OK,
@@ -5,13 +6,14 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from ._app import app
-from ._types import ErrorResponse, FastaType
-from .exception import EINVALException
-from .job import Job, JobState
+from .._types import ErrorResponse, FastaType
+from ..exception import EINVALException
+from ..job import Job, JobState
+
+router = APIRouter()
 
 
-@app.get(
+@router.get(
     "/jobs/{job_id}/prods/fasta/{fasta_type}",
     summary="get products as codon sequences",
     response_class=PlainTextResponse,

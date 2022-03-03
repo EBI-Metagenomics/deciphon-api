@@ -1,16 +1,18 @@
 from typing import List
 
+from fastapi import APIRouter
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
-from ._app import app
-from ._types import ErrorResponse
-from .csched import ffi, lib
-from .db import DB
-from .exception import create_exception
-from .rc import RC
+from .._types import ErrorResponse
+from ..csched import ffi, lib
+from ..db import DB
+from ..exception import create_exception
+from ..rc import RC
+
+router = APIRouter()
 
 
-@app.get(
+@router.get(
     "/dbs",
     summary="get database list",
     response_model=List[DB],

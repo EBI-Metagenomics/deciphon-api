@@ -1,16 +1,18 @@
 from typing import List
 
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
+from fastapi import APIRouter
 
-from ._app import app
-from ._types import ErrorResponse
-from .csched import ffi, lib
-from .exception import create_exception
-from .job import Job
-from .rc import RC
+from .._types import ErrorResponse
+from ..csched import ffi, lib
+from ..exception import create_exception
+from ..job import Job
+from ..rc import RC
+
+router = APIRouter()
 
 
-@app.get(
+@router.get(
     "/jobs/next_pend",
     summary="get next pending job",
     response_model=List[Job],

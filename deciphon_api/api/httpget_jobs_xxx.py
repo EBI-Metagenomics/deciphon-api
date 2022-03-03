@@ -1,15 +1,17 @@
+from fastapi import APIRouter
 from starlette.status import (
     HTTP_200_OK,
     HTTP_404_NOT_FOUND,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from ._app import app
-from ._types import ErrorResponse
-from .job import Job
+from .._types import ErrorResponse
+from ..job import Job
+
+router = APIRouter()
 
 
-@app.get(
+@router.get(
     "/jobs/{job_id}",
     summary="get job",
     response_model=Job,

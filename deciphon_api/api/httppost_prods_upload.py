@@ -1,6 +1,6 @@
 import os
 
-from fastapi import File, UploadFile
+from fastapi import APIRouter, File, UploadFile
 from starlette.status import (
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
@@ -8,14 +8,15 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from ._app import app
-from ._types import ErrorResponse
-from .csched import lib
-from .exception import EINVALException, EPARSEException, create_exception
-from .rc import RC
+from .._types import ErrorResponse
+from ..csched import lib
+from ..exception import EINVALException, EPARSEException, create_exception
+from ..rc import RC
+
+router = APIRouter()
 
 
-@app.post(
+@router.post(
     "/prods/upload",
     summary="upload a text/tab-separated-values file of products",
     # response_model=ErrorResponse,

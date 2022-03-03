@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from starlette.status import (
     HTTP_200_OK,
     HTTP_403_FORBIDDEN,
@@ -5,15 +6,16 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from ._app import app
-from ._types import ErrorResponse
-from .csched import lib
-from .exception import EINVALException, create_exception
-from .job import Job, JobState
-from .rc import RC
+from .._types import ErrorResponse
+from ..csched import lib
+from ..exception import EINVALException, create_exception
+from ..job import Job, JobState
+from ..rc import RC
+
+router = APIRouter()
 
 
-@app.patch(
+@router.patch(
     "/jobs/{job_id}",
     summary="get job",
     response_model=Job,

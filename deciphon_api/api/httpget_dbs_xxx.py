@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter
 from starlette.status import (
     HTTP_200_OK,
@@ -8,7 +10,7 @@ from starlette.status import (
 from .._types import ErrorResponse
 from ..csched import ffi, lib
 from ..db import DB
-from ..exception import create_exception
+from ..exception import EINVALException, create_exception
 from ..rc import RC
 
 router = APIRouter()
@@ -17,7 +19,7 @@ router = APIRouter()
 @router.get(
     "/dbs/{db_id}",
     summary="get database",
-    response_model=DB,
+    response_model=List[DB],
     status_code=HTTP_200_OK,
     responses={
         HTTP_404_NOT_FOUND: {"model": ErrorResponse},
@@ -32,9 +34,9 @@ def httpget_dbs_xxx(db_id: int):
     assert rc != RC.END
 
     if rc == RC.NOTFOUND:
-        return []
+        raise EINVALException(HTTP_404_NOT_FOUND, "db not found")
 
     if rc != RC.OK:
         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
-    return DB.from_cdata(cdb)
+    return [DB.from_cdata(cdb)]

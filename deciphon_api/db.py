@@ -22,7 +22,23 @@ class DB(BaseModel):
         )
 
     @staticmethod
-    def exists(filename: str):
+    def exists_from_id(id: int) -> bool:
+        cdb = ffi.new("struct sched_db *")
+        cdb[0].id = id
+
+        rc = RC(lib.sched_db_get(cdb))
+        assert rc != RC.END
+
+        if rc == RC.OK:
+            return True
+
+        if rc == RC.NOTFOUND:
+            return False
+
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+
+    @staticmethod
+    def exists_from_filename(filename: str) -> bool:
         cdb = ffi.new("struct sched_db *")
         cdb[0].filename = filename.encode()
 

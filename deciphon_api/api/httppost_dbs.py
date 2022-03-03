@@ -40,7 +40,7 @@ def httppost_dbs(db: DBFileName):
     if not filepath.exists():
         raise EINVALException(HTTP_412_PRECONDITION_FAILED, "file not found")
 
-    if DB.exists(db.filename):
+    if DB.exists_from_filename(db.filename):
         raise EINVALException(
             HTTP_409_CONFLICT,
             "database already exists",

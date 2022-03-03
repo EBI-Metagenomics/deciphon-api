@@ -34,4 +34,4 @@ def test_httppost_prods_upload(app: FastAPI):
             },
         )
         assert response.status_code == 201
-        assert response.json() == {}
+        assert response.json() == []

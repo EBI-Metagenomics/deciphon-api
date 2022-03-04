@@ -10,14 +10,14 @@ __all__ = ["DB"]
 
 class DB(BaseModel):
     id: int = Field(..., gt=0)
-    xxh64: int = Field(..., title="XXH64 file hash")
+    xxh3_64: int = Field(..., title="XXH3_64 file hash")
     filename: str = Field(...)
 
     @classmethod
     def from_cdata(cls, cdb):
         return cls(
             id=int(cdb[0].id),
-            xxh64=int(cdb[0].xxh64),
+            xxh3_64=int(cdb[0].xxh3_64),
             filename=ffi.string(cdb[0].filename).decode(),
         )
 

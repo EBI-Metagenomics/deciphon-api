@@ -15,6 +15,7 @@ python-multipart = "*"
 setuptools = "*"
 setuptools-scm = "*"
 uvicorn = "*"
+xxhash = "*"
 
 [dev-packages]
 black = "*"

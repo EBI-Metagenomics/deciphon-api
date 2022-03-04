@@ -4,6 +4,7 @@ from . import (
     httpget,
     httpget_dbs,
     httpget_dbs_xxx,
+    httpget_dbs_xxx_download,
     httpget_jobs_next_pend,
     httpget_jobs_xxx,
     httpget_jobs_xxx_prods,
@@ -25,6 +26,7 @@ router = APIRouter()
 router.include_router(httpget.router)
 router.include_router(httpget_dbs.router)
 router.include_router(httpget_dbs_xxx.router)
+router.include_router(httpget_dbs_xxx_download.router)
 router.include_router(httpget_jobs_next_pend.router)
 router.include_router(httpget_jobs_xxx.router)
 router.include_router(httpget_jobs_xxx_prods.router)

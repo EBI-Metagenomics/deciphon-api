@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -18,7 +17,7 @@ from ..rc import RC
 
 
 class DBFileName(BaseModel):
-    filename: str = "minifam.dcp"
+    filename: str
 
 
 router = APIRouter()

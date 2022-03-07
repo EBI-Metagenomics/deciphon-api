@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from . import (
+    httpdelete,
     httpget,
     httpget_dbs,
     httpget_dbs_xxx,
@@ -23,6 +24,7 @@ from . import (
 
 router = APIRouter()
 
+router.include_router(httpdelete.router)
 router.include_router(httpget.router)
 router.include_router(httpget_dbs.router)
 router.include_router(httpget_dbs_xxx.router)

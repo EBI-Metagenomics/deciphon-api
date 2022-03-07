@@ -135,6 +135,7 @@ enum sched_rc sched_prod_add_file(FILE *fp);
 enum sched_rc sched_setup(char const *filepath);
 enum sched_rc sched_open(void);
 enum sched_rc sched_close(void);
+enum sched_rc sched_wipe(void);
 
 struct sched_seq
 {

@@ -29,7 +29,7 @@ router = APIRouter()
 )
 def post_job(job: JobPost = Body(..., example=JobPost.example())):
     if not DB.exists_from_id(job.db_id):
-        raise EINVALException(HTTP_404_NOT_FOUND, "db not found")
+        raise EINVALException(HTTP_404_NOT_FOUND, "database not found")
 
     cjob = ffi.new("struct sched_job *")
     cjob[0].id = 0

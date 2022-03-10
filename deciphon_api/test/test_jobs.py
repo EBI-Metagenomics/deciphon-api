@@ -12,7 +12,7 @@ def test_httppost_jobs_db_notfound(app: FastAPI):
     with TestClient(app) as client:
         response = client.post("/jobs/", json=JobPost.example().dict())
         assert response.status_code == 404
-        assert response.json() == {"rc": "einval", "msg": "db not found"}
+        assert response.json() == {"rc": "einval", "msg": "database not found"}
 
 
 def test_httppost_jobs(app: FastAPI):

@@ -34,7 +34,7 @@ def httpget_dbs_xxx(db_id: int):
     assert rc != RC.END
 
     if rc == RC.NOTFOUND:
-        raise EINVALException(HTTP_404_NOT_FOUND, "db not found")
+        raise EINVALException(HTTP_404_NOT_FOUND, "database not found")
 
     if rc != RC.OK:
         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)

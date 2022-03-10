@@ -55,7 +55,7 @@ def test_httpget_dbs_notfound(app: FastAPI):
         assert response.status_code == 404
         assert response.json() == {
             "rc": "einval",
-            "msg": "db not found",
+            "msg": "database not found",
         }
 
 

@@ -173,15 +173,3 @@ class JobPost(BaseModel):
                 ),
             ],
         )
-
-
-@ffi.def_extern()
-def append_prod_callback(cprod, arg):
-    prods = ffi.from_handle(arg)
-    prods.append(Prod.from_cdata(cprod))
-
-
-@ffi.def_extern()
-def append_seq_callback(cseq, arg):
-    seqs = ffi.from_handle(arg)
-    seqs.append(Seq.from_cdata(cseq))

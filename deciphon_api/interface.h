@@ -51,11 +51,11 @@ struct sched_db
     char filename[FILENAME_SIZE];
 };
 
-typedef void(sched_db_set_cb)(struct sched_db *db, void *arg);
+typedef void(sched_db_set_func_t)(struct sched_db *db, void *arg);
 
 enum sched_rc sched_db_get(struct sched_db *db);
 enum sched_rc sched_db_add(struct sched_db *db, char const *filename);
-enum sched_rc sched_db_get_all(sched_db_set_cb cb, struct sched_db *db,
+enum sched_rc sched_db_get_all(sched_db_set_func_t cb, struct sched_db *db,
                                void *arg);
 
 enum sched_job_state
@@ -81,16 +81,16 @@ struct sched_job
     int64_t exec_ended;
 };
 
-typedef void(sched_seq_set_cb)(struct sched_seq *seq, void *arg);
-typedef void(sched_prod_set_cb)(struct sched_prod *prod, void *arg);
+typedef void(sched_seq_set_func_t)(struct sched_seq *seq, void *arg);
+typedef void(sched_prod_set_func_t)(struct sched_prod *prod, void *arg);
 
 void sched_job_init(struct sched_job *job, int64_t db_id, bool multi_hits,
                     bool hmmer3_compat);
 
-enum sched_rc sched_job_get_seqs(int64_t job_id, sched_seq_set_cb cb,
+enum sched_rc sched_job_get_seqs(int64_t job_id, sched_seq_set_func_t cb,
                                  struct sched_seq *seq, void *arg);
 
-enum sched_rc sched_job_get_prods(int64_t job_id, sched_prod_set_cb cb,
+enum sched_rc sched_job_get_prods(int64_t job_id, sched_prod_set_func_t cb,
                                   struct sched_prod *prod, void *arg);
 
 enum sched_rc sched_job_get(struct sched_job *job);

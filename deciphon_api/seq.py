@@ -19,3 +19,9 @@ class Seq(BaseModel):
             name=ffi.string(cseq[0].name).decode(),
             data=ffi.string(cseq[0].data).decode(),
         )
+
+
+@ffi.def_extern()
+def append_seq_callback(cseq, arg):
+    seqs = ffi.from_handle(arg)
+    seqs.append(Seq.from_cdata(cseq))

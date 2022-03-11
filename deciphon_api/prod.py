@@ -40,3 +40,9 @@ class Prod(BaseModel):
 
 class ProdID(BaseModel):
     id: int = 0
+
+
+@ffi.def_extern()
+def append_prod_callback(cprod, arg):
+    prods = ffi.from_handle(arg)
+    prods.append(Prod.from_cdata(cprod))

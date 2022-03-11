@@ -30,7 +30,8 @@ def httpget_jobs_xxx_seqs(job_id: int):
     cseq = ffi.new("struct sched_seq *")
     seqs: List[Seq] = []
 
-    rc = RC(lib.sched_job_get_seqs(job_id, lib.seq_set_cb, cseq, ffi.new_handle(seqs)))
+    cb = lib.append_seq_callback
+    rc = RC(lib.sched_job_get_seqs(job_id, cb, cseq, ffi.new_handle(seqs)))
     assert rc != RC.END
 
     if rc == RC.NOTFOUND:

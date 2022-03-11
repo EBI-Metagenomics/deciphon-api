@@ -20,6 +20,7 @@ from . import (
     httppost_dbs,
     httppost_jobs,
     httppost_prods_upload,
+    httppost_testing_data,
 )
 
 router = APIRouter()
@@ -43,3 +44,4 @@ router.include_router(httppatch_jobs_xxx.router)
 router.include_router(httppost_dbs.router)
 router.include_router(httppost_jobs.router)
 router.include_router(httppost_prods_upload.router)
+router.include_router(httppost_testing_data.router)

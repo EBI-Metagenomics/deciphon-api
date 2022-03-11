@@ -11,17 +11,17 @@ import deciphon_api.data as data
 
 
 def test_httppost_dbs(app: FastAPI):
-    minifam = data.filepath(data.FileName.minifam)
+    minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.hmm"})
+        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
 
     assert response.status_code == 201
     assert response.json() == {
-        "filename": "minifam.hmm",
+        "filename": "minifam.dcp",
         "id": 1,
-        "xxh3_64": -1400478458576472411,
+        "xxh3_64": -3907098992699871052,
     }
 
 
@@ -36,16 +36,16 @@ def test_httppost_dbs_notfound(app: FastAPI):
 
 
 def test_httpget_dbs(app: FastAPI):
-    minifam = data.filepath(data.FileName.minifam)
+    minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.hmm"})
+        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
 
         response = client.get("/dbs/1")
         assert response.json() == [
-            {"filename": "minifam.hmm", "id": 1, "xxh3_64": -1400478458576472411}
+            {"filename": "minifam.dcp", "id": 1, "xxh3_64": -3907098992699871052}
         ]
 
 
@@ -60,11 +60,11 @@ def test_httpget_dbs_notfound(app: FastAPI):
 
 
 def test_httpget_dbs_download(app: FastAPI):
-    minifam = data.filepath(data.FileName.minifam)
+    minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.hmm"})
+        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
 
         response = client.get("/dbs/1/download")
@@ -80,4 +80,4 @@ def test_httpget_dbs_download(app: FastAPI):
                 f.write(chunk)
 
         v = ctypes.c_int64(x.intdigest()).value
-        assert v == -1400478458576472411
+        assert v == -3907098992699871052

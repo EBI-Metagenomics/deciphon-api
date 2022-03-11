@@ -16,11 +16,11 @@ def test_httppost_jobs_db_notfound(app: FastAPI):
 
 
 def test_httppost_jobs(app: FastAPI):
-    minifam = data.filepath(data.FileName.minifam)
+    minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.hmm"})
+        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
 
         response = client.post("/jobs/", json=JobPost.example().dict())
@@ -48,11 +48,11 @@ def test_httpget_jobs_next_pend_empty(app: FastAPI):
 
 
 def test_httpget_jobs_next_pend(app: FastAPI):
-    minifam = data.filepath(data.FileName.minifam)
+    minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.hmm"})
+        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
         response = client.post("/jobs/", json=JobPost.example().dict())
         assert response.status_code == 201
@@ -77,11 +77,11 @@ def test_httpget_jobs_next_pend(app: FastAPI):
 
 
 def test_httppatch_jobs_set_run(app: FastAPI):
-    minifam = data.filepath(data.FileName.minifam)
+    minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.hmm"})
+        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
         response = client.post("/jobs/", json=JobPost.example().dict())
         assert response.status_code == 201
@@ -98,11 +98,11 @@ def test_httppatch_jobs_set_run(app: FastAPI):
 
 
 def test_httppatch_jobs_invalid_set(app: FastAPI):
-    minifam = data.filepath(data.FileName.minifam)
+    minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.hmm"})
+        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
         response = client.post("/jobs/", json=JobPost.example().dict())
         assert response.status_code == 201

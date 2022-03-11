@@ -14,12 +14,16 @@ GOODBOY = pooch.create(
     base_url="https://deciphon.s3.eu-west-2.amazonaws.com/",
     version=__version__,
     version_dev="main",
-    registry={"minifam.hmm.bz2": "md5:6e102264a59e7bf538ce08b9ad2b46d8"},
+    registry={
+        "minifam.hmm.bz2": "md5:6e102264a59e7bf538ce08b9ad2b46d8",
+        "minifam.dcp.bz2": "md5:e460d18f3802c1f2a3b2c05246ab4199",
+    },
 )
 
 
 class FileName(Enum):
-    minifam = "minifam.hmm"
+    minifam_hmm = "minifam.hmm"
+    minifam_dcp = "minifam.dcp"
 
 
 def filepath(file_name: FileName) -> Path:

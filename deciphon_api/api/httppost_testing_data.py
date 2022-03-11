@@ -34,7 +34,7 @@ router = APIRouter()
 def httppost_testing_data():
     import deciphon_api.data as data
 
-    minifam = data.filepath(data.FileName.minifam)
+    minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())
 
     cdb = ffi.new("struct sched_db *")

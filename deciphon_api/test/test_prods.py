@@ -9,11 +9,11 @@ from deciphon_api.job import JobPost
 
 
 def test_httppost_prods_upload(app: FastAPI):
-    minifam = data.filepath(data.FileName.minifam)
+    minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.hmm"})
+        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
         response = client.post("/jobs/", json=JobPost.example().dict())
         assert response.status_code == 201

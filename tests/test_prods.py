@@ -13,18 +13,18 @@ def test_httppost_prods_upload(app: FastAPI):
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
+        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
-        response = client.post("/jobs/", json=JobPost.example().dict())
+        response = client.post("/api/jobs/", json=JobPost.example().dict())
         assert response.status_code == 201
-        response = client.get("/jobs/next_pend")
+        response = client.get("/api/jobs/next_pend")
         assert response.status_code == 200
 
         with open("prods_file.tsv", "wb") as f:
             f.write(data.prods_file().encode())
 
         response = client.post(
-            "/prods/",
+            "/api/prods/",
             files={
                 "prods_file": (
                     "prods_file.tsv",

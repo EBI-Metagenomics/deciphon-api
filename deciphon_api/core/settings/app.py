@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple
 
 from loguru import logger
 
-from deciphon_api._version import version as __version__
+from deciphon_api import __version__
 from deciphon_api.core.logging import InterceptHandler
 from deciphon_api.core.settings.base import BaseAppSettings
 

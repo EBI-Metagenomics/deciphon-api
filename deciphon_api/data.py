@@ -4,8 +4,7 @@ from pathlib import Path
 
 import pooch
 
-from ._name import name as __name__
-from ._version import version as __version__
+from deciphon_api import __name__, __version__
 
 __all__ = ["FileName", "filepath"]
 

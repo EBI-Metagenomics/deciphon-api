@@ -15,7 +15,7 @@ def test_httppost_dbs(app: FastAPI):
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
+        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
 
     assert response.status_code == 201
     assert response.json() == {
@@ -27,7 +27,7 @@ def test_httppost_dbs(app: FastAPI):
 
 def test_httppost_dbs_notfound(app: FastAPI):
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "notfound.hmm"})
+        response = client.post("/api/dbs/", json={"filename": "notfound.hmm"})
         assert response.status_code == 412
         assert response.json() == {
             "rc": "einval",
@@ -40,10 +40,10 @@ def test_httpget_dbs(app: FastAPI):
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
+        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
 
-        response = client.get("/dbs/1")
+        response = client.get("/api/dbs/1")
         assert response.json() == [
             {"filename": "minifam.dcp", "id": 1, "xxh3_64": -3907098992699871052}
         ]
@@ -51,7 +51,7 @@ def test_httpget_dbs(app: FastAPI):
 
 def test_httpget_dbs_notfound(app: FastAPI):
     with TestClient(app) as client:
-        response = client.get("/dbs/1")
+        response = client.get("/api/dbs/1")
         assert response.status_code == 404
         assert response.json() == {
             "rc": "einval",
@@ -64,10 +64,10 @@ def test_httpget_dbs_download(app: FastAPI):
     shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/dbs/", json={"filename": "minifam.dcp"})
+        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
         assert response.status_code == 201
 
-        response = client.get("/dbs/1/download")
+        response = client.get("/api/dbs/1/download")
         assert response.status_code == 200
 
         attach = cgi.parse_header(response.headers["content-disposition"])

@@ -1,5 +1,5 @@
+deciphon.sched
 *.c
 *.so
 Testing/
 *.lock
-deciphon_api/_version.py

@@ -4,19 +4,11 @@ from fastapi.responses import JSONResponse
 
 from ._types import ErrorResponse
 from .api.api import router as api_router
+from .core.config import get_app_settings
+from .core.events import create_start_app_handler, create_stop_app_handler
 from .exception import DCPException
-from .sched import sched_close, sched_open, sched_setup
 
 __all__ = ["app", "get_app"]
-
-
-def startup_event():
-    sched_setup("deciphon.sched")
-    sched_open()
-
-
-def shutdown_event():
-    sched_close()
 
 
 def deciphon_exception_handler(_: Request, exc: DCPException):
@@ -28,36 +20,32 @@ def deciphon_exception_handler(_: Request, exc: DCPException):
 
 
 def get_app() -> FastAPI:
+    settings = get_app_settings()
 
-    app = FastAPI(title="Deciphon API")
+    settings.configure_logging()
 
-    origins = [
-        "http://127.0.0.1",
-        "http://127.0.0.1:8080",
-        "http://127.0.0.1:8000",
-        "http://127.0.0.1:3000",
-    ]
+    app = FastAPI(**settings.fastapi_kwargs)
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=settings.allowed_hosts,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    app.include_router(api_router)
-
     app.add_event_handler(
         "startup",
-        startup_event,
+        create_start_app_handler(settings),
     )
     app.add_event_handler(
         "shutdown",
-        shutdown_event,
+        create_stop_app_handler(),
     )
 
     app.add_exception_handler(DCPException, deciphon_exception_handler)
+
+    app.include_router(api_router, prefix=settings.api_prefix)
 
     return app
 

@@ -1,8 +1,9 @@
 FILE *fdopen(int, const char *);
 int fclose(FILE *);
 
-typedef void sched_logger_print_t(char const *msg, void *arg);
-void sched_logger_setup(sched_logger_print_t *print, void *arg);
+typedef void (*sched_logger_print_func_t)(char const *ctx, char const *msg,
+                                          void *arg);
+void sched_logger_setup(sched_logger_print_func_t, void *arg);
 
 enum sched_rc
 {
@@ -23,8 +24,9 @@ struct sched_seq;
 
 extern "Python" void append_prod_callback(struct sched_prod *prod, void *arg);
 extern "Python" void append_seq_callback(struct sched_seq *seq, void *arg);
-extern "Python" void logger_callback(char const *msg, void *arg);
 extern "Python" void append_db_callback(struct sched_db *db, void *arg);
+extern "Python" void sched_logger_print(char const *ctx, char const *msg,
+                                        void *arg);
 
 enum sched_limits
 {

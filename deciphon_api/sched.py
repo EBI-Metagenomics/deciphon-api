@@ -1,6 +1,7 @@
+from loguru import logger
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
-from .csched import lib
+from .csched import ffi, lib
 from .exception import create_exception
 from .rc import RC
 
@@ -8,6 +9,8 @@ __all__ = ["sched_setup", "sched_open", "sched_close"]
 
 
 def sched_setup(file_name: str):
+    lib.sched_logger_setup(lib.sched_logger_print, ffi.NULL)
+
     rc = RC(lib.sched_setup(file_name.encode()))
 
     if rc != RC.OK:
@@ -26,3 +29,8 @@ def sched_close():
 
     if rc != RC.OK:
         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+
+
+@ffi.def_extern()
+def sched_logger_print(ctx: bytes, msg: bytes, _):
+    logger.error(ffi.string(ctx).decode() + ": " + ffi.string(msg).decode())

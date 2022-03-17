@@ -1,25 +1,46 @@
-[build-system]
-requires = ["setuptools", "setuptools_scm", "wheel", "cffi", "pep517", "build"]
-build-backend = "setuptools.build_meta"
+[tool.poetry]
+name = "deciphon-api"
+version = "0.1.0"
+description = "RESTful API for Deciphon scheduler"
 
-[project]
-name = "deciphon_api"
-authors = [{ name = "Danilo Horta", email = "danilo.horta@pm.me" }]
-license = { file = "LICENSE" }
+license = "MIT"
+
+authors = ["Danilo Horta <danilo.horta@pm.me>"]
+
+readme = "README.md"
+
+repository = "https://github.com/EBI-Metagenomics/deciphon-api"
+homepage = "https://github.com/EBI-Metagenomics/deciphon-api"
+
+keywords = ["deciphon", "api"]
+
 classifiers = ["License :: OSI Approved :: MIT License"]
-dynamic = ["version", "description"]
-requires-python = ">=3.8"
-dependencies = [
-  "fastapi",
-  "uvicorn",
-  "cffi",
-  "python-multipart",
-  "biopython",
-  "bcbio-gff",
-]
 
-[project.urls]
-Home = "http://github.com/EBI-Metagenomics/deciphon-api"
+[tool.poetry.dependencies]
+bcbio-gff = "*"
+biopython = "*"
+build = "*"
+cffi = "*"
+fastapi = "*"
+loguru = "*"
+pep517 = "*"
+pooch = "*"
+pydantic = { extras = ["dotenv"], version = "*" }
+python = "^3.9"
+python-multipart = "*"
+setuptools = "*"
+setuptools-scm = "*"
+toml = "^0.9"
+uvicorn = "*"
+xxhash = "*"
 
-[tool.setuptools_scm]
-write_to = "deciphon_api/_version.py"
+[tool.poetry.dev-dependencies]
+black = "*"
+isort = "*"
+pyright = "*"
+pytest = "*"
+requests = "*"
+
+[build-system]
+requires = ["poetry_core>=1.0.0", "poetry-dynamic-versioning"]
+build-backend = "poetry.core.masonry.api"

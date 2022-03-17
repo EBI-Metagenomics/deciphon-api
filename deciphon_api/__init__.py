@@ -1,5 +1,5 @@
-from ._name import name as __name__
-from ._version import version as __version__
+__name__ = "deciphon-api"
+__version__ = "0.1.0"
 
 __all__ = [
     "__name__",

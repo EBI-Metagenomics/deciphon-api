@@ -13,7 +13,6 @@ from .._types import ErrorResponse
 from ..csched import lib
 from ..exception import EINVALException, EPARSEException, create_exception
 from ..rc import RC
-from ..prod import ProdID
 
 router = APIRouter()
 
@@ -21,7 +20,7 @@ router = APIRouter()
 @router.post(
     "/prods/",
     summary="upload a products file",
-    response_model=List[ProdID],
+    response_model=List,
     status_code=HTTP_201_CREATED,
     responses={
         HTTP_400_BAD_REQUEST: {"model": ErrorResponse},

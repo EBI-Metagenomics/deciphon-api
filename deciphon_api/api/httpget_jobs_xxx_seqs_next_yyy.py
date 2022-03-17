@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter
 from starlette.status import (
     HTTP_200_OK,
@@ -17,7 +19,7 @@ router = APIRouter()
 @router.get(
     "/jobs/{job_id}/seqs/next/{seq_id}",
     summary="get next sequence",
-    response_model=Seq,
+    response_model=List[Seq],
     status_code=HTTP_200_OK,
     responses={
         HTTP_404_NOT_FOUND: {"model": ErrorResponse},
@@ -39,4 +41,4 @@ def get_jobs_xxx_seqs_next_yyy(job_id: int, seq_id: int):
     if rc != RC.OK:
         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
-    return Seq.from_cdata(cseq)
+    return [Seq.from_cdata(cseq)]

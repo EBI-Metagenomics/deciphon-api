@@ -16,6 +16,8 @@ setuptools = "*"
 setuptools-scm = "*"
 uvicorn = "*"
 xxhash = "*"
+loguru = "*"
+pydantic = {extras = ["dotenv"], version = "*"}
 
 [dev-packages]
 black = "*"

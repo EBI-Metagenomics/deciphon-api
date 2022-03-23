@@ -20,6 +20,8 @@ __all__ = [
     "ErrorResponse",
     "FileNotFound",
     "InternalError",
+    "JobNotDone",
+    "ScanNotFound",
 ]
 
 
@@ -60,6 +62,11 @@ class DBNotFound(EINVAL):
         super().__init__(HTTP_404_NOT_FOUND, "database not found")
 
 
+class ScanNotFound(EINVAL):
+    def __init__(self):
+        super().__init__(HTTP_404_NOT_FOUND, "scan not found")
+
+
 class FileNotFound(EINVAL):
     def __init__(self):
         super().__init__(HTTP_412_PRECONDITION_FAILED, "file not found")
@@ -68,6 +75,11 @@ class FileNotFound(EINVAL):
 class DBAlreadyExists(EINVAL):
     def __init__(self):
         super().__init__(HTTP_409_CONFLICT, "database already exists")
+
+
+class JobNotDone(EINVAL):
+    def __init__(self):
+        super().__init__(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
 
 
 def InternalError(rc: RC) -> DCPException:

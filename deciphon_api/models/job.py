@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List
 
 from pydantic import BaseModel, Field
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
+from starlette.status import HTTP_404_NOT_FOUND
 
 from deciphon_api.csched import ffi, lib
 from deciphon_api.errors import EINVAL, InternalError
@@ -29,16 +29,16 @@ class Job(BaseModel):
     error: str = ""
 
     submission: int = Field(..., gt=0)
-    exec_started: int = Field(..., gt=0)
-    exec_ended: int = Field(..., gt=0)
+    exec_started: int = Field(..., ge=0)
+    exec_ended: int = Field(..., ge=0)
 
     @classmethod
     def from_cdata(cls, cjob):
         return cls(
             id=int(cjob.id),
-            type=int(cjob.db_id),
+            type=int(cjob.type),
             state=ffi.string(cjob.state).decode(),
-            progress=int(cjob.db_id),
+            progress=int(cjob.progress),
             error=ffi.string(cjob.error).decode(),
             submission=int(cjob.submission),
             exec_started=int(cjob.exec_started),
@@ -56,7 +56,7 @@ class Job(BaseModel):
             raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
 
         if rc != RC.OK:
-            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(rc)
 
         return Job.from_cdata(ptr[0])
 
@@ -72,7 +72,7 @@ class Job(BaseModel):
             raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
 
         if rc != RC.OK:
-            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(rc)
 
         return prods
 
@@ -88,7 +88,7 @@ class Job(BaseModel):
             raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
 
         if rc != RC.OK:
-            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(rc)
 
         return seqs
 

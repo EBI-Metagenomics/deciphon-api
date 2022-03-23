@@ -11,9 +11,16 @@ from starlette.status import (
 )
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVAL, ErrorResponse, InternalError
+from deciphon_api.errors import (
+    EINVAL,
+    DBNotFound,
+    ErrorResponse,
+    InternalError,
+    JobNotDone,
+    ScanNotFound,
+)
 from deciphon_api.models.db import DB
-from deciphon_api.models.job import JobState
+from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan import Scan, ScanPost
 from deciphon_api.models.seq import Seq
@@ -22,43 +29,41 @@ from deciphon_api.rc import RC
 router = APIRouter()
 
 
-# @router.post(
-#     "/scans/",
-#     summary="add scan",
-#     response_model=Scan,
-#     status_code=HTTP_201_CREATED,
-#     responses={
-#         HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-#         HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-#     },
-# )
-# def add_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
-#     if not DB.exists_by_id(scan.db_id):
-#         raise EINVALException(HTTP_404_NOT_FOUND, "database not found")
-#
-#     cjob = ffi.new("struct sched_job *")
-#     cjob[0].id = 0
-#     cjob[0].db_id = scan.db_id
-#     cjob[0].multi_hits = scan.multi_hits
-#     cjob[0].hmmer3_compat = scan.hmmer3_compat
-#
-#     # TODO: implement try-catch all to call sched_job_rollback_submission
-#     # in case of cancel/failure.
-#     rc = RC(lib.sched_job_begin_submission(cjob))
-#     assert rc != RC.END
-#     assert rc != RC.NOTFOUND
-#
-#     if rc != RC.OK:
-#         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
-#
-#     for seq in scan.seqs:
-#         lib.sched_job_add_seq(cjob, seq.name.encode(), seq.data.encode())
-#
-#     rc = RC(lib.sched_job_end_submission(cjob))
-#     if rc != RC.OK:
-#         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
-#
-#     return Scan.from_cdata(cjob)
+@router.post(
+    "/scans/",
+    summary="submit scan job",
+    response_model=Job,
+    status_code=HTTP_201_CREATED,
+    responses={
+        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
+    },
+    name="scans:submit-scan",
+)
+def submit_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
+    if not DB.exists_by_id(scan.db_id):
+        raise DBNotFound()
+
+    seqs = scan.seqs
+    if len(seqs) > lib.NUM_SEQS_PER_JOB:
+        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "too many sequences")
+
+    scan_ptr = ffi.new("struct sched_scan *")
+    lib.sched_scan_init(scan_ptr, scan.db_id, scan.multi_hits, scan.hmmer3_compat)
+
+    for seq in scan.seqs:
+        lib.sched_scan_add_seq(scan_ptr, seq.name.encode(), seq.data.encode())
+
+    job_ptr = ffi.new("struct sched_job *")
+    lib.sched_job_init(job_ptr, lib.SCHED_SCAN)
+    rc = RC(lib.sched_job_submit(job_ptr, scan_ptr))
+    assert rc != RC.END
+    assert rc != RC.NOTFOUND
+
+    if rc != RC.OK:
+        raise InternalError(rc)
+
+    return Job.from_cdata(job_ptr)
 
 
 @router.get(
@@ -98,7 +103,7 @@ def get_next_sequence_of_scan(scan_id: int, seq_id: int):
         return []
 
     if rc == RC.NOTFOUND:
-        raise EINVAL(HTTP_404_NOT_FOUND, "scan not found")
+        raise ScanNotFound()
 
     if rc != RC.OK:
         raise InternalError(rc)
@@ -122,7 +127,7 @@ def get_products_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise JobNotDone()
 
     return scan.prods()
 
@@ -144,7 +149,7 @@ def get_products_of_scan_as_gff(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise JobNotDone()
 
     return scan.result().gff()
 
@@ -166,7 +171,7 @@ def get_hmm_paths_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise JobNotDone()
 
     return scan.result().fasta("state")
 

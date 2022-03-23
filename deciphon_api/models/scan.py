@@ -1,14 +1,9 @@
 from typing import List
 
 from pydantic import BaseModel, Field
-from starlette.status import (
-    HTTP_404_NOT_FOUND,
-    HTTP_412_PRECONDITION_FAILED,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-)
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVAL, InternalError
+from deciphon_api.errors import InternalError, JobNotDone, ScanNotFound
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
@@ -28,13 +23,13 @@ class Scan(BaseModel):
     job_id: int = Field(..., gt=0)
 
     @classmethod
-    def from_cdata(cls, cjob):
+    def from_cdata(cls, cscan):
         return cls(
-            id=int(cjob.id),
-            db_id=int(cjob.db_id),
-            multi_hits=bool(cjob.multi_hits),
-            hmmer3_compat=bool(cjob.hmmer3_compat),
-            job_id=int(cjob.job_id),
+            id=int(cscan.id),
+            db_id=int(cscan.db_id),
+            multi_hits=bool(cscan.multi_hits),
+            hmmer3_compat=bool(cscan.hmmer3_compat),
+            job_id=int(cscan.job_id),
         )
 
     @classmethod
@@ -45,10 +40,10 @@ class Scan(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVAL(HTTP_404_NOT_FOUND, "scan not found")
+            raise ScanNotFound()
 
         if rc != RC.OK:
-            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(rc)
 
         return Scan.from_cdata(ptr[0])
 
@@ -61,10 +56,10 @@ class Scan(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVAL(HTTP_404_NOT_FOUND, "scan not found")
+            raise ScanNotFound()
 
         if rc != RC.OK:
-            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(rc)
 
         return prods
 
@@ -77,10 +72,10 @@ class Scan(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVAL(HTTP_404_NOT_FOUND, "scan not found")
+            raise ScanNotFound()
 
         if rc != RC.OK:
-            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(rc)
 
         return seqs
 
@@ -89,9 +84,7 @@ class Scan(BaseModel):
         job = self.job()
 
         if job.state != JobState.done:
-            raise EINVAL(
-                HTTP_412_PRECONDITION_FAILED, "job is not in done state"
-            )
+            raise JobNotDone()
 
         prods: List[Prod] = self.prods()
         seqs: List[Seq] = self.seqs()

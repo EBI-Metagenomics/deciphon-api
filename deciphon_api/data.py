@@ -10,7 +10,7 @@ __all__ = ["FileName", "filepath"]
 
 GOODBOY = pooch.create(
     path=pooch.os_cache(__name__),
-    base_url="https://deciphon.s3.eu-west-2.amazonaws.com/",
+    base_url="https://f002.backblazeb2.com/file/deciphon/",
     version=__version__,
     version_dev="main",
     registry={

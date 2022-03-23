@@ -10,11 +10,11 @@ from Bio.Seq import Seq as BioSeq
 from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio.SeqRecord import SeqRecord
 
-from deciphon_api.prod import Prod
-from deciphon_api.seq import Seq
+from deciphon_api.models.prod import Prod
+from deciphon_api.models.seq import Seq
 
 if TYPE_CHECKING:
-    from deciphon_api.scan import Scan
+    from deciphon_api.models.scan import Scan
 
 EPSILON = "0.01"
 

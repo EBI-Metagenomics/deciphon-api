@@ -12,13 +12,13 @@ from starlette.status import (
 
 from deciphon_api._types import ErrorResponse
 from deciphon_api.csched import ffi, lib
-from deciphon_api.db import DB
 from deciphon_api.exception import EINVALException, create_exception
-from deciphon_api.job import JobState
-from deciphon_api.prod import Prod
+from deciphon_api.models.db import DB
+from deciphon_api.models.job import JobState
+from deciphon_api.models.prod import Prod
+from deciphon_api.models.scan import Scan, ScanPost
+from deciphon_api.models.seq import Seq
 from deciphon_api.rc import RC
-from deciphon_api.scan import Scan, ScanPost
-from deciphon_api.seq import Seq
 
 router = APIRouter()
 

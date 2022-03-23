@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from .csched import ffi
+from deciphon_api.csched import ffi
 
 __all__ = ["Seq"]
 

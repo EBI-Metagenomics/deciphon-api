@@ -2,10 +2,10 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
-from .._types import ErrorResponse
-from ..csched import lib
-from ..exception import create_exception
-from ..rc import RC
+from deciphon_api._types import ErrorResponse
+from deciphon_api.csched import lib
+from deciphon_api.exception import create_exception
+from deciphon_api.rc import RC
 
 router = APIRouter()
 

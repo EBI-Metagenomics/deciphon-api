@@ -11,7 +11,7 @@ from starlette.status import (
 from deciphon_api._types import ErrorResponse
 from deciphon_api.csched import ffi, lib
 from deciphon_api.exception import EINVALException, create_exception
-from deciphon_api.job import Job, JobPatch, JobState
+from deciphon_api.models.job import Job, JobPatch, JobState
 from deciphon_api.rc import RC
 
 router = APIRouter()

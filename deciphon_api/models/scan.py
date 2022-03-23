@@ -9,11 +9,11 @@ from starlette.status import (
 
 from deciphon_api.csched import ffi, lib
 from deciphon_api.exception import EINVALException, create_exception
-from deciphon_api.job import Job, JobState
-from deciphon_api.prod import Prod
+from deciphon_api.models.job import Job, JobState
+from deciphon_api.models.prod import Prod
+from deciphon_api.models.scan_result import ScanResult
+from deciphon_api.models.seq import Seq
 from deciphon_api.rc import RC
-from deciphon_api.scan_result import ScanResult
-from deciphon_api.seq import Seq
 
 __all__ = ["Scan", "ScanPost"]
 

@@ -4,11 +4,11 @@ from typing import List
 from pydantic import BaseModel, Field
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
-from .csched import ffi, lib
-from .exception import EINVALException, create_exception
-from .prod import Prod
-from .rc import RC
-from .seq import Seq
+from deciphon_api.csched import ffi, lib
+from deciphon_api.exception import EINVALException, create_exception
+from deciphon_api.models.prod import Prod
+from deciphon_api.models.seq import Seq
+from deciphon_api.rc import RC
 
 __all__ = ["Job", "JobPatch"]
 

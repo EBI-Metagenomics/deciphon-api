@@ -2,7 +2,6 @@ import os
 from typing import List
 
 from fastapi import APIRouter, File, UploadFile
-from fastapi.responses import PlainTextResponse
 from starlette.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -14,7 +13,6 @@ from starlette.status import (
 
 from deciphon_api.csched import lib
 from deciphon_api.errors import EINVAL, EPARSE, ErrorResponse, InternalError
-from deciphon_api.examples import prods_file
 from deciphon_api.models.prod import Prod
 from deciphon_api.rc import RC
 
@@ -70,8 +68,3 @@ def upload_products(
         raise InternalError(rc)
 
     return []
-
-
-@router.get("/prods/upload/example", response_class=PlainTextResponse)
-def httpget_prods_upload_example():
-    return prods_file

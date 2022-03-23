@@ -1,17 +1,16 @@
 from enum import Enum
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from .csched import ffi, lib
 from .exception import EINVALException, create_exception
-from .job_result import JobResult
 from .prod import Prod
 from .rc import RC
 from .seq import Seq
 
-__all__ = ["Job", "JobPatch", "JobPost"]
+__all__ = ["Job", "JobPatch"]
 
 
 class JobState(str, Enum):
@@ -22,38 +21,35 @@ class JobState(str, Enum):
 
 
 class Job(BaseModel):
-    id: int = 0
+    id: int = Field(..., gt=0)
+    type: int = Field(..., ge=0, le=1)
 
-    db_id: int = 0
-    multi_hits: bool = False
-    hmmer3_compat: bool = False
     state: JobState = JobState.pend
-
+    progress: int = Field(..., ge=0, le=100)
     error: str = ""
-    submission: int = 0
-    exec_started: int = 0
-    exec_ended: int = 0
+
+    submission: int = Field(..., gt=0)
+    exec_started: int = Field(..., gt=0)
+    exec_ended: int = Field(..., gt=0)
 
     @classmethod
     def from_cdata(cls, cjob):
         return cls(
-            id=int(cjob[0].id),
-            db_id=int(cjob[0].db_id),
-            multi_hits=bool(cjob[0].multi_hits),
-            hmmer3_compat=bool(cjob[0].hmmer3_compat),
-            state=ffi.string(cjob[0].state).decode(),
-            error=ffi.string(cjob[0].error).decode(),
-            submission=int(cjob[0].submission),
-            exec_started=int(cjob[0].exec_started),
-            exec_ended=int(cjob[0].exec_ended),
+            id=int(cjob.id),
+            type=int(cjob.db_id),
+            state=ffi.string(cjob.state).decode(),
+            progress=int(cjob.db_id),
+            error=ffi.string(cjob.error).decode(),
+            submission=int(cjob.submission),
+            exec_started=int(cjob.exec_started),
+            exec_ended=int(cjob.exec_ended),
         )
 
     @classmethod
     def from_id(cls, job_id: int):
-        cjob = ffi.new("struct sched_job *")
-        cjob[0].id = job_id
+        ptr = ffi.new("struct sched_job *")
 
-        rc = RC(lib.sched_job_get(cjob))
+        rc = RC(lib.sched_job_get_by_id(ptr, job_id))
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
@@ -62,17 +58,14 @@ class Job(BaseModel):
         if rc != RC.OK:
             raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
-        return Job.from_cdata(cjob)
+        return Job.from_cdata(ptr[0])
 
     def prods(self) -> List[Prod]:
-        cprod = ffi.new("struct sched_prod *")
+        ptr = ffi.new("struct sched_prod *")
         prods: List[Prod] = []
 
-        rc = RC(
-            lib.sched_job_get_prods(
-                self.id, lib.append_prod_callback, cprod, ffi.new_handle(prods)
-            )
-        )
+        prods_hdl = ffi.new_handle(prods)
+        rc = RC(lib.sched_job_get_prods(self.id, lib.append_prod, ptr, prods_hdl))
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
@@ -84,14 +77,11 @@ class Job(BaseModel):
         return prods
 
     def seqs(self) -> List[Seq]:
-        cseq = ffi.new("struct sched_seq *")
+        ptr = ffi.new("struct sched_seq *")
         seqs: List[Seq] = []
 
-        rc = RC(
-            lib.sched_job_get_seqs(
-                self.id, lib.append_seq_callback, cseq, ffi.new_handle(seqs)
-            )
-        )
+        seqs_hdl = ffi.new_handle(seqs)
+        rc = RC(lib.sched_job_get_seqs(self.id, lib.append_seq, ptr, seqs_hdl))
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
@@ -102,74 +92,7 @@ class Job(BaseModel):
 
         return seqs
 
-    def result(self) -> JobResult:
-        prods: List[Prod] = self.prods()
-        seqs: List[Seq] = self.seqs()
-        return JobResult(self, prods, seqs)
-
 
 class JobPatch(BaseModel):
     state: JobState = JobState.pend
     error: str = ""
-
-
-class SeqPost(BaseModel):
-    name: str = ""
-    data: str = ""
-
-
-class JobPost(BaseModel):
-    db_id: int = 0
-    multi_hits: bool = False
-    hmmer3_compat: bool = False
-    seqs: List[SeqPost] = []
-
-    @classmethod
-    def example(cls):
-        return cls(
-            db_id=1,
-            multi_hits=True,
-            hmmer3_compat=False,
-            seqs=[
-                SeqPost(
-                    name="Homoserine_dh-consensus",
-                    data="CCTATCATTTCGACGCTCAAGGAGTCGCTGACAGGTGACCGTATTACTCGAATCGAAGGG"
-                    "ATATTAAACGGCACCCTGAATTACATTCTCACTGAGATGGAGGAAGAGGGGGCTTCATTC"
-                    "TCTGAGGCGCTGAAGGAGGCACAGGAATTGGGCTACGCGGAAGCGGATCCTACGGACGAT"
-                    "GTGGAAGGGCTAGATGCTGCTAGAAAGCTGGCAATTCTAGCCAGATTGGCATTTGGGTTA"
-                    "GAGGTCGAGTTGGAGGACGTAGAGGTGGAAGGAATTGAAAAGCTGACTGCCGAAGATATT"
-                    "GAAGAAGCGAAGGAAGAGGGTAAAGTTTTAAAACTAGTGGCAAGCGCCGTCGAAGCCAGG"
-                    "GTCAAGCCTGAGCTGGTACCTAAGTCACATCCATTAGCCTCGGTAAAAGGCTCTGACAAC"
-                    "GCCGTGGCTGTAGAAACGGAACGGGTAGGCGAACTCGTAGTGCAGGGACCAGGGGCTGGC"
-                    "GCAGAGCCAACCGCATCCGCTGTACTCGCTGACCTTCTC",
-                ),
-                SeqPost(
-                    name="AA_kinase-consensus",
-                    data="AAACGTGTAGTTGTAAAGCTTGGGGGTAGTTCTCTGACAGATAAGGAAGAGGCATCACTC"
-                    "AGGCGTTTAGCTGAGCAGATTGCAGCATTAAAAGAGAGTGGCAATAAACTAGTGGTCGTG"
-                    "CATGGAGGCGGCAGCTTCACTGATGGTCTGCTGGCATTGAAAAGTGGCCTGAGCTCGGGC"
-                    "GAATTAGCTGCGGGGTTGAGGAGCACGTTAGAAGAGGCCGGAGAAGTAGCGACGAGGGAC"
-                    "GCCCTAGCTAGCTTAGGGGAACGGCTTGTTGCAGCGCTGCTGGCGGCGGGTCTCCCTGCT"
-                    "GTAGGACTCAGCGCCGCTGCGTTAGATGCGACGGAGGCGGGCCGGGATGAAGGCAGCGAC"
-                    "GGGAACGTCGAGTCCGTGGACGCAGAAGCAATTGAGGAGTTGCTTGAGGCCGGGGTGGTC"
-                    "CCCGTCCTAACAGGATTTATCGGCTTAGACGAAGAAGGGGAACTGGGAAGGGGATCTTCT"
-                    "GACACCATCGCTGCGTTACTCGCTGAAGCTTTAGGCGCGGACAAACTCATAATACTGACC"
-                    "GACGTAGACGGCGTTTACGATGCCGACCCTAAAAAGGTCCCAGACGCGAGGCTCTTGCCA"
-                    "GAGATAAGTGTGGACGAGGCCGAGGAAAGCGCCTCCGAATTAGCGACCGGTGGGATGAAG"
-                    "GTCAAACATCCAGCGGCTCTTGCTGCAGCTAGACGGGGGGGTATTCCGGTCGTGATAACG"
-                    "AAT",
-                ),
-                SeqPost(
-                    name="23ISL-consensus",
-                    data="CAGGGTCTGGATAACGCTAATCGTTCGCTAGTTCGCGCTACAAAAGCAGAAAGTTCAGAT"
-                    "ATACGGAAAGAGGTGACTAACGGCATCGCTAAAGGGCTGAAGCTAGACAGTCTGGAAACA"
-                    "GCTGCAGAGTCGAAGAACTGCTCAAGCGCACAGAAAGGCGGATCGCTAGCTTGGGCAACC"
-                    "AACTCCCAACCACAGCCTCTCCGTGAAAGTAAGCTTGAGCCATTGGAAGACTCCCCACGT"
-                    "AAGGCTTTAAAAACACCTGTGTTGCAAAAGACATCCAGTACCATAACTTTACAAGCAGTC"
-                    "AAGGTTCAACCTGAACCCCGCGCTCCCGTCTCCGGGGCGCTGTCCCCGAGCGGGGAGGAA"
-                    "CGCAAGCGCCCAGCTGCGTCTGCTCCCGCTACCTTACCGACACGACAGAGTGGTCTAGGT"
-                    "TCTCAGGAAGTCGTTTCGAAGGTGGCGACTCGCAAAATTCCAATGGAGTCACAACGCGAG"
-                    "TCGACT",
-                ),
-            ],
-        )

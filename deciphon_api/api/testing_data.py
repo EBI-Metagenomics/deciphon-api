@@ -1,42 +1,57 @@
-from fastapi import APIRouter, Body
+import os
+import shutil
+
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from starlette.status import (
     HTTP_201_CREATED,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
+from deciphon_api.scan import ScanPost
+
 from .._types import ErrorResponse
 from ..csched import ffi, lib
-from ..db import DB
-from ..exception import EINVALException, create_exception
-from ..job import Job, JobPost
+from ..exception import create_exception
 from ..rc import RC
 
 router = APIRouter()
 
 
 @router.post(
-    "/jobs/",
-    summary="add job",
-    response_model=Job,
+    "/testing_data/",
+    summary="add data for testing purposes",
+    response_class=JSONResponse,
     status_code=HTTP_201_CREATED,
     responses={
         HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_409_CONFLICT: {"model": ErrorResponse},
         HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
+    name="testing_data:add-testing-data",
 )
-def post_job(job: JobPost = Body(..., example=JobPost.example())):
-    if not DB.exists_from_id(job.db_id):
-        raise EINVALException(HTTP_404_NOT_FOUND, "database not found")
+def testing_data():
+    import deciphon_api.data as data
 
-    cjob = ffi.new("struct sched_job *")
+    minifam = data.filepath(data.FileName.minifam_dcp)
+    shutil.copy(minifam, os.getcwd())
+
+    cdb = ffi.new("struct sched_db *")
+    rc = RC(lib.sched_db_add(cdb, minifam.name.encode()))
+
+    if rc != RC.OK:
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+
+    job = ScanPost.example()
+
+    cjob = ffi.new("struct sched_scan *")
     cjob[0].id = 0
     cjob[0].db_id = job.db_id
     cjob[0].multi_hits = job.multi_hits
     cjob[0].hmmer3_compat = job.hmmer3_compat
 
-    # TODO: implement try-catch all to call sched_job_rollback_submission
-    # in case of cancel/failure.
     rc = RC(lib.sched_job_begin_submission(cjob))
     assert rc != RC.END
     assert rc != RC.NOTFOUND
@@ -51,4 +66,4 @@ def post_job(job: JobPost = Body(..., example=JobPost.example())):
     if rc != RC.OK:
         raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
-    return Job.from_cdata(cjob)
+    return JSONResponse([], status_code=HTTP_201_CREATED)

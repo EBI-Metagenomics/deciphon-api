@@ -1,21 +1,24 @@
+from __future__ import annotations
+
 import dataclasses
 import io
-from typing import List
+from typing import TYPE_CHECKING, Dict, List
 
 from BCBio import GFF
 from Bio import SeqIO
 from Bio.Seq import Seq as BioSeq
 from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio.SeqRecord import SeqRecord
-from starlette.status import HTTP_412_PRECONDITION_FAILED
 
-from .exception import EINVALException
-from .prod import Prod
-from .seq import Seq
+from deciphon_api.prod import Prod
+from deciphon_api.seq import Seq
+
+if TYPE_CHECKING:
+    from deciphon_api.scan import Scan
 
 EPSILON = "0.01"
 
-__all__ = ["JobResult"]
+__all__ = ["ScanResult"]
 
 
 @dataclasses.dataclass
@@ -40,9 +43,14 @@ class Hit:
     feature_end: int = 0
 
 
-class JobResult:
-    def __init__(self, job, prods: List[Prod], seqs: List[Seq]):
-        self.job = job
+class ScanResult:
+    scan: Scan
+    prods: List[Prod]
+    seqs: Dict[int, Seq]
+    hits: List[Hit]
+
+    def __init__(self, scan: Scan, prods: List[Prod], seqs: List[Seq]):
+        self.scan = scan
         self.prods = list(sorted(prods, key=lambda prod: prod.seq_id))
         self.seqs = dict((seq.id, seq) for seq in seqs)
         self.hits: List[Hit] = []
@@ -50,22 +58,7 @@ class JobResult:
         for prod in self.prods:
             self._make_hits(prod)
 
-    @classmethod
-    def from_id(cls, job_id: int):
-        from .job import Job, JobState
-
-        job = Job.from_id(job_id)
-
-        if job.state != JobState.done:
-            raise EINVALException(
-                HTTP_412_PRECONDITION_FAILED, "job is not in done state"
-            )
-
-        prods: List[Prod] = job.prods()
-        seqs: List[Seq] = job.seqs()
-        return cls(job, prods, seqs).gff()
-
-    def _make_hits(self, prod):
+    def _make_hits(self, prod: Prod):
         hit_start = 0
         hit_end = 0
         offset = 0
@@ -153,78 +146,6 @@ class JobResult:
         SeqIO.write(recs, fasta_io, "fasta")
         fasta_io.seek(0)
         return fasta_io.read()
-
-
-# def _make_hits(rec, match_data, hit_id_offset, qualifiers):
-#     hit_start = 0
-#     hit_end = 0
-#     offset = 0
-#     hits: List[Hit] = []
-#     hit_start_found = False
-#     hit_end_found = False
-#
-#     for frag_match in match_data.split(";"):
-#         frag, state, codon, amino = frag_match.split(",")
-#
-#         if not hit_start_found and (state.startswith("M") or state.startswith("I")):
-#             hit_start = offset
-#             hit_start_found = True
-#             hits.append(Hit(hit_id_offset))
-#
-#         if hit_start_found and not (state.startswith("M") or state.startswith("I")):
-#             hit_end = offset + len(frag)
-#             hit_end_found = True
-#
-#         if hit_start_found and not hit_end_found:
-#             hits[-1].matchs.append(Match(state[0], frag, codon, amino))
-#
-#         if hit_end_found:
-#             hit = SeqFeature(
-#                 FeatureLocation(hit_start, hit_end, strand=None),
-#                 type="CDS",
-#                 qualifiers=dict(qualifiers, ID=hit_id_offset),
-#             )
-#             hits[-1].feature_start = hit_start
-#             hits[-1].feature_end = hit_end
-#             rec.features.append(hit)
-#             hit_start_found = False
-#             hit_end_found = False
-#             hit_id_offset += 1
-#
-#         offset += len(frag)
-#
-#     return hits
-#
-#
-# def make_gff(prods: List[Prod], seqs: List[Seq]):
-#     if len(prods) == 0:
-#         return "##gff-version 3\n"
-#
-#     gff_records = []
-#     seqs_dict = dict((seq.id, seq) for seq in seqs)
-#
-#     hit_id_offset = 1
-#     for prod in sorted(prods, key=lambda prod: prod.seq_id):
-#         seq = BioSeq(seqs_dict[prod.seq_id].data)
-#         rec = SeqRecord(seq, seqs_dict[prod.seq_id].name)
-#
-#         lrt = -2 * (prod.null_loglik - prod.alt_loglik)
-#
-#         qualifiers = {
-#             "source": f"deciphon:{prod.version}",
-#             "score": f"{lrt:.17g}",
-#             "Target_alph": prod.abc_name,
-#             "Profile_acc": prod.profile_name,
-#             "Epsilon": EPSILON,
-#         }
-#
-#         hit_id_offset += len(_make_hits(rec, prod.match, hit_id_offset, qualifiers))
-#         gff_records.append(rec)
-#
-#     gff_io = io.StringIO()
-#     GFF.write(gff_records, gff_io, False)
-#     gff_io.seek(0)
-#     return gff_io.read()
 
 
 def make_fasta(prods: List[Prod], seqs: List[Seq], fasta_type: str):

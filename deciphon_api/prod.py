@@ -1,15 +1,18 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
-from .csched import ffi
+from .csched import ffi, lib
+from .exception import EINVALException, create_exception
+from .rc import RC
 
 __all__ = ["Prod", "ProdID"]
 
 
 class Prod(BaseModel):
-    id: int = 0
+    id: int = Field(..., gt=0)
 
-    job_id: int = 0
-    seq_id: int = 0
+    scan_id: int = Field(..., gt=0)
+    seq_id: int = Field(..., gt=0)
 
     profile_name: str = ""
     abc_name: str = ""
@@ -25,24 +28,39 @@ class Prod(BaseModel):
     @classmethod
     def from_cdata(cls, cprod):
         return cls(
-            id=int(cprod[0].id),
-            job_id=int(cprod[0].job_id),
-            seq_id=int(cprod[0].seq_id),
-            profile_name=ffi.string(cprod[0].profile_name).decode(),
-            abc_name=ffi.string(cprod[0].abc_name).decode(),
-            alt_loglik=float(cprod[0].alt_loglik),
-            null_loglik=float(cprod[0].null_loglik),
-            profile_typeid=ffi.string(cprod[0].profile_typeid).decode(),
-            version=ffi.string(cprod[0].version).decode(),
-            match=ffi.string(cprod[0].match).decode(),
+            id=int(cprod.id),
+            scan_id=int(cprod.scan_id),
+            seq_id=int(cprod.seq_id),
+            profile_name=ffi.string(cprod.profile_name).decode(),
+            abc_name=ffi.string(cprod.abc_name).decode(),
+            alt_loglik=float(cprod.alt_loglik),
+            null_loglik=float(cprod.null_loglik),
+            profile_typeid=ffi.string(cprod.profile_typeid).decode(),
+            version=ffi.string(cprod.version).decode(),
+            match=ffi.string(cprod.match).decode(),
         )
+
+    @classmethod
+    def from_id(cls, prod_id: int):
+        ptr = ffi.new("struct sched_prod *")
+
+        rc = RC(lib.sched_prod_get_by_id(ptr, prod_id))
+        assert rc != RC.END
+
+        if rc == RC.NOTFOUND:
+            raise EINVALException(HTTP_404_NOT_FOUND, "prod not found")
+
+        if rc != RC.OK:
+            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+
+        return Prod.from_cdata(ptr[0])
 
 
 class ProdID(BaseModel):
-    id: int = 0
+    id: int = Field(..., gt=0)
 
 
 @ffi.def_extern()
-def append_prod_callback(cprod, arg):
+def append_prod(ptr, arg):
     prods = ffi.from_handle(arg)
-    prods.append(Prod.from_cdata(cprod))
+    prods.append(Prod.from_cdata(ptr[0]))

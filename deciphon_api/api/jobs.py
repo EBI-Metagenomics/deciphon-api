@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter
 from starlette.status import (
     HTTP_200_OK,
@@ -6,13 +8,53 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from .._types import ErrorResponse
-from ..csched import lib
-from ..exception import EINVALException, create_exception
-from ..job import Job, JobPatch, JobState
-from ..rc import RC
+from deciphon_api._types import ErrorResponse
+from deciphon_api.csched import ffi, lib
+from deciphon_api.exception import EINVALException, create_exception
+from deciphon_api.job import Job, JobPatch, JobState
+from deciphon_api.rc import RC
 
 router = APIRouter()
+
+
+@router.get(
+    "/jobs/{job_id}",
+    summary="get job",
+    response_model=Job,
+    status_code=HTTP_200_OK,
+    responses={
+        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
+    },
+    name="jobs:get-job",
+)
+def get_job(job_id: int):
+    return Job.from_id(job_id)
+
+
+@router.get(
+    "/jobs/next_pend",
+    summary="get next pending job",
+    response_model=List[Job],
+    status_code=HTTP_200_OK,
+    responses={
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
+    },
+    name="jobs:get-next-job",
+)
+def get_next_job():
+    cjob = ffi.new("struct sched_job *")
+
+    rc = RC(lib.sched_job_next_pend(cjob))
+    assert rc != RC.END
+
+    if rc == RC.NOTFOUND:
+        return []
+
+    if rc != RC.OK:
+        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+
+    return [Job.from_cdata(cjob)]
 
 
 @router.patch(
@@ -25,8 +67,9 @@ router = APIRouter()
         HTTP_404_NOT_FOUND: {"model": ErrorResponse},
         HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
+    name="jobs:change-job-state",
 )
-def httppatch_jobs_xxx(job_id: int, job_patch: JobPatch):
+def change_job_state(job_id: int, job_patch: JobPatch):
     job = Job.from_id(job_id)
 
     if job.state == job_patch.state:

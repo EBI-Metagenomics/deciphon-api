@@ -51,7 +51,7 @@ def get_next_job():
         return []
 
     if rc != RC.OK:
-        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(rc)
 
     return [Job.from_cdata(cjob)]
 

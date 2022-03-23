@@ -87,6 +87,16 @@ def test_download_database(app: FastAPI):
         assert v == -3907098992699871052
 
 
+def test_download_database_notfound(app: FastAPI):
+    minifam = data.filepath(data.FileName.minifam_dcp)
+    shutil.copy(minifam, os.getcwd())
+
+    with TestClient(app) as client:
+        response = client.get("/api/dbs/1/download")
+        assert response.status_code == 404
+        assert response.json() == {"msg": "database not found", "rc": "einval"}
+
+
 def test_get_database_list(app: FastAPI):
     minifam = data.filepath(data.FileName.minifam_dcp)
     shutil.copy(minifam, os.getcwd())

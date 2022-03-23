@@ -13,12 +13,7 @@ from starlette.status import (
 )
 
 from deciphon_api.csched import lib
-from deciphon_api.errors import (
-    EINVAL,
-    EPARSE,
-    ErrorResponse,
-    InternalError,
-)
+from deciphon_api.errors import EINVAL, EPARSE, ErrorResponse, InternalError
 from deciphon_api.examples import prods_file
 from deciphon_api.models.prod import Prod
 from deciphon_api.rc import RC
@@ -72,7 +67,7 @@ def upload_products(
         raise EPARSE(HTTP_400_BAD_REQUEST, "failed to parse file")
 
     if rc != RC.OK:
-        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(rc)
 
     return []
 

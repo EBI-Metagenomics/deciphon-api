@@ -101,7 +101,7 @@ def get_next_sequence_of_scan(scan_id: int, seq_id: int):
         raise EINVAL(HTTP_404_NOT_FOUND, "scan not found")
 
     if rc != RC.OK:
-        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(rc)
 
     return [Seq.from_cdata(cscan)]
 

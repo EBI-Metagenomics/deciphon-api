@@ -1,5 +1,4 @@
 from loguru import logger
-from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from deciphon_api.csched import ffi, lib
 from deciphon_api.errors import InternalError
@@ -14,14 +13,14 @@ def sched_init(file_name: str):
     rc = RC(lib.sched_init(file_name.encode()))
 
     if rc != RC.OK:
-        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(rc)
 
 
 def sched_cleanup():
     rc = RC(lib.sched_cleanup())
 
     if rc != RC.OK:
-        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(rc)
 
 
 @ffi.def_extern()

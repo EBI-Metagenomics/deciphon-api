@@ -18,34 +18,6 @@ from deciphon_api.rc import RC
 __all__ = ["DB"]
 
 
-def get_by_id(db_id: int) -> Tuple[Any, RC]:
-    ptr = ffi.new("struct sched_db *")
-
-    rc = RC(lib.sched_db_get_by_id(ptr, db_id))
-    assert rc != RC.END
-
-    return (ptr, rc)
-
-
-def get_by_filename(filename: str) -> Tuple[Any, RC]:
-    ptr = ffi.new("struct sched_db *")
-
-    rc = RC(lib.sched_db_get_by_filename(ptr, filename.encode()))
-    assert rc != RC.END
-
-    return (ptr, rc)
-
-
-def resolve_get_db(ptr: Any, rc: RC) -> DB:
-    if rc == RC.OK:
-        return DB.from_cdata(ptr[0])
-
-    if rc == RC.NOTFOUND:
-        raise DBNotFound()
-
-    raise InternalError(rc)
-
-
 class DB(BaseModel):
     id: int = Field(..., gt=0)
     xxh3: int = Field(..., title="XXH3 file hash")
@@ -114,6 +86,34 @@ class DB(BaseModel):
             raise InternalError(rc)
 
         return dbs
+
+
+def get_by_id(db_id: int) -> Tuple[Any, RC]:
+    ptr = ffi.new("struct sched_db *")
+
+    rc = RC(lib.sched_db_get_by_id(ptr, db_id))
+    assert rc != RC.END
+
+    return (ptr, rc)
+
+
+def get_by_filename(filename: str) -> Tuple[Any, RC]:
+    ptr = ffi.new("struct sched_db *")
+
+    rc = RC(lib.sched_db_get_by_filename(ptr, filename.encode()))
+    assert rc != RC.END
+
+    return (ptr, rc)
+
+
+def resolve_get_db(ptr: Any, rc: RC) -> DB:
+    if rc == RC.OK:
+        return DB.from_cdata(ptr[0])
+
+    if rc == RC.NOTFOUND:
+        raise DBNotFound()
+
+    raise InternalError(rc)
 
 
 @ffi.def_extern()

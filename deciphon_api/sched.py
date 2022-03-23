@@ -1,9 +1,9 @@
 from loguru import logger
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
-from .csched import ffi, lib
-from .exception import create_exception
-from .rc import RC
+from deciphon_api.csched import ffi, lib
+from deciphon_api.errors import create_exception
+from deciphon_api.rc import RC
 
 __all__ = ["sched_setup", "sched_open", "sched_close"]
 

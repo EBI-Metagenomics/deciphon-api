@@ -2,11 +2,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from ._types import ErrorResponse
-from .api.api import router as api_router
-from .core.config import get_app_settings
-from .core.events import create_start_app_handler, create_stop_app_handler
-from .exception import DCPException
+from deciphon_api.api.api import router as api_router
+from deciphon_api.core.config import get_app_settings
+from deciphon_api.core.events import create_start_app_handler, create_stop_app_handler
+from deciphon_api.errors import DCPException, ErrorResponse
 
 __all__ = ["app", "get_app"]
 

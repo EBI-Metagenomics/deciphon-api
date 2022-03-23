@@ -8,7 +8,7 @@ from starlette.status import (
 )
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.exception import EINVALException, create_exception
+from deciphon_api.errors import EINVALException, create_exception
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult

@@ -1,4 +1,6 @@
-from .rc import RC
+from pydantic import BaseModel
+
+from deciphon_api.rc import RC, StrRC
 
 __all__ = [
     "DCPException",
@@ -8,6 +10,7 @@ __all__ = [
     "ENOMEMException",
     "EPARSEException",
     "create_exception",
+    "ErrorResponse",
 ]
 
 
@@ -59,3 +62,12 @@ def create_exception(http_code: int, rc: RC) -> DCPException:
     else:
         assert rc == RC.EPARSE
         return EPARSEException(http_code)
+
+
+class ErrorResponse(BaseModel):
+    rc: StrRC = StrRC.EFAIL
+    msg: str = "something went wrong"
+
+    @classmethod
+    def create(cls, rc: RC, msg: str):
+        return cls(rc=StrRC[rc.name], msg=msg)

@@ -9,7 +9,7 @@ from starlette.status import (
 )
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVALException, ErrorResponse, create_exception
+from deciphon_api.errors import EINVAL, ErrorResponse, InternalError
 from deciphon_api.models.job import Job, JobPatch, JobState
 from deciphon_api.rc import RC
 
@@ -51,7 +51,7 @@ def get_next_job():
         return []
 
     if rc != RC.OK:
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return [Job.from_cdata(cjob)]
 
@@ -72,7 +72,7 @@ def change_job_state(job_id: int, job_patch: JobPatch):
     job = Job.from_id(job_id)
 
     if job.state == job_patch.state:
-        raise EINVALException(HTTP_403_FORBIDDEN, "redundant job state update")
+        raise EINVAL(HTTP_403_FORBIDDEN, "redundant job state update")
 
     if job.state == JobState.pend and job_patch.state == JobState.run:
 
@@ -87,9 +87,9 @@ def change_job_state(job_id: int, job_patch: JobPatch):
         rc = RC(lib.sched_job_set_fail(job_id, job_patch.error.encode()))
 
     else:
-        raise EINVALException(HTTP_403_FORBIDDEN, "invalid job state update")
+        raise EINVAL(HTTP_403_FORBIDDEN, "invalid job state update")
 
     if rc != RC.OK:
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return Job.from_id(job_id)

@@ -8,7 +8,7 @@ from starlette.status import (
 )
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVALException, create_exception
+from deciphon_api.errors import EINVAL, InternalError
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
@@ -45,10 +45,10 @@ class Scan(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVALException(HTTP_404_NOT_FOUND, "scan not found")
+            raise EINVAL(HTTP_404_NOT_FOUND, "scan not found")
 
         if rc != RC.OK:
-            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return Scan.from_cdata(ptr[0])
 
@@ -61,10 +61,10 @@ class Scan(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVALException(HTTP_404_NOT_FOUND, "scan not found")
+            raise EINVAL(HTTP_404_NOT_FOUND, "scan not found")
 
         if rc != RC.OK:
-            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return prods
 
@@ -77,10 +77,10 @@ class Scan(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVALException(HTTP_404_NOT_FOUND, "scan not found")
+            raise EINVAL(HTTP_404_NOT_FOUND, "scan not found")
 
         if rc != RC.OK:
-            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return seqs
 
@@ -89,7 +89,7 @@ class Scan(BaseModel):
         job = self.job()
 
         if job.state != JobState.done:
-            raise EINVALException(
+            raise EINVAL(
                 HTTP_412_PRECONDITION_FAILED, "job is not in done state"
             )
 

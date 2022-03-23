@@ -16,6 +16,8 @@ GOODBOY = pooch.create(
     registry={
         "minifam.hmm.bz2": "md5:6e102264a59e7bf538ce08b9ad2b46d8",
         "minifam.dcp.bz2": "md5:e460d18f3802c1f2a3b2c05246ab4199",
+        "pfam1.hmm.bz2": "md5:e6e335b8798c7e0aec8c6c99e1709bf7",
+        "pfam1.dcp.bz2": "md5:e6e335b8798c7e0aec8c6c99e1709bf7",
     },
 )
 
@@ -23,6 +25,8 @@ GOODBOY = pooch.create(
 class FileName(Enum):
     minifam_hmm = "minifam.hmm"
     minifam_dcp = "minifam.dcp"
+    pfam1_hmm = "pfam1.hmm"
+    pfam1_dcp = "pfam1.dcp"
 
 
 def filepath(file_name: FileName) -> Path:

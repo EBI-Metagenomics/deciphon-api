@@ -1,24 +1,57 @@
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Any, List, Tuple
 
 from pydantic import BaseModel, Field
-from starlette.status import (
-    HTTP_409_CONFLICT,
-    HTTP_412_PRECONDITION_FAILED,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-)
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVALException, create_exception
+from deciphon_api.errors import (
+    EINVAL,
+    DBAlreadyExists,
+    DBNotFound,
+    FileNotFound,
+    InternalError,
+)
 from deciphon_api.rc import RC
 
 __all__ = ["DB"]
+
+
+def get_by_id(db_id: int) -> Tuple[Any, RC]:
+    ptr = ffi.new("struct sched_db *")
+
+    rc = RC(lib.sched_db_get_by_id(ptr, db_id))
+    assert rc != RC.END
+
+    return (ptr, rc)
+
+
+def get_by_filename(filename: str) -> Tuple[Any, RC]:
+    ptr = ffi.new("struct sched_db *")
+
+    rc = RC(lib.sched_db_get_by_filename(ptr, filename.encode()))
+    assert rc != RC.END
+
+    return (ptr, rc)
+
+
+def resolve_get_db(ptr: Any, rc: RC) -> DB:
+    if rc == RC.OK:
+        return DB.from_cdata(ptr[0])
+
+    if rc == RC.NOTFOUND:
+        raise DBNotFound()
+
+    raise InternalError(rc)
 
 
 class DB(BaseModel):
     id: int = Field(..., gt=0)
     xxh3: int = Field(..., title="XXH3 file hash")
     filename: str = ""
-    hmm_id: int = Field(..., gt=0)
+    hmm_id: int = Field(...)
+    # hmm_id: int = Field(..., gt=0)
 
     @classmethod
     def from_cdata(cls, cdb):
@@ -32,51 +65,55 @@ class DB(BaseModel):
     @staticmethod
     def add(filename: str):
         if DB.exists_by_filename(filename):
-            raise EINVALException(
-                HTTP_409_CONFLICT,
-                "database already exists",
-            )
+            raise DBAlreadyExists()
 
         if not Path(filename).exists():
-            raise EINVALException(HTTP_412_PRECONDITION_FAILED, "file not found")
+            raise FileNotFound()
 
         ptr = ffi.new("struct sched_db *")
         rc = RC(lib.sched_db_add(ptr, filename.encode()))
 
         if rc != RC.OK:
-            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(rc)
 
         return DB.from_cdata(ptr[0])
 
     @staticmethod
+    def get_by_id(db_id: int) -> DB:
+        return resolve_get_db(*get_by_id(db_id))
+
+    @staticmethod
+    def get_by_filename(filename: str) -> DB:
+        return resolve_get_db(*get_by_filename(filename))
+
+    @staticmethod
     def exists_by_id(db_id: int) -> bool:
-        ptr = ffi.new("struct sched_db *")
-
-        rc = RC(lib.sched_db_get_by_id(ptr, db_id))
-        assert rc != RC.END
-
-        if rc == RC.OK:
-            return True
-
-        if rc == RC.NOTFOUND:
+        try:
+            DB.get_by_id(db_id)
+        except EINVAL:
             return False
-
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        return True
 
     @staticmethod
     def exists_by_filename(filename: str) -> bool:
+        try:
+            DB.get_by_filename(filename)
+        except EINVAL:
+            return False
+        return True
+
+    @staticmethod
+    def get_list() -> List[DB]:
         ptr = ffi.new("struct sched_db *")
 
-        rc = RC(lib.sched_db_get_by_filename(ptr, filename.encode()))
+        dbs: List[DB] = []
+        rc = RC(lib.sched_db_get_all(lib.append_db, ptr, ffi.new_handle(dbs)))
         assert rc != RC.END
 
-        if rc == RC.OK:
-            return True
+        if rc != RC.OK:
+            raise InternalError(rc)
 
-        if rc == RC.NOTFOUND:
-            return False
-
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        return dbs
 
 
 @ffi.def_extern()

@@ -8,7 +8,7 @@ from starlette.status import (
 )
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVALException, ErrorResponse, create_exception
+from deciphon_api.errors import EINVAL, ErrorResponse, InternalError
 from deciphon_api.models.seq import Seq
 from deciphon_api.rc import RC
 
@@ -33,9 +33,9 @@ def get_sequence(seq_id: int):
     assert rc != RC.END
 
     if rc == RC.NOTFOUND:
-        raise EINVALException(HTTP_404_NOT_FOUND, "job not found")
+        raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
 
     if rc != RC.OK:
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return Seq.from_cdata(cseq)

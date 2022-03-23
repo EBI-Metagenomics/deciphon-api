@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVALException, create_exception
+from deciphon_api.errors import EINVAL, InternalError
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.seq import Seq
 from deciphon_api.rc import RC
@@ -53,10 +53,10 @@ class Job(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVALException(HTTP_404_NOT_FOUND, "job not found")
+            raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
 
         if rc != RC.OK:
-            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return Job.from_cdata(ptr[0])
 
@@ -69,10 +69,10 @@ class Job(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVALException(HTTP_404_NOT_FOUND, "job not found")
+            raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
 
         if rc != RC.OK:
-            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return prods
 
@@ -85,10 +85,10 @@ class Job(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVALException(HTTP_404_NOT_FOUND, "job not found")
+            raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
 
         if rc != RC.OK:
-            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return seqs
 

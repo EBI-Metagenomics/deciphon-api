@@ -11,7 +11,7 @@ from starlette.status import (
 )
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVALException, ErrorResponse, create_exception
+from deciphon_api.errors import EINVAL, ErrorResponse, InternalError
 from deciphon_api.models.db import DB
 from deciphon_api.models.job import JobState
 from deciphon_api.models.prod import Prod
@@ -98,10 +98,10 @@ def get_next_sequence_of_scan(scan_id: int, seq_id: int):
         return []
 
     if rc == RC.NOTFOUND:
-        raise EINVALException(HTTP_404_NOT_FOUND, "scan not found")
+        raise EINVAL(HTTP_404_NOT_FOUND, "scan not found")
 
     if rc != RC.OK:
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return [Seq.from_cdata(cscan)]
 
@@ -122,7 +122,7 @@ def get_products_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVALException(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
 
     return scan.prods()
 
@@ -144,7 +144,7 @@ def get_products_of_scan_as_gff(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVALException(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
 
     return scan.result().gff()
 
@@ -166,7 +166,7 @@ def get_hmm_paths_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVALException(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
 
     return scan.result().fasta("state")
 
@@ -188,7 +188,7 @@ def get_fragments_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVALException(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
 
     return scan.result().fasta("frag")
 
@@ -210,7 +210,7 @@ def get_codons_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVALException(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
 
     return scan.result().fasta("codon")
 
@@ -232,6 +232,6 @@ def get_aminos_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVALException(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
 
     return scan.result().fasta("amino")

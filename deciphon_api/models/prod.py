@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVALException, create_exception
+from deciphon_api.errors import EINVAL, InternalError
 from deciphon_api.rc import RC
 
 __all__ = ["Prod", "ProdID"]
@@ -48,10 +48,10 @@ class Prod(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVALException(HTTP_404_NOT_FOUND, "prod not found")
+            raise EINVAL(HTTP_404_NOT_FOUND, "prod not found")
 
         if rc != RC.OK:
-            raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+            raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
         return Prod.from_cdata(ptr[0])
 

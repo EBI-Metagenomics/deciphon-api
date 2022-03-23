@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
 from deciphon_api.csched import lib
-from deciphon_api.errors import ErrorResponse, create_exception
+from deciphon_api.errors import ErrorResponse, InternalError
 from deciphon_api.rc import RC
 
 router = APIRouter()
@@ -23,6 +23,6 @@ def httpdelete():
     rc = RC(lib.sched_wipe())
 
     if rc != RC.OK:
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return JSONResponse([])

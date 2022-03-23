@@ -43,6 +43,13 @@ enum sched_limits
     ERROR_SIZE = 256,
 };
 
+/* --- SCHED Section --- */
+
+enum sched_rc sched_init(char const *filepath);
+enum sched_rc sched_cleanup(void);
+enum sched_rc sched_wipe(void);
+struct sqlite3 *sched_handle(void);
+
 /* --- LOGGER Section --- */
 typedef void (*sched_logger_print_func_t)(char const *ctx, char const *msg,
                                           void *arg);

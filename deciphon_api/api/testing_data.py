@@ -11,7 +11,7 @@ from starlette.status import (
 )
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import ErrorResponse, create_exception
+from deciphon_api.errors import ErrorResponse, InternalError
 from deciphon_api.models.scan import ScanPost
 from deciphon_api.rc import RC
 
@@ -40,7 +40,7 @@ def testing_data():
     rc = RC(lib.sched_db_add(cdb, minifam.name.encode()))
 
     if rc != RC.OK:
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     job = ScanPost.example()
 
@@ -55,13 +55,13 @@ def testing_data():
     assert rc != RC.NOTFOUND
 
     if rc != RC.OK:
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     for seq in job.seqs:
         lib.sched_job_add_seq(cjob, seq.name.encode(), seq.data.encode())
 
     rc = RC(lib.sched_job_end_submission(cjob))
     if rc != RC.OK:
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return JSONResponse([], status_code=HTTP_201_CREATED)

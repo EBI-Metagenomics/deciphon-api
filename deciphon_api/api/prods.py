@@ -14,10 +14,10 @@ from starlette.status import (
 
 from deciphon_api.csched import lib
 from deciphon_api.errors import (
-    EINVALException,
-    EPARSEException,
+    EINVAL,
+    EPARSE,
     ErrorResponse,
-    create_exception,
+    InternalError,
 )
 from deciphon_api.examples import prods_file
 from deciphon_api.models.prod import Prod
@@ -66,13 +66,13 @@ def upload_products(
     assert rc != RC.END
 
     if rc == RC.EINVAL:
-        raise EINVALException(HTTP_409_CONFLICT, "constraint violation")
+        raise EINVAL(HTTP_409_CONFLICT, "constraint violation")
 
     if rc == RC.EPARSE:
-        raise EPARSEException(HTTP_400_BAD_REQUEST, "failed to parse file")
+        raise EPARSE(HTTP_400_BAD_REQUEST, "failed to parse file")
 
     if rc != RC.OK:
-        raise create_exception(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
 
     return []
 

@@ -3,8 +3,7 @@ from typing import Callable
 from loguru import logger
 
 from deciphon_api.core.settings.app import AppSettings
-
-from ..sched import sched_close, sched_open, sched_setup
+from deciphon_api.sched import sched_cleanup, sched_init
 
 
 def create_start_app_handler(
@@ -12,8 +11,7 @@ def create_start_app_handler(
 ) -> Callable:
     async def start_app() -> None:
         logger.info("Starting scheduler")
-        sched_setup(str(settings.sched_filename))
-        sched_open()
+        sched_init(str(settings.sched_filename))
 
     return start_app
 
@@ -21,6 +19,6 @@ def create_start_app_handler(
 def create_stop_app_handler() -> Callable:
     @logger.catch
     async def stop_app() -> None:
-        sched_close()
+        sched_cleanup()
 
     return stop_app

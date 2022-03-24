@@ -15,12 +15,11 @@ def test_get_next_pend_job_empty(app: FastAPI):
         assert response.json() == []
 
 
-def test_get_next_pend_job(app: FastAPI):
+def test_get_next_pend_job(app: FastAPI, upload_database):
     minifam = data.filepath(data.FileName.minifam_dcp)
-    shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
+        response = upload_database(client, minifam)
         assert response.status_code == 201
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())
@@ -46,12 +45,11 @@ def test_get_next_pend_job(app: FastAPI):
         ]
 
 
-def test_set_job_state_run(app: FastAPI):
+def test_set_job_state_run(app: FastAPI, upload_database):
     minifam = data.filepath(data.FileName.minifam_dcp)
-    shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
+        response = upload_database(client, minifam)
         assert response.status_code == 201
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())
@@ -69,12 +67,11 @@ def test_set_job_state_run(app: FastAPI):
         assert response.json()["error"] == ""
 
 
-def test_set_job_state_run_and_fail(app: FastAPI):
+def test_set_job_state_run_and_fail(app: FastAPI, upload_database):
     minifam = data.filepath(data.FileName.minifam_dcp)
-    shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
+        response = upload_database(client, minifam)
         assert response.status_code == 201
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())
@@ -97,12 +94,11 @@ def test_set_job_state_run_and_fail(app: FastAPI):
         assert response.json()["error"] == "failed"
 
 
-def test_set_job_state_run_and_done(app: FastAPI):
+def test_set_job_state_run_and_done(app: FastAPI, upload_database):
     minifam = data.filepath(data.FileName.minifam_dcp)
-    shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
+        response = upload_database(client, minifam)
         assert response.status_code == 201
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())
@@ -125,12 +121,11 @@ def test_set_job_state_run_and_done(app: FastAPI):
         assert response.json()["error"] == ""
 
 
-def test_set_job_state_wrongly(app: FastAPI):
+def test_set_job_state_wrongly(app: FastAPI, upload_database):
     minifam = data.filepath(data.FileName.minifam_dcp)
-    shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
+        response = upload_database(client, minifam)
         assert response.status_code == 201
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())

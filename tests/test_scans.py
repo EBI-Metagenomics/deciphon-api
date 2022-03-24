@@ -1,6 +1,3 @@
-import os
-import shutil
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -15,12 +12,11 @@ def test_submit_scan_with_non_existent_database(app: FastAPI):
         assert response.json() == {"rc": "einval", "msg": "database not found"}
 
 
-def test_submit_scan(app: FastAPI):
+def test_submit_scan(app: FastAPI, upload_database):
     minifam = data.filepath(data.FileName.minifam_dcp)
-    shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
+        response = upload_database(client, minifam)
         assert response.status_code == 201
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())

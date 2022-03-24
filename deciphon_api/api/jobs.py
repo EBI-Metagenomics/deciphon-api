@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Body, Path
 from starlette.status import HTTP_200_OK
 
 from deciphon_api.api.responses import responses
@@ -43,7 +43,7 @@ def get_next_pend_job():
     responses=responses,
     name="jobs:get-job",
 )
-def get_job(job_id: int):
+def get_job(job_id: int = Path(..., gt=0)):
     return Job.from_id(job_id)
 
 
@@ -55,7 +55,7 @@ def get_job(job_id: int):
     responses=responses,
     name="jobs:set-job-state",
 )
-def set_job_state(job_id: int, job_patch: JobPatch):
+def set_job_state(job_id: int = Path(..., gt=0), job_patch: JobPatch = Body(...)):
     job = Job.from_id(job_id)
 
     if job.state == job_patch.state:

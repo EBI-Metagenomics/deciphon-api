@@ -1,6 +1,3 @@
-import os
-import shutil
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -8,12 +5,11 @@ import deciphon_api.data as data
 from deciphon_api.models.scan import ScanPost
 
 
-def test_upload_products(app: FastAPI):
+def test_upload_products(app: FastAPI, upload_database):
     minifam = data.filepath(data.FileName.minifam_dcp)
-    shutil.copy(minifam, os.getcwd())
 
     with TestClient(app) as client:
-        response = client.post("/api/dbs/", json={"filename": "minifam.dcp"})
+        response = upload_database(client, minifam)
         assert response.status_code == 201
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())

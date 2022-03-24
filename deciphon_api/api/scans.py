@@ -2,11 +2,11 @@ from typing import List
 
 from fastapi import APIRouter, Body
 from fastapi.responses import PlainTextResponse
-from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_412_PRECONDITION_FAILED
+from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import ConditionError, InternalError, JobNotDone, NotFoundError
+from deciphon_api.errors import ConditionError, InternalError, NotFoundError
 from deciphon_api.models.db import DB
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
@@ -101,10 +101,7 @@ def get_next_sequence_of_scan(scan_id: int, seq_id: int):
 def get_products_of_scan(scan_id: int):
     scan = Scan.from_id(scan_id)
     job = scan.job()
-
-    if job.state != JobState.done:
-        raise JobNotDone()
-
+    job.assert_state(JobState.done)
     return scan.prods()
 
 
@@ -119,10 +116,7 @@ def get_products_of_scan(scan_id: int):
 def get_products_of_scan_as_gff(scan_id: int):
     scan = Scan.from_id(scan_id)
     job = scan.job()
-
-    if job.state != JobState.done:
-        raise JobNotDone()
-
+    job.assert_state(JobState.done)
     return scan.result().gff()
 
 
@@ -137,10 +131,7 @@ def get_products_of_scan_as_gff(scan_id: int):
 def get_hmm_paths_of_scan(scan_id: int):
     scan = Scan.from_id(scan_id)
     job = scan.job()
-
-    if job.state != JobState.done:
-        raise JobNotDone()
-
+    job.assert_state(JobState.done)
     return scan.result().fasta("state")
 
 
@@ -155,10 +146,7 @@ def get_hmm_paths_of_scan(scan_id: int):
 def get_fragments_of_scan(scan_id: int):
     scan = Scan.from_id(scan_id)
     job = scan.job()
-
-    if job.state != JobState.done:
-        raise JobNotDone()
-
+    job.assert_state(JobState.done)
     return scan.result().fasta("frag")
 
 
@@ -173,10 +161,7 @@ def get_fragments_of_scan(scan_id: int):
 def get_codons_of_scan(scan_id: int):
     scan = Scan.from_id(scan_id)
     job = scan.job()
-
-    if job.state != JobState.done:
-        raise JobNotDone()
-
+    job.assert_state(JobState.done)
     return scan.result().fasta("codon")
 
 
@@ -191,8 +176,5 @@ def get_codons_of_scan(scan_id: int):
 def get_aminos_of_scan(scan_id: int):
     scan = Scan.from_id(scan_id)
     job = scan.job()
-
-    if job.state != JobState.done:
-        raise JobNotDone()
-
+    job.assert_state(JobState.done)
     return scan.result().fasta("amino")

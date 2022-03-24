@@ -4,7 +4,7 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import InternalError, NotFoundError
+from deciphon_api.errors import ConditionError, InternalError, NotFoundError
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.seq import Seq
 from deciphon_api.rc import RC
@@ -90,6 +90,10 @@ class Job(BaseModel):
             raise InternalError(rc)
 
         return seqs
+
+    def assert_state(self, state: JobState):
+        if self.state != state:
+            raise ConditionError(f"job not in {str(state.done)} state")
 
 
 class JobPatch(BaseModel):

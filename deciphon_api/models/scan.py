@@ -3,7 +3,7 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import InternalError, JobNotDone, NotFoundError
+from deciphon_api.errors import InternalError, NotFoundError
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
@@ -80,11 +80,8 @@ class Scan(BaseModel):
         return seqs
 
     def result(self) -> ScanResult:
-
         job = self.job()
-
-        if job.state != JobState.done:
-            raise JobNotDone()
+        job.assert_state(JobState.done)
 
         prods: List[Prod] = self.prods()
         seqs: List[Seq] = self.seqs()

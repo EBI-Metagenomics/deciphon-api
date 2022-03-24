@@ -29,7 +29,6 @@ __all__ = [
     "EPARSE",
     "ErrorResponse",
     "InternalError",
-    "JobNotDone",
     "ForbiddenError",
     "ParseError",
     "ConditionError",
@@ -91,11 +90,6 @@ class ForbiddenError(EINVAL):
 class ConditionError(EINVAL):
     def __init__(self, msg: str):
         super().__init__(HTTP_412_PRECONDITION_FAILED, msg)
-
-
-class JobNotDone(ConditionError):
-    def __init__(self):
-        super().__init__("job is not in done state")
 
 
 def InternalError(rc: RC) -> DeciphonError:

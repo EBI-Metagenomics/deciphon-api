@@ -1,15 +1,11 @@
 from typing import List
 
 from fastapi import APIRouter
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-)
+from starlette.status import HTTP_200_OK
 
+from deciphon_api.api.responses import responses
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVAL, ErrorResponse, InternalError
+from deciphon_api.errors import ForbiddenError, InternalError
 from deciphon_api.models.job import Job, JobPatch, JobState
 from deciphon_api.rc import RC
 
@@ -21,9 +17,7 @@ router = APIRouter()
     summary="get next pending job",
     response_model=List[Job],
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="jobs:get-next-pend-job",
 )
 def get_next_pend_job():
@@ -46,10 +40,7 @@ def get_next_pend_job():
     summary="get job",
     response_model=Job,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="jobs:get-job",
 )
 def get_job(job_id: int):
@@ -61,18 +52,14 @@ def get_job(job_id: int):
     summary="patch job",
     response_model=Job,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_403_FORBIDDEN: {"model": ErrorResponse},
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="jobs:set-job-state",
 )
 def set_job_state(job_id: int, job_patch: JobPatch):
     job = Job.from_id(job_id)
 
     if job.state == job_patch.state:
-        raise EINVAL(HTTP_403_FORBIDDEN, "redundant job state update")
+        raise ForbiddenError("redundant job state update")
 
     if job.state == JobState.pend and job_patch.state == JobState.run:
 
@@ -87,7 +74,7 @@ def set_job_state(job_id: int, job_patch: JobPatch):
         rc = RC(lib.sched_job_set_fail(job_id, job_patch.error.encode()))
 
     else:
-        raise EINVAL(HTTP_403_FORBIDDEN, "invalid job state update")
+        raise ForbiddenError("invalid job state update")
 
     if rc != RC.OK:
         raise InternalError(rc)

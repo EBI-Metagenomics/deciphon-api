@@ -1,15 +1,12 @@
 from typing import List
 
 from fastapi import APIRouter
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_404_NOT_FOUND,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-)
+from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVAL, ErrorResponse, InternalError
+from deciphon_api.errors import ErrorResponse, InternalError, NotFoundError
 from deciphon_api.models.seq import Seq
+from deciphon_api.api.responses import responses
 from deciphon_api.rc import RC
 
 router = APIRouter()
@@ -33,7 +30,7 @@ def get_sequence(seq_id: int):
     assert rc != RC.END
 
     if rc == RC.NOTFOUND:
-        raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
+        raise NotFoundError("job")
 
     if rc != RC.OK:
         raise InternalError(rc)

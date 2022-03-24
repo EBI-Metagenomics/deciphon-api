@@ -3,16 +3,9 @@ from typing import List
 from fastapi import APIRouter, Path
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
-    HTTP_422_UNPROCESSABLE_ENTITY,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-)
+from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
-from deciphon_api.errors import ErrorResponse
+from deciphon_api.api.responses import responses
 from deciphon_api.models.db import DB
 
 router = APIRouter()
@@ -23,11 +16,7 @@ router = APIRouter()
     summary="get database",
     response_model=DB,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="dbs:get-database",
 )
 def get_database(db_id: int = Path(..., gt=0)):
@@ -39,9 +28,7 @@ def get_database(db_id: int = Path(..., gt=0)):
     summary="get database list",
     response_model=List[DB],
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="dbs:get-database-list",
 )
 def get_database_list():
@@ -53,10 +40,7 @@ def get_database_list():
     summary="download database",
     response_class=FileResponse,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="dbs:download-database",
 )
 def download_database(db_id: int):
@@ -74,10 +58,7 @@ class DBFileName(BaseModel):
     summary="upload a new database",
     response_model=DB,
     status_code=HTTP_201_CREATED,
-    responses={
-        HTTP_409_CONFLICT: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="dbs:upload-database",
 )
 def upload_database(db: DBFileName):

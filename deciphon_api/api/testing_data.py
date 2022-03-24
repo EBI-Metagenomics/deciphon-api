@@ -12,6 +12,7 @@ from starlette.status import (
 
 from deciphon_api.csched import ffi, lib
 from deciphon_api.errors import ErrorResponse, InternalError
+from deciphon_api.api.responses import responses
 from deciphon_api.models.scan import ScanPost
 from deciphon_api.rc import RC
 

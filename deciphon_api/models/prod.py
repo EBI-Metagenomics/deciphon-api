@@ -1,8 +1,7 @@
 from pydantic import BaseModel, Field
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVAL, InternalError, NotFoundError
+from deciphon_api.errors import InternalError, NotFoundError
 from deciphon_api.rc import RC
 
 __all__ = ["Prod", "ProdID"]

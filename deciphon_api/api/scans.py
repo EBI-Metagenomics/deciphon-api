@@ -2,22 +2,11 @@ from typing import List
 
 from fastapi import APIRouter, Body
 from fastapi.responses import PlainTextResponse
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_404_NOT_FOUND,
-    HTTP_412_PRECONDITION_FAILED,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-)
+from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_412_PRECONDITION_FAILED
 
+from deciphon_api.api.responses import responses
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import (
-    EINVAL,
-    ErrorResponse,
-    InternalError,
-    JobNotDone,
-    NotFoundError,
-)
+from deciphon_api.errors import ConditionError, InternalError, JobNotDone, NotFoundError
 from deciphon_api.models.db import DB
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
@@ -33,10 +22,7 @@ router = APIRouter()
     summary="submit scan job",
     response_model=Job,
     status_code=HTTP_201_CREATED,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="scans:submit-scan",
 )
 def submit_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
@@ -45,7 +31,7 @@ def submit_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
 
     seqs = scan.seqs
     if len(seqs) > lib.NUM_SEQS_PER_JOB:
-        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "too many sequences")
+        raise ConditionError("too many sequences")
 
     scan_ptr = ffi.new("struct sched_scan *")
     lib.sched_scan_init(scan_ptr, scan.db_id, scan.multi_hits, scan.hmmer3_compat)
@@ -70,10 +56,7 @@ def submit_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
     summary="get sequences of scan",
     response_model=List[Seq],
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="scans:get-sequences-of-scan",
 )
 def get_sequences_of_scan(scan_id: int):
@@ -85,10 +68,7 @@ def get_sequences_of_scan(scan_id: int):
     summary="get next sequence",
     response_model=List[Seq],
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="scans:get-next-sequence-of-scan",
 )
 def get_next_sequence_of_scan(scan_id: int, seq_id: int):
@@ -115,10 +95,7 @@ def get_next_sequence_of_scan(scan_id: int, seq_id: int):
     summary="get products of scan",
     response_model=List[Prod],
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="scans:get-products-of-scan",
 )
 def get_products_of_scan(scan_id: int):
@@ -136,11 +113,7 @@ def get_products_of_scan(scan_id: int):
     summary="get products of scan as gff",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_412_PRECONDITION_FAILED: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="scans:get-products-of-scan-as-gff",
 )
 def get_products_of_scan_as_gff(scan_id: int):
@@ -158,11 +131,7 @@ def get_products_of_scan_as_gff(scan_id: int):
     summary="get hmm paths of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_412_PRECONDITION_FAILED: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="scans:get-hmm-paths-of-scan",
 )
 def get_hmm_paths_of_scan(scan_id: int):
@@ -180,11 +149,7 @@ def get_hmm_paths_of_scan(scan_id: int):
     summary="get fragments of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_412_PRECONDITION_FAILED: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="scans:get-fragments-of-scan",
 )
 def get_fragments_of_scan(scan_id: int):
@@ -192,7 +157,7 @@ def get_fragments_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise JobNotDone()
 
     return scan.result().fasta("frag")
 
@@ -202,11 +167,7 @@ def get_fragments_of_scan(scan_id: int):
     summary="get codons of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_412_PRECONDITION_FAILED: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="scans:get-codons-of-scan",
 )
 def get_codons_of_scan(scan_id: int):
@@ -214,7 +175,7 @@ def get_codons_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise JobNotDone()
 
     return scan.result().fasta("codon")
 
@@ -224,11 +185,7 @@ def get_codons_of_scan(scan_id: int):
     summary="get aminos of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_412_PRECONDITION_FAILED: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="scans:get-aminos-of-scan",
 )
 def get_aminos_of_scan(scan_id: int):
@@ -236,6 +193,6 @@ def get_aminos_of_scan(scan_id: int):
     job = scan.job()
 
     if job.state != JobState.done:
-        raise EINVAL(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        raise JobNotDone()
 
     return scan.result().fasta("amino")

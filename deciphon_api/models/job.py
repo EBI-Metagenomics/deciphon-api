@@ -2,10 +2,9 @@ from enum import Enum
 from typing import List
 
 from pydantic import BaseModel, Field
-from starlette.status import HTTP_404_NOT_FOUND
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVAL, InternalError
+from deciphon_api.errors import InternalError, NotFoundError
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.seq import Seq
 from deciphon_api.rc import RC
@@ -53,7 +52,7 @@ class Job(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
+            raise NotFoundError("job")
 
         if rc != RC.OK:
             raise InternalError(rc)
@@ -69,7 +68,7 @@ class Job(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
+            raise NotFoundError("job")
 
         if rc != RC.OK:
             raise InternalError(rc)
@@ -85,7 +84,7 @@ class Job(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise EINVAL(HTTP_404_NOT_FOUND, "job not found")
+            raise NotFoundError("job")
 
         if rc != RC.OK:
             raise InternalError(rc)

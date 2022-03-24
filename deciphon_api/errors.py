@@ -6,6 +6,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 from starlette.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
     HTTP_412_PRECONDITION_FAILED,
@@ -17,7 +19,7 @@ from deciphon_api.csched import lib
 from deciphon_api.rc import RC, StrRC
 
 __all__ = [
-    "DBAlreadyExists",
+    "ConflictError",
     "NotFoundError",
     "DeciphonError",
     "EFAIL",
@@ -28,6 +30,9 @@ __all__ = [
     "ErrorResponse",
     "InternalError",
     "JobNotDone",
+    "ForbiddenError",
+    "ParseError",
+    "ConditionError",
 ]
 
 
@@ -63,19 +68,34 @@ class EPARSE(DeciphonError):
         super().__init__(http_code, RC.EPARSE, msg)
 
 
+class ParseError(EPARSE):
+    def __init__(self, msg: str):
+        super().__init__(HTTP_400_BAD_REQUEST, msg)
+
+
 class NotFoundError(EINVAL):
     def __init__(self, what: str):
         super().__init__(HTTP_404_NOT_FOUND, f"{what} not found")
 
 
-class DBAlreadyExists(EINVAL):
-    def __init__(self):
-        super().__init__(HTTP_409_CONFLICT, "database already exists")
+class ConflictError(EINVAL):
+    def __init__(self, msg: str):
+        super().__init__(HTTP_409_CONFLICT, msg)
 
 
-class JobNotDone(EINVAL):
+class ForbiddenError(EINVAL):
+    def __init__(self, msg: str):
+        super().__init__(HTTP_403_FORBIDDEN, msg)
+
+
+class ConditionError(EINVAL):
+    def __init__(self, msg: str):
+        super().__init__(HTTP_412_PRECONDITION_FAILED, msg)
+
+
+class JobNotDone(ConditionError):
     def __init__(self):
-        super().__init__(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
+        super().__init__("job is not in done state")
 
 
 def InternalError(rc: RC) -> DeciphonError:

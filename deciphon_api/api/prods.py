@@ -2,17 +2,11 @@ import os
 from typing import List
 
 from fastapi import APIRouter, File, UploadFile
-from starlette.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_400_BAD_REQUEST,
-    HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-)
+from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
+from deciphon_api.api.responses import responses
 from deciphon_api.csched import lib
-from deciphon_api.errors import EINVAL, EPARSE, ErrorResponse, InternalError
+from deciphon_api.errors import ConflictError, InternalError, ParseError
 from deciphon_api.models.prod import Prod
 from deciphon_api.rc import RC
 
@@ -24,10 +18,7 @@ router = APIRouter()
     summary="get product",
     response_model=Prod,
     status_code=HTTP_200_OK,
-    responses={
-        HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="prods:get-product",
 )
 def get_product(prod_id: int):
@@ -39,11 +30,7 @@ def get_product(prod_id: int):
     summary="upload file of products",
     response_model=List,
     status_code=HTTP_201_CREATED,
-    responses={
-        HTTP_400_BAD_REQUEST: {"model": ErrorResponse},
-        HTTP_409_CONFLICT: {"model": ErrorResponse},
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
+    responses=responses,
     name="prods:upload-products",
 )
 def upload_products(
@@ -59,10 +46,10 @@ def upload_products(
     assert rc != RC.END
 
     if rc == RC.EINVAL:
-        raise EINVAL(HTTP_409_CONFLICT, "constraint violation")
+        raise ConflictError("constraint violation")
 
     if rc == RC.EPARSE:
-        raise EPARSE(HTTP_400_BAD_REQUEST, "failed to parse file")
+        raise ParseError("failed to parse file")
 
     if rc != RC.OK:
         raise InternalError(rc)

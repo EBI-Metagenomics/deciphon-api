@@ -8,9 +8,9 @@ import deciphon_api.data as data
 from deciphon_api.models.scan import ScanPost
 
 
-def test_httppost_jobs_db_notfound(app: FastAPI):
+def test_submit_scan_with_non_existent_database(app: FastAPI):
     with TestClient(app) as client:
-        response = client.post("/api/jobs/", json=ScanPost.example().dict())
+        response = client.post("/api/scans/", json=ScanPost.example().dict())
         assert response.status_code == 404
         assert response.json() == {"rc": "einval", "msg": "database not found"}
 
@@ -25,9 +25,11 @@ def test_submit_scan(app: FastAPI):
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
+
         json = response.json()
         assert "submission" in json
         del json["submission"]
+
         assert json == {
             "id": 1,
             "type": 0,

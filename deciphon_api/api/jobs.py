@@ -17,6 +17,31 @@ router = APIRouter()
 
 
 @router.get(
+    "/jobs/next_pend",
+    summary="get next pending job",
+    response_model=List[Job],
+    status_code=HTTP_200_OK,
+    responses={
+        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
+    },
+    name="jobs:get-next-pend-job",
+)
+def get_next_pend_job():
+    ptr = ffi.new("struct sched_job *")
+
+    rc = RC(lib.sched_job_next_pend(ptr))
+    assert rc != RC.END
+
+    if rc == RC.NOTFOUND:
+        return []
+
+    if rc != RC.OK:
+        raise InternalError(rc)
+
+    return [Job.from_cdata(ptr[0])]
+
+
+@router.get(
     "/jobs/{job_id}",
     summary="get job",
     response_model=Job,
@@ -31,31 +56,6 @@ def get_job(job_id: int):
     return Job.from_id(job_id)
 
 
-@router.get(
-    "/jobs/next_pend",
-    summary="get next pending job",
-    response_model=List[Job],
-    status_code=HTTP_200_OK,
-    responses={
-        HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
-    },
-    name="jobs:get-next-job",
-)
-def get_next_job():
-    cjob = ffi.new("struct sched_job *")
-
-    rc = RC(lib.sched_job_next_pend(cjob))
-    assert rc != RC.END
-
-    if rc == RC.NOTFOUND:
-        return []
-
-    if rc != RC.OK:
-        raise InternalError(rc)
-
-    return [Job.from_cdata(cjob)]
-
-
 @router.patch(
     "/jobs/{job_id}",
     summary="patch job",
@@ -66,9 +66,9 @@ def get_next_job():
         HTTP_404_NOT_FOUND: {"model": ErrorResponse},
         HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
-    name="jobs:change-job-state",
+    name="jobs:set-job-state",
 )
-def change_job_state(job_id: int, job_patch: JobPatch):
+def set_job_state(job_id: int, job_patch: JobPatch):
     job = Job.from_id(job_id)
 
     if job.state == job_patch.state:

@@ -4,7 +4,7 @@ from deciphon_api.csched import ffi, lib
 from deciphon_api.errors import InternalError, NotFoundError
 from deciphon_api.rc import RC
 
-__all__ = ["Prod", "ProdID"]
+__all__ = ["Prod"]
 
 
 class Prod(BaseModel):
@@ -53,10 +53,6 @@ class Prod(BaseModel):
             raise InternalError(rc)
 
         return Prod.from_cdata(ptr[0])
-
-
-class ProdID(BaseModel):
-    id: int = Field(..., gt=0)
 
 
 @ffi.def_extern()

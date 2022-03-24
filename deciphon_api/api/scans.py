@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Path
 from fastapi.responses import PlainTextResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -59,7 +59,7 @@ def submit_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
     responses=responses,
     name="scans:get-sequences-of-scan",
 )
-def get_sequences_of_scan(scan_id: int):
+def get_sequences_of_scan(scan_id: int = Path(..., gt=0)):
     return Scan.from_id(scan_id).seqs()
 
 
@@ -71,23 +71,10 @@ def get_sequences_of_scan(scan_id: int):
     responses=responses,
     name="scans:get-next-sequence-of-scan",
 )
-def get_next_sequence_of_scan(scan_id: int, seq_id: int):
-    ptr = ffi.new("struct sched_seq *")
-    cscan = ptr[0]
-    cscan.id = seq_id
-    cscan.scan_id = scan_id
-    rc = RC(lib.sched_seq_next(ptr))
-
-    if rc == RC.END:
-        return []
-
-    if rc == RC.NOTFOUND:
-        raise NotFoundError("scan")
-
-    if rc != RC.OK:
-        raise InternalError(rc)
-
-    return [Seq.from_cdata(cscan)]
+def get_next_sequence_of_scan(
+    scan_id: int = Path(..., gt=0), seq_id: int = Path(..., gt=0)
+):
+    return Seq.next(seq_id, scan_id)
 
 
 @router.get(
@@ -98,7 +85,7 @@ def get_next_sequence_of_scan(scan_id: int, seq_id: int):
     responses=responses,
     name="scans:get-products-of-scan",
 )
-def get_products_of_scan(scan_id: int):
+def get_products_of_scan(scan_id: int = Path(..., gt=0)):
     scan = Scan.from_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
@@ -113,7 +100,7 @@ def get_products_of_scan(scan_id: int):
     responses=responses,
     name="scans:get-products-of-scan-as-gff",
 )
-def get_products_of_scan_as_gff(scan_id: int):
+def get_products_of_scan_as_gff(scan_id: int = Path(..., gt=0)):
     scan = Scan.from_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
@@ -128,7 +115,7 @@ def get_products_of_scan_as_gff(scan_id: int):
     responses=responses,
     name="scans:get-hmm-paths-of-scan",
 )
-def get_hmm_paths_of_scan(scan_id: int):
+def get_hmm_paths_of_scan(scan_id: int = Path(..., gt=0)):
     scan = Scan.from_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
@@ -143,7 +130,7 @@ def get_hmm_paths_of_scan(scan_id: int):
     responses=responses,
     name="scans:get-fragments-of-scan",
 )
-def get_fragments_of_scan(scan_id: int):
+def get_fragments_of_scan(scan_id: int = Path(..., gt=0)):
     scan = Scan.from_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
@@ -158,7 +145,7 @@ def get_fragments_of_scan(scan_id: int):
     responses=responses,
     name="scans:get-codons-of-scan",
 )
-def get_codons_of_scan(scan_id: int):
+def get_codons_of_scan(scan_id: int = Path(..., gt=0)):
     scan = Scan.from_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
@@ -173,7 +160,7 @@ def get_codons_of_scan(scan_id: int):
     responses=responses,
     name="scans:get-aminos-of-scan",
 )
-def get_aminos_of_scan(scan_id: int):
+def get_aminos_of_scan(scan_id: int = Path(..., gt=0)):
     scan = Scan.from_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)

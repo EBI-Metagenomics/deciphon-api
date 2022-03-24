@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, Path, UploadFile
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
@@ -21,7 +21,7 @@ router = APIRouter()
     responses=responses,
     name="prods:get-product",
 )
-def get_product(prod_id: int):
+def get_product(prod_id: int = Path(..., gt=0)):
     return Prod.from_id(prod_id)
 
 

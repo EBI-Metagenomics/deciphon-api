@@ -1,6 +1,12 @@
+from __future__ import annotations
+
+from typing import List
+
 from pydantic import BaseModel, Field
 
-from deciphon_api.csched import ffi
+from deciphon_api.csched import ffi, lib
+from deciphon_api.errors import InternalError, NotFoundError
+from deciphon_api.rc import RC
 
 __all__ = ["Seq"]
 
@@ -19,6 +25,41 @@ class Seq(BaseModel):
             name=ffi.string(cseq.name).decode(),
             data=ffi.string(cseq.data).decode(),
         )
+
+    @classmethod
+    def from_id(cls, seq_id: int):
+        ptr = ffi.new("struct sched_seq *")
+
+        rc = RC(lib.sched_seq_get_by_id(ptr, seq_id))
+        assert rc != RC.END
+
+        if rc == RC.NOTFOUND:
+            raise NotFoundError("seq")
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
+        return Seq.from_cdata(ptr[0])
+
+    @classmethod
+    def next(cls, seq_id: int, scan_id: int) -> List[Seq]:
+        ptr = ffi.new("struct sched_seq *")
+
+        cseq = ptr[0]
+        cseq.id = seq_id
+        cseq.scan_id = scan_id
+        rc = RC(lib.sched_seq_next(ptr))
+
+        if rc == RC.END:
+            return []
+
+        if rc == RC.NOTFOUND:
+            raise NotFoundError("scan")
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
+        return [Seq.from_cdata(cseq)]
 
 
 @ffi.def_extern()

@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Path
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from starlette.status import (
@@ -8,6 +8,7 @@ from starlette.status import (
     HTTP_201_CREATED,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
+    HTTP_422_UNPROCESSABLE_ENTITY,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
@@ -24,11 +25,12 @@ router = APIRouter()
     status_code=HTTP_200_OK,
     responses={
         HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorResponse},
         HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
     },
     name="dbs:get-database",
 )
-def get_database(db_id: int):
+def get_database(db_id: int = Path(..., gt=0)):
     return DB.get_by_id(db_id)
 
 

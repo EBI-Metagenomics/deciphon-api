@@ -40,7 +40,6 @@ enum sched_limits
     SEQ_NAME_SIZE = 256,
     SEQ_SIZE = (1024 * 1024),
     VERSION_SIZE = 16,
-    ERROR_SIZE = 256,
 };
 
 /* --- SCHED Section --- */

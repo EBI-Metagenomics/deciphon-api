@@ -3,7 +3,7 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import InternalError, JobNotDone, ScanNotFound
+from deciphon_api.errors import InternalError, JobNotDone, NotFoundError
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
@@ -40,7 +40,7 @@ class Scan(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise ScanNotFound()
+            raise NotFoundError("scan")
 
         if rc != RC.OK:
             raise InternalError(rc)
@@ -56,7 +56,7 @@ class Scan(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise ScanNotFound()
+            raise NotFoundError("scan")
 
         if rc != RC.OK:
             raise InternalError(rc)
@@ -72,7 +72,7 @@ class Scan(BaseModel):
         assert rc != RC.END
 
         if rc == RC.NOTFOUND:
-            raise ScanNotFound()
+            raise NotFoundError("scan")
 
         if rc != RC.OK:
             raise InternalError(rc)

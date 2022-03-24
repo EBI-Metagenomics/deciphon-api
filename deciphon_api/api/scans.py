@@ -13,11 +13,10 @@ from starlette.status import (
 from deciphon_api.csched import ffi, lib
 from deciphon_api.errors import (
     EINVAL,
-    DBNotFound,
     ErrorResponse,
     InternalError,
     JobNotDone,
-    ScanNotFound,
+    NotFoundError,
 )
 from deciphon_api.models.db import DB
 from deciphon_api.models.job import Job, JobState
@@ -42,7 +41,7 @@ router = APIRouter()
 )
 def submit_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
     if not DB.exists_by_id(scan.db_id):
-        raise DBNotFound()
+        raise NotFoundError("database")
 
     seqs = scan.seqs
     if len(seqs) > lib.NUM_SEQS_PER_JOB:
@@ -103,7 +102,7 @@ def get_next_sequence_of_scan(scan_id: int, seq_id: int):
         return []
 
     if rc == RC.NOTFOUND:
-        raise ScanNotFound()
+        raise NotFoundError("scan")
 
     if rc != RC.OK:
         raise InternalError(rc)

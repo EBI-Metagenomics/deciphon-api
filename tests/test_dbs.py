@@ -29,7 +29,7 @@ def test_upload_database(app: FastAPI):
 def test_upload_database_notfound(app: FastAPI):
     with TestClient(app) as client:
         response = client.post("/api/dbs/", json={"filename": "notfound.hmm"})
-        assert response.status_code == 412
+        assert response.status_code == 404
         assert response.json() == {
             "rc": "einval",
             "msg": "file not found",

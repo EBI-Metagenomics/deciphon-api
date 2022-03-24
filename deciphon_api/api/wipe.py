@@ -23,6 +23,6 @@ def httpdelete():
     rc = RC(lib.sched_wipe())
 
     if rc != RC.OK:
-        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(rc)
 
     return JSONResponse([])

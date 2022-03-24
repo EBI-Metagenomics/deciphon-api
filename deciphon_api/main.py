@@ -1,21 +1,17 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from deciphon_api.api.api import router as api_router
 from deciphon_api.core.config import get_app_settings
 from deciphon_api.core.events import create_start_app_handler, create_stop_app_handler
-from deciphon_api.errors import DCPException, ErrorResponse
+from deciphon_api.errors import (
+    DeciphonError,
+    deciphon_error_handler,
+    http422_error_handler,
+)
 
 __all__ = ["app", "get_app"]
-
-
-def deciphon_exception_handler(_: Request, exc: DCPException):
-    content = ErrorResponse.create(exc.rc, exc.msg)
-    return JSONResponse(
-        status_code=exc.http_code,
-        content=content.dict(),
-    )
 
 
 def get_app() -> FastAPI:
@@ -42,7 +38,8 @@ def get_app() -> FastAPI:
         create_stop_app_handler(),
     )
 
-    app.add_exception_handler(DCPException, deciphon_exception_handler)
+    app.add_exception_handler(DeciphonError, deciphon_error_handler)
+    app.add_exception_handler(RequestValidationError, http422_error_handler)
 
     app.include_router(api_router, prefix=settings.api_prefix)
 

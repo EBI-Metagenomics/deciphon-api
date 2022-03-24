@@ -90,6 +90,6 @@ def set_job_state(job_id: int, job_patch: JobPatch):
         raise EINVAL(HTTP_403_FORBIDDEN, "invalid job state update")
 
     if rc != RC.OK:
-        raise InternalError(HTTP_500_INTERNAL_SERVER_ERROR, rc)
+        raise InternalError(rc)
 
     return Job.from_id(job_id)

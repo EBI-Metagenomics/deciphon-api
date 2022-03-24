@@ -1,75 +1,71 @@
-from pydantic import BaseModel
+import json
+from typing import Union
+
+from fastapi import Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ValidationError
 from starlette.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
     HTTP_412_PRECONDITION_FAILED,
+    HTTP_422_UNPROCESSABLE_ENTITY,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
+from deciphon_api.csched import lib
 from deciphon_api.rc import RC, StrRC
 
 __all__ = [
     "DBAlreadyExists",
-    "DBNotFound",
-    "DCPException",
+    "NotFoundError",
+    "DeciphonError",
     "EFAIL",
     "EINVAL",
     "EIO",
     "ENOMEM",
     "EPARSE",
     "ErrorResponse",
-    "FileNotFound",
     "InternalError",
     "JobNotDone",
-    "ScanNotFound",
 ]
 
 
-class DCPException(Exception):
+class DeciphonError(Exception):
     def __init__(self, http_code: int, rc: RC, msg: str = ""):
         self.http_code = http_code
         self.rc = rc
         self.msg = msg
 
 
-class EFAIL(DCPException):
+class EFAIL(DeciphonError):
     def __init__(self, http_code: int, msg: str = "unspecified failure"):
         super().__init__(http_code, RC.EFAIL, msg)
 
 
-class EIO(DCPException):
+class EIO(DeciphonError):
     def __init__(self, http_code: int, msg: str = "io failure"):
         super().__init__(http_code, RC.EIO, msg)
 
 
-class EINVAL(DCPException):
+class EINVAL(DeciphonError):
     def __init__(self, http_code: int, msg: str = "invalid value"):
         super().__init__(http_code, RC.EINVAL, msg)
 
 
-class ENOMEM(DCPException):
+class ENOMEM(DeciphonError):
     def __init__(self, http_code: int, msg: str = "not enough memory"):
         super().__init__(http_code, RC.ENOMEM, msg)
 
 
-class EPARSE(DCPException):
+class EPARSE(DeciphonError):
     def __init__(self, http_code: int, msg: str = "parse error"):
         super().__init__(http_code, RC.EPARSE, msg)
 
 
-class DBNotFound(EINVAL):
-    def __init__(self):
-        super().__init__(HTTP_404_NOT_FOUND, "database not found")
-
-
-class ScanNotFound(EINVAL):
-    def __init__(self):
-        super().__init__(HTTP_404_NOT_FOUND, "scan not found")
-
-
-class FileNotFound(EINVAL):
-    def __init__(self):
-        super().__init__(HTTP_412_PRECONDITION_FAILED, "file not found")
+class NotFoundError(EINVAL):
+    def __init__(self, what: str):
+        super().__init__(HTTP_404_NOT_FOUND, f"{what} not found")
 
 
 class DBAlreadyExists(EINVAL):
@@ -82,7 +78,7 @@ class JobNotDone(EINVAL):
         super().__init__(HTTP_412_PRECONDITION_FAILED, "job is not in done state")
 
 
-def InternalError(rc: RC) -> DCPException:
+def InternalError(rc: RC) -> DeciphonError:
     assert rc != RC.OK
     assert rc != RC.END
     assert rc != RC.NOTFOUND
@@ -102,10 +98,34 @@ def InternalError(rc: RC) -> DCPException:
         return EPARSE(http_code)
 
 
+def truncate(msg: str):
+    limit = int(lib.JOB_ERROR_SIZE)
+    return (msg[: limit - 3] + "...") if len(msg) > limit else msg
+
+
 class ErrorResponse(BaseModel):
     rc: StrRC = StrRC.EFAIL
     msg: str = "something went wrong"
 
     @classmethod
     def create(cls, rc: RC, msg: str):
-        return cls(rc=StrRC[rc.name], msg=msg)
+        return cls(rc=StrRC[rc.name], msg=truncate(msg))
+
+
+def deciphon_error_handler(_: Request, exc: DeciphonError):
+    content = ErrorResponse.create(exc.rc, exc.msg)
+    return JSONResponse(
+        status_code=exc.http_code,
+        content=content.dict(),
+    )
+
+
+def http422_error_handler(
+    _: Request,
+    exc: Union[RequestValidationError, ValidationError],
+) -> JSONResponse:
+    content = ErrorResponse.create(RC.EINVAL, json.dumps(exc.errors()))
+    return JSONResponse(
+        status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+        content=content.dict(),
+    )

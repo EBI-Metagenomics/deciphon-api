@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 from typing import List
 
 from pydantic import BaseModel, Field
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import InternalError, NotFoundError
+from deciphon_api.errors import ConditionError, InternalError, NotFoundError
+from deciphon_api.models.db import DB
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
-from deciphon_api.models.seq import Seq
+from deciphon_api.models.seq import Seq, SeqPost
 from deciphon_api.rc import RC
 
 __all__ = ["Scan", "ScanPost"]
@@ -91,11 +94,6 @@ class Scan(BaseModel):
         return Job.from_id(self.job_id)
 
 
-class SeqPost(BaseModel):
-    name: str = ""
-    data: str = ""
-
-
 class ScanPost(BaseModel):
     db_id: int = 0
 
@@ -103,6 +101,31 @@ class ScanPost(BaseModel):
     hmmer3_compat: bool = False
 
     seqs: List[SeqPost] = []
+
+    def submit(self):
+        if not DB.exists_by_id(self.db_id):
+            raise NotFoundError("database")
+
+        seqs = self.seqs
+        if len(seqs) > lib.NUM_SEQS_PER_JOB:
+            raise ConditionError("too many sequences")
+
+        scan_ptr = ffi.new("struct sched_scan *")
+        lib.sched_scan_init(scan_ptr, self.db_id, self.multi_hits, self.hmmer3_compat)
+
+        for seq in self.seqs:
+            lib.sched_scan_add_seq(scan_ptr, seq.name.encode(), seq.data.encode())
+
+        job_ptr = ffi.new("struct sched_job *")
+        lib.sched_job_init(job_ptr, lib.SCHED_SCAN)
+        rc = RC(lib.sched_job_submit(job_ptr, scan_ptr))
+        assert rc != RC.END
+        assert rc != RC.NOTFOUND
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
+        return Job.from_cdata(job_ptr[0])
 
     @classmethod
     def example(cls):

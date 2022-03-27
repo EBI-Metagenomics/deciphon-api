@@ -6,7 +6,7 @@ from typing import Any, List, Tuple
 from pydantic import BaseModel, Field
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import EINVAL, ConflictError, InternalError, NotFoundError
+from deciphon_api.errors import ConflictError, InternalError, NotFoundError
 from deciphon_api.rc import RC
 
 __all__ = ["DB"]
@@ -16,8 +16,7 @@ class DB(BaseModel):
     id: int = Field(..., gt=0)
     xxh3: int = Field(..., title="XXH3 file hash")
     filename: str = ""
-    hmm_id: int = Field(...)
-    # hmm_id: int = Field(..., gt=0)
+    hmm_id: int = Field(..., gt=0)
 
     @classmethod
     def from_cdata(cls, cdb):
@@ -56,7 +55,7 @@ class DB(BaseModel):
     def exists_by_id(db_id: int) -> bool:
         try:
             DB.get_by_id(db_id)
-        except EINVAL:
+        except NotFoundError:
             return False
         return True
 
@@ -64,7 +63,7 @@ class DB(BaseModel):
     def exists_by_filename(filename: str) -> bool:
         try:
             DB.get_by_filename(filename)
-        except EINVAL:
+        except NotFoundError:
             return False
         return True
 

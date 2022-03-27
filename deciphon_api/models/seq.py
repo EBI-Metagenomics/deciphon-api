@@ -8,7 +8,7 @@ from deciphon_api.csched import ffi, lib
 from deciphon_api.errors import InternalError, NotFoundError
 from deciphon_api.rc import RC
 
-__all__ = ["Seq"]
+__all__ = ["Seq", "SeqPost"]
 
 
 class Seq(BaseModel):
@@ -60,6 +60,11 @@ class Seq(BaseModel):
             raise InternalError(rc)
 
         return [Seq.from_cdata(cseq)]
+
+
+class SeqPost(BaseModel):
+    name: str = ""
+    data: str = ""
 
 
 @ffi.def_extern()

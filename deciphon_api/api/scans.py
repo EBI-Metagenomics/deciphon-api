@@ -5,14 +5,10 @@ from fastapi.responses import PlainTextResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
-from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import ConditionError, InternalError, NotFoundError
-from deciphon_api.models.db import DB
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan import Scan, ScanPost
 from deciphon_api.models.seq import Seq
-from deciphon_api.rc import RC
 
 router = APIRouter()
 
@@ -26,29 +22,7 @@ router = APIRouter()
     name="scans:submit-scan",
 )
 def submit_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
-    if not DB.exists_by_id(scan.db_id):
-        raise NotFoundError("database")
-
-    seqs = scan.seqs
-    if len(seqs) > lib.NUM_SEQS_PER_JOB:
-        raise ConditionError("too many sequences")
-
-    scan_ptr = ffi.new("struct sched_scan *")
-    lib.sched_scan_init(scan_ptr, scan.db_id, scan.multi_hits, scan.hmmer3_compat)
-
-    for seq in scan.seqs:
-        lib.sched_scan_add_seq(scan_ptr, seq.name.encode(), seq.data.encode())
-
-    job_ptr = ffi.new("struct sched_job *")
-    lib.sched_job_init(job_ptr, lib.SCHED_SCAN)
-    rc = RC(lib.sched_job_submit(job_ptr, scan_ptr))
-    assert rc != RC.END
-    assert rc != RC.NOTFOUND
-
-    if rc != RC.OK:
-        raise InternalError(rc)
-
-    return Job.from_cdata(job_ptr)
+    return scan.submit()
 
 
 @router.get(

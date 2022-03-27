@@ -19,9 +19,10 @@ struct sched_prod;
 struct sched_scan;
 struct sched_seq;
 
-extern "Python" void append_prod(struct sched_prod *prod, void *arg);
-extern "Python" void append_seq(struct sched_seq *seq, void *arg);
-extern "Python" void append_db(struct sched_db *db, void *arg);
+extern "Python" void append_prod(struct sched_prod *, void *arg);
+extern "Python" void append_seq(struct sched_seq *, void *arg);
+extern "Python" void append_db(struct sched_db *, void *arg);
+extern "Python" void append_hmm(struct sched_hmm *, void *arg);
 extern "Python" void sched_logger_print(char const *ctx, char const *msg,
                                         void *arg);
 
@@ -47,7 +48,6 @@ enum sched_limits
 enum sched_rc sched_init(char const *filepath);
 enum sched_rc sched_cleanup(void);
 enum sched_rc sched_wipe(void);
-struct sqlite3 *sched_handle(void);
 
 /* --- LOGGER Section --- */
 typedef void (*sched_logger_print_func_t)(char const *ctx, char const *msg,
@@ -74,7 +74,30 @@ enum sched_rc sched_db_get_by_filename(struct sched_db *, char const *filename);
 enum sched_rc sched_db_get_all(sched_db_set_func_t, struct sched_db *,
                                void *arg);
 
-enum sched_rc sched_db_add(struct sched_db *, char const *filename);
+enum sched_rc sched_db_add(struct sched_db *, char const *filename,
+                           int64_t hmm_id);
+
+/* --- HMM Section --- */
+struct sched_hmm
+{
+    int64_t id;
+    int64_t xxh3;
+    char filename[FILENAME_SIZE];
+    int64_t job_id;
+};
+
+typedef void(sched_hmm_set_func_t)(struct sched_hmm *, void *arg);
+
+void sched_hmm_init(struct sched_hmm *);
+enum sched_rc sched_hmm_set_file(struct sched_hmm *, char const *filename);
+
+enum sched_rc sched_hmm_get_by_id(struct sched_hmm *, int64_t id);
+enum sched_rc sched_hmm_get_by_xxh3(struct sched_hmm *, int64_t xxh3);
+enum sched_rc sched_hmm_get_by_filename(struct sched_hmm *,
+                                        char const *filename);
+
+enum sched_rc sched_hmm_get_all(sched_hmm_set_func_t, struct sched_hmm *,
+                                void *arg);
 
 /* --- JOB Section --- */
 enum sched_job_type
@@ -180,7 +203,7 @@ enum sched_rc sched_prod_write_match(sched_prod_write_match_func_t *,
 enum sched_rc sched_prod_write_match_sep(unsigned file_num);
 enum sched_rc sched_prod_write_end(unsigned file_num);
 
-/* --- SEC Section --- */
+/* --- SEQ Section --- */
 struct sched_seq
 {
     int64_t id;

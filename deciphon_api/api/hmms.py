@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
+from deciphon_api.errors import ConflictError
 from deciphon_api.models.hmm import HMM
 
 router = APIRouter()
@@ -62,6 +63,10 @@ def download_hmm(hmm_id: int = Path(..., gt=0)):
 def upload_hmm(
     hmm: UploadFile = File(..., content_type=mime, description="hmmer3 file")
 ):
+    if HMM.exists_by_filename(hmm.filename):
+        raise ConflictError("hmm already exists")
+
     with open(hmm.filename, "wb") as dst:
         shutil.copyfileobj(hmm.file, dst)
+
     return HMM.submit(hmm.filename)

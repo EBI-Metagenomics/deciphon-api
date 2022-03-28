@@ -6,12 +6,7 @@ from typing import Any, List, Tuple
 from pydantic import BaseModel, Field
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import (
-    ConditionError,
-    ConflictError,
-    InternalError,
-    NotFoundError,
-)
+from deciphon_api.errors import ConditionError, InternalError, NotFoundError
 from deciphon_api.rc import RC
 
 __all__ = ["HMM"]
@@ -34,9 +29,6 @@ class HMM(BaseModel):
 
     @staticmethod
     def submit(filename: str):
-        if HMM.exists_by_filename(filename):
-            raise ConflictError("hmm already exists")
-
         if not Path(filename).exists():
             raise NotFoundError("file")
 

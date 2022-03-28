@@ -44,9 +44,15 @@ enum sched_limits
 };
 
 /* --- SCHED Section --- */
+struct sched_health
+{
+    FILE *fp;
+    int num_errors;
+};
 
 enum sched_rc sched_init(char const *filepath);
 enum sched_rc sched_cleanup(void);
+enum sched_rc sched_health_check(struct sched_health *);
 enum sched_rc sched_wipe(void);
 
 /* --- LOGGER Section --- */

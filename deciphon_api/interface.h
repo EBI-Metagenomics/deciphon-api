@@ -80,8 +80,7 @@ enum sched_rc sched_db_get_by_filename(struct sched_db *, char const *filename);
 enum sched_rc sched_db_get_all(sched_db_set_func_t, struct sched_db *,
                                void *arg);
 
-enum sched_rc sched_db_add(struct sched_db *, char const *filename,
-                           int64_t hmm_id);
+enum sched_rc sched_db_add(struct sched_db *, char const *filename);
 
 /* --- HMM Section --- */
 struct sched_hmm
@@ -98,6 +97,7 @@ void sched_hmm_init(struct sched_hmm *);
 enum sched_rc sched_hmm_set_file(struct sched_hmm *, char const *filename);
 
 enum sched_rc sched_hmm_get_by_id(struct sched_hmm *, int64_t id);
+enum sched_rc sched_hmm_get_by_job_id(struct sched_hmm *, int64_t job_id);
 enum sched_rc sched_hmm_get_by_xxh3(struct sched_hmm *, int64_t xxh3);
 enum sched_rc sched_hmm_get_by_filename(struct sched_hmm *,
                                         char const *filename);

@@ -28,30 +28,35 @@ class HMM(BaseModel):
         )
 
     @staticmethod
-    def submit(filename: str):
+    def submit(filename: str) -> HMM:
         if not Path(filename).exists():
             raise NotFoundError("file")
 
-        hmm_ptr = ffi.new("struct sched_hmm *")
-        lib.sched_hmm_init(hmm_ptr)
-        rc = RC(lib.sched_hmm_set_file(hmm_ptr, filename.encode()))
+        p_hmm = ffi.new("struct sched_hmm *")
+        lib.sched_hmm_init(p_hmm)
+
+        rc = RC(lib.sched_hmm_set_file(p_hmm, filename.encode()))
         if rc == RC.EINVAL:
             raise ConditionError("invalid hmm file name")
 
         job_ptr = ffi.new("struct sched_job *")
         lib.sched_job_init(job_ptr, lib.SCHED_HMM)
-        rc = RC(lib.sched_job_submit(job_ptr, hmm_ptr))
+        rc = RC(lib.sched_job_submit(job_ptr, p_hmm))
         assert rc != RC.END
         assert rc != RC.NOTFOUND
 
         if rc != RC.OK:
             raise InternalError(rc)
 
-        return HMM.from_cdata(hmm_ptr[0])
+        return HMM.from_cdata(p_hmm[0])
 
     @staticmethod
     def get_by_id(hmm_id: int) -> HMM:
         return resolve_get_hmm(*get_by_id(hmm_id))
+
+    @staticmethod
+    def get_by_job_id(job_id: int) -> HMM:
+        return resolve_get_hmm(*get_by_job_id(job_id))
 
     @staticmethod
     def get_by_filename(filename: str) -> HMM:
@@ -91,6 +96,15 @@ def get_by_id(hmm_id: int) -> Tuple[Any, RC]:
     ptr = ffi.new("struct sched_hmm *")
 
     rc = RC(lib.sched_hmm_get_by_id(ptr, hmm_id))
+    assert rc != RC.END
+
+    return (ptr, rc)
+
+
+def get_by_job_id(job_id: int) -> Tuple[Any, RC]:
+    ptr = ffi.new("struct sched_hmm *")
+
+    rc = RC(lib.sched_hmm_get_by_job_id(ptr, job_id))
     assert rc != RC.END
 
     return (ptr, rc)

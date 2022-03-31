@@ -61,12 +61,12 @@ def download_hmm(hmm_id: int = Path(..., gt=0)):
     name="hmms:upload-hmm",
 )
 def upload_hmm(
-    hmm: UploadFile = File(..., content_type=mime, description="hmmer3 file")
+    hmm_file: UploadFile = File(..., content_type=mime, description="hmmer3 file")
 ):
-    if HMM.exists_by_filename(hmm.filename):
+    if HMM.exists_by_filename(hmm_file.filename):
         raise ConflictError("hmm already exists")
 
-    with open(hmm.filename, "wb") as dst:
-        shutil.copyfileobj(hmm.file, dst)
+    with open(hmm_file.filename, "wb") as dst:
+        shutil.copyfileobj(hmm_file.file, dst)
 
-    return HMM.submit(hmm.filename)
+    return HMM.submit(hmm_file.filename)

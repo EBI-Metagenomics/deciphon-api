@@ -6,9 +6,13 @@ from fastapi.responses import FileResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
+from deciphon_api.errors import ConflictError
 from deciphon_api.models.db import DB
 
 router = APIRouter()
+
+
+mime = "application/octet-stream"
 
 
 @router.get(
@@ -45,8 +49,7 @@ def get_database_list():
 )
 def download_database(db_id: int = Path(..., gt=0)):
     db = DB.get_by_id(db_id)
-    media_type = "application/octet-stream"
-    return FileResponse(db.filename, media_type=media_type, filename=db.filename)
+    return FileResponse(db.filename, media_type=mime, filename=db.filename)
 
 
 @router.post(
@@ -58,10 +61,14 @@ def download_database(db_id: int = Path(..., gt=0)):
     name="dbs:upload-database",
 )
 def upload_database(
-    database: UploadFile = File(
-        ..., content_type="application/octet-stream", description="deciphon database"
+    database_file: UploadFile = File(
+        ..., content_type=mime, description="deciphon database"
     )
 ):
-    with open(database.filename, "wb") as dst:
-        shutil.copyfileobj(database.file, dst)
-    return DB.add(database.filename)
+    if DB.exists_by_filename(database_file.filename):
+        raise ConflictError("database already exists")
+
+    with open(database_file.filename, "wb") as dst:
+        shutil.copyfileobj(database_file.file, dst)
+
+    return DB.add(database_file.filename)

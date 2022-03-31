@@ -6,6 +6,7 @@ from starlette.status import HTTP_200_OK
 from deciphon_api.api.responses import responses
 from deciphon_api.csched import ffi, lib
 from deciphon_api.errors import ForbiddenError, InternalError
+from deciphon_api.models.hmm import HMM
 from deciphon_api.models.job import Job, JobPatch, JobState
 from deciphon_api.rc import RC
 
@@ -80,3 +81,15 @@ def set_job_state(job_id: int = Path(..., gt=0), job_patch: JobPatch = Body(...)
         raise InternalError(rc)
 
     return Job.from_id(job_id)
+
+
+@router.get(
+    "/jobs/{job_id}/hmm",
+    summary="get hmm",
+    response_model=HMM,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="jobs:get-hmm",
+)
+def get_hmm(job_id: int = Path(..., gt=0)):
+    return HMM.get_by_job_id(job_id)

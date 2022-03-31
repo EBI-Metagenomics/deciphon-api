@@ -6,7 +6,7 @@ from typing import Any, List, Tuple
 from pydantic import BaseModel, Field
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import ConflictError, InternalError, NotFoundError
+from deciphon_api.errors import InternalError, NotFoundError
 from deciphon_api.rc import RC
 
 __all__ = ["DB"]
@@ -29,19 +29,18 @@ class DB(BaseModel):
 
     @staticmethod
     def add(filename: str):
-        if DB.exists_by_filename(filename):
-            raise ConflictError("database already exists")
-
         if not Path(filename).exists():
             raise NotFoundError("file")
 
-        ptr = ffi.new("struct sched_db *")
-        rc = RC(lib.sched_db_add(ptr, filename.encode()))
+        p_db = ffi.new("struct sched_db *")
+        lib.sched_db_init(p_db)
+
+        rc = RC(lib.sched_db_add(p_db, filename.encode()))
 
         if rc != RC.OK:
             raise InternalError(rc)
 
-        return DB.from_cdata(ptr[0])
+        return DB.from_cdata(p_db[0])
 
     @staticmethod
     def get_by_id(db_id: int) -> DB:

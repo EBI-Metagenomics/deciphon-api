@@ -79,6 +79,16 @@ class DB(BaseModel):
 
         return dbs
 
+    @staticmethod
+    def remove(db_id: int):
+        rc = RC(lib.sched_db_remove(db_id))
+
+        if rc == RC.NOTFOUND:
+            raise NotFoundError("db")
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
 
 def get_by_id(db_id: int) -> Tuple[Any, RC]:
     ptr = ffi.new("struct sched_db *")

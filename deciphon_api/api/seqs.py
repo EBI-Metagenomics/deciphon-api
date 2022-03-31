@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Path
 from starlette.status import HTTP_200_OK
 
@@ -17,3 +19,15 @@ router = APIRouter()
 )
 def get_sequence(seq_id: int = Path(..., gt=0)):
     return Seq.from_id(seq_id)
+
+
+@router.get(
+    "/seqs",
+    summary="get seq list",
+    response_model=List[Seq],
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="seqs:get-seq-list",
+)
+def get_seq_list():
+    return Seq.get_list()

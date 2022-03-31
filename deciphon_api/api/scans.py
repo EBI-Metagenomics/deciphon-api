@@ -38,6 +38,18 @@ def get_sequences_of_scan(scan_id: int = Path(..., gt=0)):
 
 
 @router.get(
+    "/scans",
+    summary="get scan list",
+    response_model=List[Scan],
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="scans:get-scan-list",
+)
+def get_scan_list():
+    return Scan.get_list()
+
+
+@router.get(
     "/scans/{scan_id}/seqs/next/{seq_id}",
     summary="get next sequence",
     response_model=List[Seq],

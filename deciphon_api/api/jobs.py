@@ -1,13 +1,14 @@
 from typing import List
 
 from fastapi import APIRouter, Body, Path
+from fastapi.responses import JSONResponse
 from starlette.status import HTTP_200_OK
 
 from deciphon_api.api.responses import responses
 from deciphon_api.csched import ffi, lib
 from deciphon_api.errors import ForbiddenError, InternalError
 from deciphon_api.models.hmm import HMM
-from deciphon_api.models.job import Job, JobPatch, JobState
+from deciphon_api.models.job import Job, JobProgressPatch, JobState, JobStatePatch
 from deciphon_api.rc import RC
 
 router = APIRouter()
@@ -48,15 +49,27 @@ def get_job(job_id: int = Path(..., gt=0)):
     return Job.from_id(job_id)
 
 
+@router.get(
+    "/jobs",
+    summary="get job list",
+    response_model=List[Job],
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="jobs:get-job-list",
+)
+def get_job_list():
+    return Job.get_list()
+
+
 @router.patch(
-    "/jobs/{job_id}",
-    summary="patch job",
+    "/jobs/{job_id}/state",
+    summary="patch job state",
     response_model=Job,
     status_code=HTTP_200_OK,
     responses=responses,
     name="jobs:set-job-state",
 )
-def set_job_state(job_id: int = Path(..., gt=0), job_patch: JobPatch = Body(...)):
+def set_job_state(job_id: int = Path(..., gt=0), job_patch: JobStatePatch = Body(...)):
     job = Job.from_id(job_id)
 
     if job.state == job_patch.state:
@@ -83,6 +96,21 @@ def set_job_state(job_id: int = Path(..., gt=0), job_patch: JobPatch = Body(...)
     return Job.from_id(job_id)
 
 
+@router.patch(
+    "/jobs/{job_id}/progress/add",
+    summary="patch job progress",
+    response_model=Job,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="jobs:add-job-progress",
+)
+def add_job_progress(
+    job_id: int = Path(..., gt=0), job_patch: JobProgressPatch = Body(...)
+):
+    Job.add_progress(job_id, job_patch.add_progress)
+    return Job.from_id(job_id)
+
+
 @router.get(
     "/jobs/{job_id}/hmm",
     summary="get hmm",
@@ -93,3 +121,16 @@ def set_job_state(job_id: int = Path(..., gt=0), job_patch: JobPatch = Body(...)
 )
 def get_hmm(job_id: int = Path(..., gt=0)):
     return HMM.get_by_job_id(job_id)
+
+
+@router.delete(
+    "/jobs/{job_id}",
+    summary="remove job",
+    response_class=JSONResponse,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="jobs:remove-job",
+)
+def remove_job(job_id: int = Path(..., gt=0)):
+    Job.remove(job_id)
+    return JSONResponse({})

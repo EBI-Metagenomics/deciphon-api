@@ -19,10 +19,12 @@ struct sched_prod;
 struct sched_scan;
 struct sched_seq;
 
-extern "Python" void append_prod(struct sched_prod *, void *arg);
-extern "Python" void append_seq(struct sched_seq *, void *arg);
 extern "Python" void append_db(struct sched_db *, void *arg);
 extern "Python" void append_hmm(struct sched_hmm *, void *arg);
+extern "Python" void append_scan(struct sched_scan *, void *arg);
+extern "Python" void append_job(struct sched_job *, void *arg);
+extern "Python" void append_prod(struct sched_prod *, void *arg);
+extern "Python" void append_seq(struct sched_seq *, void *arg);
 extern "Python" void sched_logger_print(char const *ctx, char const *msg,
                                         void *arg);
 
@@ -42,6 +44,13 @@ enum sched_limits
     SEQ_SIZE = (1024 * 1024),
     VERSION_SIZE = 16,
 };
+
+typedef void(sched_db_set_func_t)(struct sched_db *, void *arg);
+typedef void(sched_hmm_set_func_t)(struct sched_hmm *, void *arg);
+typedef void(sched_job_set_func_t)(struct sched_job *, void *arg);
+typedef void(sched_prod_set_func_t)(struct sched_prod *, void *arg);
+typedef void(sched_scan_set_func_t)(struct sched_scan *, void *arg);
+typedef void(sched_seq_set_func_t)(struct sched_seq *, void *arg);
 
 /* --- SCHED Section --- */
 struct sched_health
@@ -69,8 +78,6 @@ struct sched_db
     int64_t hmm_id;
 };
 
-typedef void(sched_db_set_func_t)(struct sched_db *db, void *arg);
-
 void sched_db_init(struct sched_db *);
 
 enum sched_rc sched_db_get_by_id(struct sched_db *, int64_t id);
@@ -82,6 +89,8 @@ enum sched_rc sched_db_get_all(sched_db_set_func_t, struct sched_db *,
 
 enum sched_rc sched_db_add(struct sched_db *, char const *filename);
 
+enum sched_rc sched_db_remove(int64_t id);
+
 /* --- HMM Section --- */
 struct sched_hmm
 {
@@ -90,8 +99,6 @@ struct sched_hmm
     char filename[FILENAME_SIZE];
     int64_t job_id;
 };
-
-typedef void(sched_hmm_set_func_t)(struct sched_hmm *, void *arg);
 
 void sched_hmm_init(struct sched_hmm *);
 enum sched_rc sched_hmm_set_file(struct sched_hmm *, char const *filename);
@@ -104,6 +111,8 @@ enum sched_rc sched_hmm_get_by_filename(struct sched_hmm *,
 
 enum sched_rc sched_hmm_get_all(sched_hmm_set_func_t, struct sched_hmm *,
                                 void *arg);
+
+enum sched_rc sched_hmm_remove(int64_t id);
 
 /* --- JOB Section --- */
 enum sched_job_type
@@ -138,12 +147,18 @@ void sched_job_init(struct sched_job *, enum sched_job_type);
 
 enum sched_rc sched_job_get_by_id(struct sched_job *, int64_t id);
 enum sched_rc sched_job_next_pend(struct sched_job *);
+enum sched_rc sched_job_get_all(sched_job_set_func_t, struct sched_job *,
+                                void *arg);
 
 enum sched_rc sched_job_set_run(int64_t id);
 enum sched_rc sched_job_set_fail(int64_t id, char const *msg);
 enum sched_rc sched_job_set_done(int64_t id);
 
 enum sched_rc sched_job_submit(struct sched_job *, void *actual_job);
+
+enum sched_rc sched_job_add_progress(int64_t id, int progress);
+
+enum sched_rc sched_job_remove(int64_t id);
 
 /* --- SCAN Section --- */
 struct sched_scan
@@ -156,9 +171,6 @@ struct sched_scan
 
     int64_t job_id;
 };
-
-typedef void(sched_seq_set_func_t)(struct sched_seq *seq, void *arg);
-typedef void(sched_prod_set_func_t)(struct sched_prod *prod, void *arg);
 
 void sched_scan_init(struct sched_scan *, int64_t db_id, bool multi_hits,
                      bool hmmer3_compat);
@@ -174,6 +186,9 @@ enum sched_rc sched_scan_get_by_job_id(struct sched_scan *, int64_t job_id);
 
 void sched_scan_add_seq(struct sched_scan *, char const *name,
                         char const *data);
+
+enum sched_rc sched_scan_get_all(sched_scan_set_func_t fn, struct sched_scan *,
+                                 void *arg);
 
 /* --- PROD Section --- */
 struct sched_prod
@@ -209,6 +224,9 @@ enum sched_rc sched_prod_write_match(sched_prod_write_match_func_t *,
 enum sched_rc sched_prod_write_match_sep(unsigned file_num);
 enum sched_rc sched_prod_write_end(unsigned file_num);
 
+enum sched_rc sched_prod_get_all(sched_prod_set_func_t fn, struct sched_prod *,
+                                 void *arg);
+
 /* --- SEQ Section --- */
 struct sched_seq
 {
@@ -223,3 +241,5 @@ void sched_seq_init(struct sched_seq *seq, int64_t scan_id, char const *name,
 
 enum sched_rc sched_seq_get_by_id(struct sched_seq *, int64_t id);
 enum sched_rc sched_seq_next(struct sched_seq *);
+enum sched_rc sched_seq_get_all(sched_seq_set_func_t fn, struct sched_seq *,
+                                void *arg);

@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import List
+
 from pydantic import BaseModel, Field
 
 from deciphon_api.csched import ffi, lib
@@ -53,6 +57,19 @@ class Prod(BaseModel):
             raise InternalError(rc)
 
         return Prod.from_cdata(ptr[0])
+
+    @staticmethod
+    def get_list() -> List[Prod]:
+        ptr = ffi.new("struct sched_prod *")
+
+        prods: List[Prod] = []
+        rc = RC(lib.sched_prod_get_all(lib.append_prod, ptr, ffi.new_handle(prods)))
+        assert rc != RC.END
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
+        return prods
 
 
 @ffi.def_extern()

@@ -91,6 +91,16 @@ class HMM(BaseModel):
 
         return hmms
 
+    @staticmethod
+    def remove(hmm_id: int):
+        rc = RC(lib.sched_hmm_remove(hmm_id))
+
+        if rc == RC.NOTFOUND:
+            raise NotFoundError("hmm")
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
 
 def get_by_id(hmm_id: int) -> Tuple[Any, RC]:
     ptr = ffi.new("struct sched_hmm *")

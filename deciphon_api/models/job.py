@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Enum
 from typing import List
 
@@ -9,7 +11,7 @@ from deciphon_api.models.prod import Prod
 from deciphon_api.models.seq import Seq
 from deciphon_api.rc import RC
 
-__all__ = ["Job", "JobPatch"]
+__all__ = ["Job", "JobStatePatch", "JobProgressPatch"]
 
 
 class JobState(str, Enum):
@@ -95,7 +97,50 @@ class Job(BaseModel):
         if self.state != state:
             raise ConditionError(f"job not in {str(state.done)} state")
 
+    @staticmethod
+    def add_progress(job_id: int, progress: int):
+        rc = RC(lib.sched_job_add_progress(job_id, progress))
 
-class JobPatch(BaseModel):
+        if rc == RC.NOTFOUND:
+            raise NotFoundError("job")
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
+    @staticmethod
+    def remove(job_id: int):
+        rc = RC(lib.sched_job_remove(job_id))
+
+        if rc == RC.NOTFOUND:
+            raise NotFoundError("job")
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
+    @staticmethod
+    def get_list() -> List[Job]:
+        ptr = ffi.new("struct sched_job *")
+
+        jobs: List[Job] = []
+        rc = RC(lib.sched_job_get_all(lib.append_job, ptr, ffi.new_handle(jobs)))
+        assert rc != RC.END
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
+        return jobs
+
+
+class JobStatePatch(BaseModel):
     state: JobState = JobState.pend
     error: str = ""
+
+
+class JobProgressPatch(BaseModel):
+    add_progress: int = Field(..., ge=0, le=100)
+
+
+@ffi.def_extern()
+def append_job(ptr, arg):
+    jobs = ffi.from_handle(arg)
+    jobs.append(Job.from_cdata(ptr[0]))

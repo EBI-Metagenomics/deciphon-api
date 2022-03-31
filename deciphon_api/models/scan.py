@@ -93,6 +93,19 @@ class Scan(BaseModel):
     def job(self) -> Job:
         return Job.from_id(self.job_id)
 
+    @staticmethod
+    def get_list() -> List[Scan]:
+        ptr = ffi.new("struct sched_scan *")
+
+        scans: List[Scan] = []
+        rc = RC(lib.sched_scan_get_all(lib.append_scan, ptr, ffi.new_handle(scans)))
+        assert rc != RC.END
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
+        return scans
+
 
 class ScanPost(BaseModel):
     db_id: int = 0
@@ -176,3 +189,9 @@ class ScanPost(BaseModel):
                 ),
             ],
         )
+
+
+@ffi.def_extern()
+def append_scan(ptr, arg):
+    scans = ffi.from_handle(arg)
+    scans.append(Scan.from_cdata(ptr[0]))

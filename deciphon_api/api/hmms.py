@@ -2,7 +2,7 @@ import shutil
 from typing import List
 
 from fastapi import APIRouter, File, Path, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
@@ -70,3 +70,16 @@ def upload_hmm(
         shutil.copyfileobj(hmm_file.file, dst)
 
     return HMM.submit(hmm_file.filename)
+
+
+@router.delete(
+    "/hmms/{hmm_id}",
+    summary="remove hmm",
+    response_class=JSONResponse,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="hmms:remove-hmm",
+)
+def remove_hmm(hmm_id: int = Path(..., gt=0)):
+    HMM.remove(hmm_id)
+    return JSONResponse({})

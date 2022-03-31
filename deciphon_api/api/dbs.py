@@ -2,7 +2,7 @@ import shutil
 from typing import List
 
 from fastapi import APIRouter, File, Path, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
@@ -72,3 +72,16 @@ def upload_database(
         shutil.copyfileobj(database_file.file, dst)
 
     return DB.add(database_file.filename)
+
+
+@router.delete(
+    "/dbs/{db_id}",
+    summary="remove db",
+    response_class=JSONResponse,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="dbs:remove-db",
+)
+def remove_db(db_id: int = Path(..., gt=0)):
+    DB.remove(db_id)
+    return JSONResponse({})

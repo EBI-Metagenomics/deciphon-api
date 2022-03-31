@@ -61,6 +61,19 @@ class Seq(BaseModel):
 
         return [Seq.from_cdata(cseq)]
 
+    @staticmethod
+    def get_list() -> List[Seq]:
+        ptr = ffi.new("struct sched_seq *")
+
+        seqs: List[Seq] = []
+        rc = RC(lib.sched_seq_get_all(lib.append_seq, ptr, ffi.new_handle(seqs)))
+        assert rc != RC.END
+
+        if rc != RC.OK:
+            raise InternalError(rc)
+
+        return seqs
+
 
 class SeqPost(BaseModel):
     name: str = ""

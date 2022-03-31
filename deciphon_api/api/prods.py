@@ -25,6 +25,18 @@ def get_product(prod_id: int = Path(..., gt=0)):
     return Prod.from_id(prod_id)
 
 
+@router.get(
+    "/prods",
+    summary="get prod list",
+    response_model=List[Prod],
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="prods:get-prod-list",
+)
+def get_prod_list():
+    return Prod.get_list()
+
+
 @router.post(
     "/prods/",
     summary="upload file of products",

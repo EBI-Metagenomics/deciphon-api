@@ -58,7 +58,7 @@ def get_scan_list():
     name="scans:get-next-sequence-of-scan",
 )
 def get_next_sequence_of_scan(
-    scan_id: int = Path(..., gt=0), seq_id: int = Path(..., gt=0)
+    scan_id: int = Path(..., gt=0), seq_id: int = Path(..., ge=0)
 ):
     return Seq.next(seq_id, scan_id)
 

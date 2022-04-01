@@ -106,14 +106,14 @@ def get_products_of_scan_as_gff(scan_id: int = Path(..., gt=0)):
 
 
 @router.get(
-    "/scans/{scan_id}/prods/hmm_paths",
+    "/scans/{scan_id}/prods/path",
     summary="get hmm paths of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses=responses,
-    name="scans:get-hmm-paths-of-scan",
+    name="scans:get-path-of-scan",
 )
-def get_hmm_paths_of_scan(scan_id: int = Path(..., gt=0)):
+def get_path_of_scan(scan_id: int = Path(..., gt=0)):
     scan = Scan.get_by_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
@@ -121,14 +121,14 @@ def get_hmm_paths_of_scan(scan_id: int = Path(..., gt=0)):
 
 
 @router.get(
-    "/scans/{scan_id}/prods/fragments",
+    "/scans/{scan_id}/prods/fragment",
     summary="get fragments of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-fragments-of-scan",
 )
-def get_fragments_of_scan(scan_id: int = Path(..., gt=0)):
+def get_fragment_of_scan(scan_id: int = Path(..., gt=0)):
     scan = Scan.get_by_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
@@ -136,7 +136,7 @@ def get_fragments_of_scan(scan_id: int = Path(..., gt=0)):
 
 
 @router.get(
-    "/scans/{scan_id}/prods/codons",
+    "/scans/{scan_id}/prods/codon",
     summary="get codons of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
@@ -151,7 +151,7 @@ def get_codons_of_scan(scan_id: int = Path(..., gt=0)):
 
 
 @router.get(
-    "/scans/{scan_id}/prods/aminos",
+    "/scans/{scan_id}/prods/amino",
     summary="get aminos of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,

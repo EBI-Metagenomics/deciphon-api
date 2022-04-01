@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import Any, List, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -36,19 +36,12 @@ class Scan(BaseModel):
         )
 
     @classmethod
-    def from_id(cls, scan_id: int):
-        ptr = ffi.new("struct sched_scan *")
+    def get_by_id(cls, scan_id: int) -> Scan:
+        return resolve_get_scan(*get_by_id(scan_id))
 
-        rc = RC(lib.sched_scan_get_by_id(ptr, scan_id))
-        assert rc != RC.END
-
-        if rc == RC.NOTFOUND:
-            raise NotFoundError("scan")
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return Scan.from_cdata(ptr[0])
+    @staticmethod
+    def get_by_job_id(job_id: int) -> Scan:
+        return resolve_get_scan(*get_by_job_id(job_id))
 
     def prods(self) -> List[Prod]:
         ptr = ffi.new("struct sched_prod *")
@@ -105,6 +98,34 @@ class Scan(BaseModel):
             raise InternalError(rc)
 
         return scans
+
+
+def get_by_id(scan_id: int) -> Tuple[Any, RC]:
+    ptr = ffi.new("struct sched_scan *")
+
+    rc = RC(lib.sched_scan_get_by_id(ptr, scan_id))
+    assert rc != RC.END
+
+    return (ptr, rc)
+
+
+def get_by_job_id(job_id: int) -> Tuple[Any, RC]:
+    ptr = ffi.new("struct sched_scan *")
+
+    rc = RC(lib.sched_scan_get_by_job_id(ptr, job_id))
+    assert rc != RC.END
+
+    return (ptr, rc)
+
+
+def resolve_get_scan(ptr: Any, rc: RC) -> Scan:
+    if rc == RC.OK:
+        return Scan.from_cdata(ptr[0])
+
+    if rc == RC.NOTFOUND:
+        raise NotFoundError("scan")
+
+    raise InternalError(rc)
 
 
 class ScanPost(BaseModel):

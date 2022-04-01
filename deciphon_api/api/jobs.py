@@ -9,6 +9,7 @@ from deciphon_api.csched import ffi, lib
 from deciphon_api.errors import ForbiddenError, InternalError
 from deciphon_api.models.hmm import HMM
 from deciphon_api.models.job import Job, JobProgressPatch, JobState, JobStatePatch
+from deciphon_api.models.scan import Scan
 from deciphon_api.rc import RC
 
 router = APIRouter()
@@ -121,6 +122,18 @@ def add_job_progress(
 )
 def get_hmm(job_id: int = Path(..., gt=0)):
     return HMM.get_by_job_id(job_id)
+
+
+@router.get(
+    "/jobs/{job_id}/scan",
+    summary="get scan",
+    response_model=Scan,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="jobs:get-scan",
+)
+def get_scan(job_id: int = Path(..., gt=0)):
+    return Scan.get_by_job_id(job_id)
 
 
 @router.delete(

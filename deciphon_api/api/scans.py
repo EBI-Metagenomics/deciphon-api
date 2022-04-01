@@ -34,7 +34,7 @@ def submit_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
     name="scans:get-sequences-of-scan",
 )
 def get_sequences_of_scan(scan_id: int = Path(..., gt=0)):
-    return Scan.from_id(scan_id).seqs()
+    return Scan.get_by_id(scan_id).seqs()
 
 
 @router.get(
@@ -72,7 +72,7 @@ def get_next_sequence_of_scan(
     name="scans:get-products-of-scan",
 )
 def get_products_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.from_id(scan_id)
+    scan = Scan.get_by_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
     return scan.prods()
@@ -87,7 +87,7 @@ def get_products_of_scan(scan_id: int = Path(..., gt=0)):
     name="scans:get-products-of-scan-as-gff",
 )
 def get_products_of_scan_as_gff(scan_id: int = Path(..., gt=0)):
-    scan = Scan.from_id(scan_id)
+    scan = Scan.get_by_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
     return scan.result().gff()
@@ -102,7 +102,7 @@ def get_products_of_scan_as_gff(scan_id: int = Path(..., gt=0)):
     name="scans:get-hmm-paths-of-scan",
 )
 def get_hmm_paths_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.from_id(scan_id)
+    scan = Scan.get_by_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
     return scan.result().fasta("state")
@@ -117,7 +117,7 @@ def get_hmm_paths_of_scan(scan_id: int = Path(..., gt=0)):
     name="scans:get-fragments-of-scan",
 )
 def get_fragments_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.from_id(scan_id)
+    scan = Scan.get_by_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
     return scan.result().fasta("frag")
@@ -132,7 +132,7 @@ def get_fragments_of_scan(scan_id: int = Path(..., gt=0)):
     name="scans:get-codons-of-scan",
 )
 def get_codons_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.from_id(scan_id)
+    scan = Scan.get_by_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
     return scan.result().fasta("codon")
@@ -147,7 +147,7 @@ def get_codons_of_scan(scan_id: int = Path(..., gt=0)):
     name="scans:get-aminos-of-scan",
 )
 def get_aminos_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.from_id(scan_id)
+    scan = Scan.get_by_id(scan_id)
     job = scan.job()
     job.assert_state(JobState.done)
     return scan.result().fasta("amino")

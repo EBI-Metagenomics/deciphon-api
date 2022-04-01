@@ -48,7 +48,7 @@ class Seq(BaseModel):
         cseq = ptr[0]
         cseq.id = seq_id
         cseq.scan_id = scan_id
-        rc = RC(lib.sched_seq_next(ptr))
+        rc = RC(lib.sched_seq_scan_next(ptr))
 
         if rc == RC.END:
             return []

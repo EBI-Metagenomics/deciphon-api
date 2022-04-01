@@ -13,6 +13,18 @@ from deciphon_api.models.seq import Seq
 router = APIRouter()
 
 
+@router.get(
+    "/scans/{scan_id}",
+    summary="get hmm",
+    response_model=Scan,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="scans:get-scan",
+)
+def get_scan(scan_id: int = Path(..., gt=0)):
+    return Scan.get_by_id(scan_id)
+
+
 @router.post(
     "/scans/",
     summary="submit scan job",

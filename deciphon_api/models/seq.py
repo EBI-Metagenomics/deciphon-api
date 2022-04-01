@@ -54,7 +54,7 @@ class Seq(BaseModel):
             return []
 
         if rc == RC.NOTFOUND:
-            raise NotFoundError("scan")
+            return []
 
         if rc != RC.OK:
             raise InternalError(rc)

@@ -5,12 +5,9 @@ import deciphon_api.data as data
 from deciphon_api.models.scan import ScanPost
 
 
-def test_upload_products(app: FastAPI, upload_database):
-    minifam = data.filepath(data.FileName.minifam_dcp)
-
+def test_upload_products(app: FastAPI, upload_minifam):
     with TestClient(app) as client:
-        response = upload_database(client, minifam)
-        assert response.status_code == 201
+        upload_minifam(client)
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201

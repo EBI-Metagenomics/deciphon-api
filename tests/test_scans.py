@@ -12,12 +12,9 @@ def test_submit_scan_with_non_existent_database(app: FastAPI):
         assert response.json() == {"rc": "einval", "msg": "database not found"}
 
 
-def test_submit_scan(app: FastAPI, upload_database):
-    minifam = data.filepath(data.FileName.minifam_dcp)
-
+def test_submit_scan(app: FastAPI, upload_minifam):
     with TestClient(app) as client:
-        response = upload_database(client, minifam)
-        assert response.status_code == 201
+        upload_minifam(client)
 
         response = client.post("/api/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
@@ -27,7 +24,7 @@ def test_submit_scan(app: FastAPI, upload_database):
         del json["submission"]
 
         assert json == {
-            "id": 1,
+            "id": 2,
             "type": 0,
             "state": "pend",
             "progress": 0,

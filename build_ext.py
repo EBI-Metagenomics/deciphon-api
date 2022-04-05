@@ -17,6 +17,8 @@ ffibuilder.set_source(
     """,
     language="c",
     libraries=["sched"],
+    library_dirs=[".ext_deps/lib"],
+    include_dirs=[".ext_deps/include"],
 )
 
 

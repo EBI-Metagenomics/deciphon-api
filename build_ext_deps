@@ -1,0 +1,53 @@
+#!/bin/bash
+
+ORIG_DIR=$(pwd)
+function cleanup {
+    cd "$ORIG_DIR" || return
+}
+trap cleanup EXIT
+
+if ! test -d deciphon_api; then
+    echo "We are not at the root directory of the deciphon-api project."
+    exit 1
+fi
+
+EXT_DIR="$(realpath .)/.ext_deps"
+echo "We will be using $EXT_DIR to build external dependencies."
+
+if test -d "$EXT_DIR"; then
+    rm -rf "$EXT_DIR"
+fi
+
+mkdir "$EXT_DIR" || exit 1
+cd "$EXT_DIR" || exit 1
+
+USER=EBI-Metagenomics
+PROJECT=deciphon-sched
+
+echo -n "Fetching latest deciphon-sched version... "
+VERSION=$(bash -c "$(curl -fsSL https://bit.ly/36UxPPz)" -s EBI-Metagenomics/deciphon-sched) || exit 1
+echo " done."
+
+TARFILE="$PROJECT-$VERSION.tar.gz"
+TARURL="https://github.com/$USER/$PROJECT/archive/$VERSION.tar.gz"
+
+echo -n "Downloading $TARFILE... "
+curl -o "$TARFILE" -L "$TARURL" --silent || exit 1
+echo "done."
+
+echo -n "Extracting $TARFILE... "
+tar xzf "$TARFILE" || exit 1
+echo "done."
+
+cd "${TARFILE%.tar.gz}" || exit 1
+mkdir build || exit 1
+cd build || exit 1
+
+cmake \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DENABLE_ALL_WARNINGS=ON \
+    -DCMAKE_INSTALL_PREFIX:PATH="$EXT_DIR" .. || exit 1
+
+cmake --build . --config Release || exit 1
+
+cmake --build . --config Release --target install || exit 1

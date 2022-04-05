@@ -16,6 +16,11 @@ keywords = ["deciphon", "api"]
 
 classifiers = ["License :: OSI Approved :: MIT License"]
 
+include = [
+  { path = "deciphon_api/*.so", format = "wheel" },
+  { path = "deciphon_api/*.pyd", format = "wheel" },
+]
+
 [tool.poetry.dependencies]
 bcbio-gff = "*"
 biopython = "*"
@@ -25,7 +30,7 @@ fastapi = "*"
 loguru = "*"
 pooch = "*"
 pydantic = { extras = ["dotenv"], version = "*" }
-python = "^3.9"
+python = "^3.8"
 python-multipart = "*"
 toml = "^0.9"
 uvicorn = "*"
@@ -38,6 +43,13 @@ pyright = "*"
 pytest = "*"
 requests = "*"
 
+[tool.poetry.build]
+script = "build_ext.py"
+generate-setup-file = false
+
 [build-system]
 requires = ["poetry_core>=1.0.0", "cffi"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.cibuildwheel]
+skip = "cp36-* cp37-* pp*"

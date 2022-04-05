@@ -1,0 +1,3 @@
+#!/bin/bash
+
+bash -c "$(curl -fsSL https://bit.ly/3Kv06KA)" -s EBI-Metagenomics/deciphon-sched || exit 1

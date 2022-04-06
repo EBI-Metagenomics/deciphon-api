@@ -1,3 +1,4 @@
+.env
 wheelhouse/
 .ext_deps/
 __pycache__/

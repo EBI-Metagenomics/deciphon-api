@@ -35,8 +35,10 @@ to start the API.
 Tests can be performed by entering
 
 ```bash
-pytest tests
+pytest
 ```
+
+while the corresponding Python environment created by Poetry is active.
 
 ## Settings
 

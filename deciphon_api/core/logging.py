@@ -4,6 +4,8 @@ from typing import cast
 
 from loguru import logger
 
+__all__ = ["InterceptHandler"]
+
 
 class InterceptHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:  # pragma: no cover

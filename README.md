@@ -14,8 +14,28 @@ uvicorn deciphon_api:app --host 127.0.0.1 --port 8000
 
 ## Development
 
+Make sure you have [Poetry](https://python-poetry.org/docs/).
+
+Enter
+
+```bash
+poetry install
+poetry shell
+```
+
+to setup and activate a Python environment associated with the project.
+Then enter
+
 ```bash
 uvicorn deciphon_api:app --reload
+```
+
+to start the API.
+
+Tests can be performed by entering
+
+```bash
+pytest tests
 ```
 
 ## Settings

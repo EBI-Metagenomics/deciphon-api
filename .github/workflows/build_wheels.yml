@@ -20,13 +20,11 @@ jobs:
         with:
           path: ./wheelhouse/*.whl
 
-  make_sdist:
-    name: Make SDist
+  build_sdist:
+    name: Build sdist
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0 # Optional, use if you use setuptools_scm
 
       - name: Build SDist
         run: pipx run build --sdist
@@ -36,9 +34,9 @@ jobs:
           path: dist/*.tar.gz
 
   upload_all:
-    needs: [build_wheels, make_sdist]
+    needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/download-artifact@v2
         with:

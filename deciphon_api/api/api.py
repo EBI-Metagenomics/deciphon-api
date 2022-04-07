@@ -1,14 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from starlette.status import HTTP_200_OK
 
 from deciphon_api.api import dbs, hmms, jobs, prods, scans, sched, seqs
+from deciphon_api.core.responses import PrettyJSONResponse
 
 router = APIRouter()
-
-
-@router.get("/")
-def httpget():
-    return {"msg": "Hello World"}
-
 
 router.include_router(dbs.router)
 router.include_router(hmms.router)
@@ -17,3 +13,15 @@ router.include_router(prods.router)
 router.include_router(scans.router)
 router.include_router(sched.router)
 router.include_router(seqs.router)
+
+
+@router.get(
+    "/",
+    summary="list of all endpoints",
+    response_class=PrettyJSONResponse,
+    status_code=HTTP_200_OK,
+    name="root:list-of-endpoints",
+)
+def root(request: Request):
+    urls = {route.name: route.path for route in request.app.routes}
+    return PrettyJSONResponse(urls)

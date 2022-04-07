@@ -11,7 +11,7 @@ if ! test -d deciphon_api; then
     exit 1
 fi
 
-EXT_DIR="$(readlink -f -- .)/.ext_deps"
+EXT_DIR="$(PWD)/.ext_deps"
 echo "We will be using $EXT_DIR to build external dependencies."
 
 if test -d "$EXT_DIR"; then

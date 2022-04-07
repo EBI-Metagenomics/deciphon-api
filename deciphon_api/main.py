@@ -11,39 +11,49 @@ from deciphon_api.errors import (
     http422_error_handler,
 )
 
-__all__ = ["app", "get_app"]
+__all__ = ["App", "app"]
 
 
-def get_app() -> FastAPI:
-    settings = Settings()
+class App:
+    def __init__(self):
+        settings = Settings()
 
-    settings.configure_logging()
+        settings.configure_logging()
 
-    app = FastAPI(**settings.fastapi_kwargs)
+        api = FastAPI(**settings.fastapi_kwargs)
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.allowed_hosts,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+        api.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.allowed_hosts,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
-    app.add_event_handler(
-        "startup",
-        create_start_handler(settings),
-    )
-    app.add_event_handler(
-        "shutdown",
-        create_stop_handler(),
-    )
+        api.add_event_handler(
+            "startup",
+            create_start_handler(settings),
+        )
+        api.add_event_handler(
+            "shutdown",
+            create_stop_handler(),
+        )
 
-    app.add_exception_handler(DeciphonError, deciphon_error_handler)
-    app.add_exception_handler(RequestValidationError, http422_error_handler)
+        api.add_exception_handler(DeciphonError, deciphon_error_handler)
+        api.add_exception_handler(RequestValidationError, http422_error_handler)
 
-    app.include_router(api_router, prefix=settings.api_prefix)
+        api.include_router(api_router, prefix=settings.api_prefix)
 
-    return app
+        self._settings = settings
+        self._api = api
+
+    @property
+    def api(self) -> FastAPI:
+        return self._api
+
+    @property
+    def api_prefix(self) -> str:
+        return self._settings.api_prefix
 
 
-app = get_app()
+app = App()

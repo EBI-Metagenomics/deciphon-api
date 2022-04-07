@@ -24,9 +24,9 @@ GOODBOY = pooch.create(
 
 class FileName(Enum):
     minifam_hmm = "minifam.hmm"
-    minifam_dcp = "minifam.dcp"
+    minifam_db = "minifam.dcp"
     pfam1_hmm = "pfam1.hmm"
-    pfam1_dcp = "pfam1.dcp"
+    pfam1_db = "pfam1.dcp"
 
 
 def filepath(file_name: FileName) -> Path:

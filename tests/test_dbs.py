@@ -2,35 +2,17 @@ import cgi
 import ctypes
 
 import xxhash
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-import deciphon_api.data as data
+from deciphon_api.main import App
 
 
-def test_upload_hmm(app: FastAPI, upload_hmm):
-    minifam_hmm = data.filepath(data.FileName.minifam_hmm)
-
-    with TestClient(app) as client:
-        response = upload_hmm(client, minifam_hmm)
-        assert response.status_code == 201
-        assert response.json() == {
-            "id": 1,
-            "xxh3": -1400478458576472411,
-            "filename": "minifam.hmm",
-            "job_id": 1,
-        }
-
-
-def test_upload_database(app: FastAPI, upload_hmm, upload_database):
-    minifam_hmm = data.filepath(data.FileName.minifam_hmm)
-    minifam_dcp = data.filepath(data.FileName.minifam_dcp)
-
-    with TestClient(app) as client:
-        response = upload_hmm(client, minifam_hmm)
+def test_upload_database(app: App, upload_minifam_hmm, upload_minifam_db):
+    with TestClient(app.api) as client:
+        response = upload_minifam_hmm(client, app.api_prefix)
         assert response.status_code == 201
 
-        response = upload_database(client, minifam_dcp)
+        response = upload_minifam_db(client, app.api_prefix)
         assert response.status_code == 201
 
         assert response.json() == {
@@ -41,18 +23,15 @@ def test_upload_database(app: FastAPI, upload_hmm, upload_database):
         }
 
 
-def test_get_database(app: FastAPI, upload_hmm, upload_database):
-    minifam_hmm = data.filepath(data.FileName.minifam_hmm)
-    minifam_dcp = data.filepath(data.FileName.minifam_dcp)
-
-    with TestClient(app) as client:
-        response = upload_hmm(client, minifam_hmm)
+def test_get_database(app: App, upload_minifam_hmm, upload_minifam_db):
+    with TestClient(app.api) as client:
+        response = upload_minifam_hmm(client, app.api_prefix)
         assert response.status_code == 201
 
-        response = upload_database(client, minifam_dcp)
+        response = upload_minifam_db(client, app.api_prefix)
         assert response.status_code == 201
 
-        response = client.get("/api/dbs/1")
+        response = client.get(app.api_prefix + "/dbs/1")
         assert response.json() == {
             "id": 1,
             "xxh3": -3907098992699871052,
@@ -61,9 +40,9 @@ def test_get_database(app: FastAPI, upload_hmm, upload_database):
         }
 
 
-def test_get_database_notfound(app: FastAPI):
-    with TestClient(app) as client:
-        response = client.get("/api/dbs/1")
+def test_get_database_notfound(app: App):
+    with TestClient(app.api) as client:
+        response = client.get(app.api_prefix + "/dbs/1")
         assert response.status_code == 404
         assert response.json() == {
             "rc": "einval",
@@ -71,18 +50,15 @@ def test_get_database_notfound(app: FastAPI):
         }
 
 
-def test_download_database(app: FastAPI, upload_hmm, upload_database):
-    minifam_hmm = data.filepath(data.FileName.minifam_hmm)
-    minifam_dcp = data.filepath(data.FileName.minifam_dcp)
-
-    with TestClient(app) as client:
-        response = upload_hmm(client, minifam_hmm)
+def test_download_database(app: App, upload_minifam_hmm, upload_minifam_db):
+    with TestClient(app.api) as client:
+        response = upload_minifam_hmm(client, app.api_prefix)
         assert response.status_code == 201
 
-        response = upload_database(client, minifam_dcp)
+        response = upload_minifam_db(client, app.api_prefix)
         assert response.status_code == 201
 
-        response = client.get("/api/dbs/1/download")
+        response = client.get(app.api_prefix + "/dbs/1/download")
         assert response.status_code == 200
 
         attach = cgi.parse_header(response.headers["content-disposition"])
@@ -98,35 +74,21 @@ def test_download_database(app: FastAPI, upload_hmm, upload_database):
         assert v == -3907098992699871052
 
 
-def test_download_database_notfound(app: FastAPI):
-    with TestClient(app) as client:
-        response = client.get("/api/dbs/1/download")
+def test_download_database_notfound(app: App):
+    with TestClient(app.api) as client:
+        response = client.get(app.api_prefix + "/dbs/1/download")
         assert response.status_code == 404
         assert response.json() == {"msg": "database not found", "rc": "einval"}
 
 
-def test_get_database_list(app: FastAPI, upload_hmm, upload_database):
-    minifam_hmm = data.filepath(data.FileName.minifam_hmm)
-    minifam_dcp = data.filepath(data.FileName.minifam_dcp)
+def test_get_database_list(app: App, upload_minifam, upload_pfam1):
+    with TestClient(app.api) as client:
 
-    pfam1_hmm = data.filepath(data.FileName.pfam1_hmm)
-    pfam1_dcp = data.filepath(data.FileName.pfam1_dcp)
+        upload_minifam(client, app.api_prefix)
 
-    with TestClient(app) as client:
+        upload_pfam1(client, app.api_prefix)
 
-        response = upload_hmm(client, minifam_hmm)
-        assert response.status_code == 201
-
-        response = upload_database(client, minifam_dcp)
-        assert response.status_code == 201
-
-        response = upload_hmm(client, pfam1_hmm)
-        assert response.status_code == 201
-
-        response = upload_database(client, pfam1_dcp)
-        assert response.status_code == 201
-
-        response = client.get("/api/dbs")
+        response = client.get(app.api_prefix + "/dbs")
         assert response.json() == [
             {
                 "id": 1,

@@ -61,17 +61,15 @@ def download_database(db_id: int = Path(..., gt=0)):
     name="dbs:upload-database",
 )
 def upload_database(
-    database_file: UploadFile = File(
-        ..., content_type=mime, description="deciphon database"
-    )
+    db_file: UploadFile = File(..., content_type=mime, description="deciphon database")
 ):
-    if DB.exists_by_filename(database_file.filename):
+    if DB.exists_by_filename(db_file.filename):
         raise ConflictError("database already exists")
 
-    with open(database_file.filename, "wb") as dst:
-        shutil.copyfileobj(database_file.file, dst)
+    with open(db_file.filename, "wb") as dst:
+        shutil.copyfileobj(db_file.file, dst)
 
-    return DB.add(database_file.filename)
+    return DB.add(db_file.filename)
 
 
 @router.delete(

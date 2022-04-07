@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     title: str = "Deciphon API"
     version: str = __version__
 
-    api_prefix: str = "/api"
+    api_prefix: str = ""
 
     allowed_hosts: List[str] = ["*"]
 

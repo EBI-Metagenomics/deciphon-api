@@ -1,5 +1,7 @@
+import importlib.metadata
+
 __name__ = "deciphon-api"
-__version__ = "0.1.0"
+__version__ = importlib.metadata.version(__name__)
 
 __all__ = [
     "__name__",

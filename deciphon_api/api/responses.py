@@ -9,7 +9,7 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from deciphon_api.errors import ErrorResponse
+from deciphon_api.core.errors import ErrorResponse
 
 __all__ = ["responses"]
 

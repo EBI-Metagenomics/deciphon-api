@@ -4,9 +4,10 @@ from pathlib import Path
 
 import pooch
 
+import deciphon_api.resources
 from deciphon_api import __name__, __version__
 
-__all__ = ["FileName", "filepath"]
+__all__ = ["FileName", "filepath", "prods_file_content"]
 
 GOODBOY = pooch.create(
     path=pooch.os_cache(__name__),
@@ -35,7 +36,5 @@ def filepath(file_name: FileName) -> Path:
     return Path(fp)
 
 
-def prods_file() -> str:
-    import deciphon_api
-
-    return importlib.resources.read_text(deciphon_api, "prods_file.tsv")
+def prods_file_content() -> str:
+    return importlib.resources.read_text(deciphon_api.resources, "prods_file.tsv")

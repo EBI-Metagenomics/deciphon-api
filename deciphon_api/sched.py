@@ -1,7 +1,7 @@
 from loguru import logger
 
+from deciphon_api.core.errors import InternalError
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import InternalError
 from deciphon_api.rc import RC
 
 __all__ = ["sched_init", "sched_cleanup"]

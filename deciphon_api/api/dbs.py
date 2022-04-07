@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
-from deciphon_api.errors import ConflictError
+from deciphon_api.core.errors import ConflictError
 from deciphon_api.models.db import DB
 
 router = APIRouter()

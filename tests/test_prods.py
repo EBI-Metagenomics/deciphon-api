@@ -17,7 +17,7 @@ def test_upload_products(app: App, upload_minifam):
         assert response.status_code == 200
 
         with open("prods_file.tsv", "wb") as f:
-            f.write(data.prods_file().encode())
+            f.write(data.prods_file_content().encode())
 
         response = client.post(
             f"{prefix}/prods/",

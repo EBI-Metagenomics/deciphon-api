@@ -6,7 +6,7 @@ from starlette.status import HTTP_200_OK
 
 from deciphon_api.api.responses import responses
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import ForbiddenError, InternalError
+from deciphon_api.core.errors import ForbiddenError, InternalError
 from deciphon_api.models.hmm import HMM
 from deciphon_api.models.job import Job, JobProgressPatch, JobState, JobStatePatch
 from deciphon_api.models.scan import Scan

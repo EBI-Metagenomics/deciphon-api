@@ -6,7 +6,7 @@ from typing import Any, List, Tuple
 from pydantic import BaseModel, Field
 
 from deciphon_api.csched import ffi, lib
-from deciphon_api.errors import InternalError, NotFoundError
+from deciphon_api.core.errors import InternalError, NotFoundError
 from deciphon_api.rc import RC
 
 __all__ = ["DB"]

@@ -9,7 +9,7 @@ pip install deciphon-api
 ## Production
 
 ```bash
-uvicorn deciphon_api.main:app --host 127.0.0.1 --port 8000
+uvicorn deciphon_api.main:app.api --host 127.0.0.1 --port 8000
 ```
 
 ## Development
@@ -27,7 +27,7 @@ to setup and activate a Python environment associated with the project.
 Then enter
 
 ```bash
-uvicorn deciphon_api.main:app --reload
+uvicorn deciphon_api.main:app.api --reload
 ```
 
 to start the API.

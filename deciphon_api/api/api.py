@@ -23,5 +23,6 @@ router.include_router(seqs.router)
     name="root:list-of-endpoints",
 )
 def root(request: Request):
-    urls = {route.name: route.path for route in request.app.routes}
+    routes = sorted(request.app.routes, key=lambda x: x.name)
+    urls = {route.name: route.path for route in routes}
     return PrettyJSONResponse(urls)

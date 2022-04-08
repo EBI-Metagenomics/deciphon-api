@@ -30,7 +30,7 @@ def _upload(
                 "application/octet-stream",
             )
         },
-        headers={"Authorization": f"Bearer {app.api_key}"},
+        headers={"X-API-Key": f"{app.api_key}"},
     )
 
 

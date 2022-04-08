@@ -1,12 +1,13 @@
 import shutil
 from typing import List
 
-from fastapi import APIRouter, File, Path, UploadFile
+from fastapi import APIRouter, Depends, File, Path, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
+from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import ConflictError
+from deciphon_api.core.errors import ConflictError, UnauthorizedError
 from deciphon_api.models.db import DB
 
 router = APIRouter()
@@ -61,8 +62,12 @@ def download_database(db_id: int = Path(..., gt=0)):
     name="dbs:upload-database",
 )
 def upload_database(
-    db_file: UploadFile = File(..., content_type=mime, description="deciphon database")
+    db_file: UploadFile = File(..., content_type=mime, description="deciphon database"),
+    authenticated: bool = Depends(auth_request),
 ):
+    if not authenticated:
+        raise UnauthorizedError()
+
     if DB.exists_by_filename(db_file.filename):
         raise ConflictError("database already exists")
 
@@ -80,6 +85,10 @@ def upload_database(
     responses=responses,
     name="dbs:remove-db",
 )
-def remove_db(db_id: int = Path(..., gt=0)):
+def remove_db(
+    db_id: int = Path(..., gt=0), authenticated: bool = Depends(auth_request)
+):
+    if not authenticated:
+        raise UnauthorizedError()
     DB.remove(db_id)
     return JSONResponse({})

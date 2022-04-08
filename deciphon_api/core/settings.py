@@ -1,5 +1,6 @@
 import logging
 import sys
+from functools import lru_cache
 from typing import Any, Dict, List
 
 from loguru import logger
@@ -8,7 +9,7 @@ from pydantic import BaseSettings
 from deciphon_api import __version__
 from deciphon_api.core.logging import InterceptHandler
 
-__all__ = ["Settings"]
+__all__ = ["get_settings"]
 
 
 class Settings(BaseSettings):
@@ -21,11 +22,12 @@ class Settings(BaseSettings):
     version: str = __version__
 
     api_prefix: str = ""
+    api_key: str = "change-me"
 
     allowed_hosts: List[str] = ["*"]
 
     logging_level: int = logging.INFO
-    # Refer to loguru format.
+    # Refer to loguru format for details.
     logging_format: str = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
         "<level>{level: <8}</level> | "
@@ -66,3 +68,8 @@ class Settings(BaseSettings):
                 }
             ]
         )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

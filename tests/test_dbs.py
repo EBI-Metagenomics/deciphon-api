@@ -9,10 +9,10 @@ from deciphon_api.main import App
 
 def test_upload_database(app: App, upload_minifam_hmm, upload_minifam_db):
     with TestClient(app.api) as client:
-        response = upload_minifam_hmm(client, app.api_prefix)
+        response = upload_minifam_hmm(client, app)
         assert response.status_code == 201
 
-        response = upload_minifam_db(client, app.api_prefix)
+        response = upload_minifam_db(client, app)
         assert response.status_code == 201
 
         assert response.json() == {
@@ -25,10 +25,10 @@ def test_upload_database(app: App, upload_minifam_hmm, upload_minifam_db):
 
 def test_get_database(app: App, upload_minifam_hmm, upload_minifam_db):
     with TestClient(app.api) as client:
-        response = upload_minifam_hmm(client, app.api_prefix)
+        response = upload_minifam_hmm(client, app)
         assert response.status_code == 201
 
-        response = upload_minifam_db(client, app.api_prefix)
+        response = upload_minifam_db(client, app)
         assert response.status_code == 201
 
         response = client.get(app.api_prefix + "/dbs/1")
@@ -52,10 +52,10 @@ def test_get_database_notfound(app: App):
 
 def test_download_database(app: App, upload_minifam_hmm, upload_minifam_db):
     with TestClient(app.api) as client:
-        response = upload_minifam_hmm(client, app.api_prefix)
+        response = upload_minifam_hmm(client, app)
         assert response.status_code == 201
 
-        response = upload_minifam_db(client, app.api_prefix)
+        response = upload_minifam_db(client, app)
         assert response.status_code == 201
 
         response = client.get(app.api_prefix + "/dbs/1/download")
@@ -84,9 +84,9 @@ def test_download_database_notfound(app: App):
 def test_get_database_list(app: App, upload_minifam, upload_pfam1):
     with TestClient(app.api) as client:
 
-        upload_minifam(client, app.api_prefix)
+        upload_minifam(client, app)
 
-        upload_pfam1(client, app.api_prefix)
+        upload_pfam1(client, app)
 
         response = client.get(app.api_prefix + "/dbs")
         assert response.json() == [

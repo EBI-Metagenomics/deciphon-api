@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 from starlette.status import (
     HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
@@ -32,6 +33,7 @@ __all__ = [
     "ForbiddenError",
     "ParseError",
     "ConditionError",
+    "UnauthorizedError",
 ]
 
 
@@ -80,6 +82,11 @@ class NotFoundError(EINVAL):
 class ConflictError(EINVAL):
     def __init__(self, msg: str):
         super().__init__(HTTP_409_CONFLICT, msg)
+
+
+class UnauthorizedError(EINVAL):
+    def __init__(self):
+        super().__init__(HTTP_401_UNAUTHORIZED, "Failed to validate credentials")
 
 
 class ForbiddenError(EINVAL):

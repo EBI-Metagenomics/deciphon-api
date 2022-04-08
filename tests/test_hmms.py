@@ -5,7 +5,7 @@ from deciphon_api.main import App
 
 def test_upload_hmm(app: App, upload_minifam_hmm):
     with TestClient(app.api) as client:
-        response = upload_minifam_hmm(client, app.api_prefix)
+        response = upload_minifam_hmm(client, app)
         assert response.status_code == 201
         assert response.json() == {
             "id": 1,

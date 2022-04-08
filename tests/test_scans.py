@@ -5,19 +5,21 @@ from deciphon_api.models.scan import ScanPost
 
 
 def test_submit_scan_with_non_existent_database(app: App):
-    prefix = app.api_prefix
     with TestClient(app.api) as client:
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(
+            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
+        )
         assert response.status_code == 404
         assert response.json() == {"rc": "einval", "msg": "database not found"}
 
 
 def test_submit_scan(app: App, upload_minifam):
-    prefix = app.api_prefix
     with TestClient(app.api) as client:
-        upload_minifam(client, prefix)
+        upload_minifam(client, app)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(
+            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
+        )
         assert response.status_code == 201
 
         json = response.json()

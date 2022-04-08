@@ -1,12 +1,13 @@
 import shutil
 from typing import List
 
-from fastapi import APIRouter, File, Path, UploadFile
+from fastapi import APIRouter, Depends, File, Path, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
+from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import ConflictError
+from deciphon_api.core.errors import ConflictError, UnauthorizedError
 from deciphon_api.models.hmm import HMM
 
 router = APIRouter()
@@ -61,8 +62,12 @@ def download_hmm(hmm_id: int = Path(..., gt=0)):
     name="hmms:upload-hmm",
 )
 def upload_hmm(
-    hmm_file: UploadFile = File(..., content_type=mime, description="hmmer3 file")
+    hmm_file: UploadFile = File(..., content_type=mime, description="hmmer3 file"),
+    authenticated: bool = Depends(auth_request),
 ):
+    if not authenticated:
+        raise UnauthorizedError()
+
     if HMM.exists_by_filename(hmm_file.filename):
         raise ConflictError("hmm already exists")
 
@@ -80,6 +85,12 @@ def upload_hmm(
     responses=responses,
     name="hmms:remove-hmm",
 )
-def remove_hmm(hmm_id: int = Path(..., gt=0)):
+def remove_hmm(
+    hmm_id: int = Path(..., gt=0),
+    authenticated: bool = Depends(auth_request),
+):
+    if not authenticated:
+        raise UnauthorizedError()
+
     HMM.remove(hmm_id)
     return JSONResponse({})

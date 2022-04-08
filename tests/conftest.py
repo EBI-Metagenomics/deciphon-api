@@ -15,10 +15,14 @@ def app(tmp_path: Path) -> main.App:
 
 
 def _upload(
-    client: TestClient, file_type: str, file_field: str, api_prefix: str, path: Path
+    client: TestClient,
+    file_type: str,
+    file_field: str,
+    app: main.App,
+    path: Path,
 ):
     return client.post(
-        f"{api_prefix}/{file_type}/",
+        f"{app.api_prefix}/{file_type}/",
         files={
             file_field: (
                 path.name,
@@ -26,6 +30,7 @@ def _upload(
                 "application/octet-stream",
             )
         },
+        headers={"Authorization": f"Bearer {app.api_key}"},
     )
 
 
@@ -33,8 +38,8 @@ def _upload(
 def upload_minifam_hmm():
     minifam_hmm = data.filepath(data.FileName.minifam_hmm)
 
-    def upload(client: TestClient, api_prefix: str):
-        return _upload(client, "hmms", "hmm_file", api_prefix, minifam_hmm)
+    def upload(client: TestClient, app: main.App):
+        return _upload(client, "hmms", "hmm_file", app, minifam_hmm)
 
     return upload
 
@@ -43,19 +48,19 @@ def upload_minifam_hmm():
 def upload_minifam_db():
     minifam_dcp = data.filepath(data.FileName.minifam_db)
 
-    def upload(client: TestClient, api_prefix: str):
-        return _upload(client, "dbs", "db_file", api_prefix, minifam_dcp)
+    def upload(client: TestClient, app: main.App):
+        return _upload(client, "dbs", "db_file", app, minifam_dcp)
 
     return upload
 
 
 @pytest.fixture
 def upload_minifam(upload_minifam_hmm, upload_minifam_db):
-    def upload(client: TestClient, api_prefix: str):
-        response = upload_minifam_hmm(client, api_prefix)
+    def upload(client: TestClient, app: main.App):
+        response = upload_minifam_hmm(client, app)
         assert response.status_code == 201
 
-        response = upload_minifam_db(client, api_prefix)
+        response = upload_minifam_db(client, app)
         assert response.status_code == 201
 
     return upload
@@ -65,8 +70,8 @@ def upload_minifam(upload_minifam_hmm, upload_minifam_db):
 def upload_pfam1_hmm():
     pfam1_hmm = data.filepath(data.FileName.pfam1_hmm)
 
-    def upload(client: TestClient, api_prefix: str):
-        return _upload(client, "hmms", "hmm_file", api_prefix, pfam1_hmm)
+    def upload(client: TestClient, app: main.App):
+        return _upload(client, "hmms", "hmm_file", app, pfam1_hmm)
 
     return upload
 
@@ -75,19 +80,19 @@ def upload_pfam1_hmm():
 def upload_pfam1_db():
     pfam1_dcp = data.filepath(data.FileName.pfam1_db)
 
-    def upload(client: TestClient, api_prefix: str):
-        return _upload(client, "dbs", "db_file", api_prefix, pfam1_dcp)
+    def upload(client: TestClient, app: main.App):
+        return _upload(client, "dbs", "db_file", app, pfam1_dcp)
 
     return upload
 
 
 @pytest.fixture
 def upload_pfam1(upload_pfam1_hmm, upload_pfam1_db):
-    def upload(client: TestClient, api_prefix: str):
-        response = upload_pfam1_hmm(client, api_prefix)
+    def upload(client: TestClient, app: main.App):
+        response = upload_pfam1_hmm(client, app)
         assert response.status_code == 201
 
-        response = upload_pfam1_db(client, api_prefix)
+        response = upload_pfam1_db(client, app)
         assert response.status_code == 201
 
     return upload

@@ -3,20 +3,20 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from deciphon_api.api.api import router as api_router
-from deciphon_api.core.config import Settings
 from deciphon_api.core.errors import (
     DeciphonError,
     deciphon_error_handler,
     http422_error_handler,
 )
 from deciphon_api.core.events import create_start_handler, create_stop_handler
+from deciphon_api.core.settings import get_settings
 
 __all__ = ["App", "app"]
 
 
 class App:
     def __init__(self):
-        settings = Settings()
+        settings = get_settings()
 
         settings.configure_logging()
 
@@ -54,6 +54,10 @@ class App:
     @property
     def api_prefix(self) -> str:
         return self._settings.api_prefix
+
+    @property
+    def api_key(self) -> str:
+        return self._settings.api_key
 
 
 app = App()

@@ -12,14 +12,15 @@ def test_get_next_pend_job_empty(app: App):
 
 
 def test_get_next_pend_job(app: App, upload_minifam):
-    prefix = app.api_prefix
     with TestClient(app.api) as client:
-        upload_minifam(client, prefix)
+        upload_minifam(client, app)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(
+            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
+        )
         assert response.status_code == 201
 
-        response = client.get(f"{prefix}/jobs/next_pend")
+        response = client.get(f"{app.api_prefix}/jobs/next_pend")
         assert response.status_code == 200
 
         json = response.json()
@@ -40,93 +41,97 @@ def test_get_next_pend_job(app: App, upload_minifam):
 
 
 def test_set_job_state_run(app: App, upload_minifam):
-    prefix = app.api_prefix
     with TestClient(app.api) as client:
-        upload_minifam(client, prefix)
+        upload_minifam(client, app)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(
+            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
+        )
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{prefix}/jobs/{job_id}/state", json={"state": "run", "error": ""}
+            f"{app.api_prefix}/jobs/{job_id}/state", json={"state": "run", "error": ""}
         )
         assert response.status_code == 200
 
-        response = client.get(f"{prefix}/jobs/{job_id}")
+        response = client.get(f"{app.api_prefix}/jobs/{job_id}")
         assert response.status_code == 200
         assert response.json()["state"] == "run"
         assert response.json()["error"] == ""
 
 
 def test_set_job_state_run_and_fail(app: App, upload_minifam):
-    prefix = app.api_prefix
     with TestClient(app.api) as client:
-        upload_minifam(client, prefix)
+        upload_minifam(client, app)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(
+            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
+        )
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{prefix}/jobs/{job_id}/state", json={"state": "run", "error": ""}
+            f"{app.api_prefix}/jobs/{job_id}/state", json={"state": "run", "error": ""}
         )
         assert response.status_code == 200
 
         response = client.patch(
-            f"{prefix}/jobs/{job_id}/state",
+            f"{app.api_prefix}/jobs/{job_id}/state",
             json={"state": "fail", "error": "failed"},
         )
         assert response.status_code == 200
 
-        response = client.get(f"{prefix}/jobs/{job_id}")
+        response = client.get(f"{app.api_prefix}/jobs/{job_id}")
         assert response.status_code == 200
         assert response.json()["state"] == "fail"
         assert response.json()["error"] == "failed"
 
 
 def test_set_job_state_run_and_done(app: App, upload_minifam):
-    prefix = app.api_prefix
     with TestClient(app.api) as client:
-        upload_minifam(client, prefix)
+        upload_minifam(client, app)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(
+            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
+        )
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{prefix}/jobs/{job_id}/state", json={"state": "run", "error": ""}
+            f"{app.api_prefix}/jobs/{job_id}/state", json={"state": "run", "error": ""}
         )
         assert response.status_code == 200
 
         response = client.patch(
-            f"{prefix}/jobs/{job_id}/state",
+            f"{app.api_prefix}/jobs/{job_id}/state",
             json={"state": "done", "error": ""},
         )
         assert response.status_code == 200
 
-        response = client.get(f"{prefix}/jobs/{job_id}")
+        response = client.get(f"{app.api_prefix}/jobs/{job_id}")
         assert response.status_code == 200
         assert response.json()["state"] == "done"
         assert response.json()["error"] == ""
 
 
 def test_set_job_state_wrongly(app: App, upload_minifam):
-    prefix = app.api_prefix
     with TestClient(app.api) as client:
-        upload_minifam(client, prefix)
+        upload_minifam(client, app)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(
+            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
+        )
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{prefix}/jobs/{job_id}/state",
+            f"{app.api_prefix}/jobs/{job_id}/state",
             json={"state": "invalid", "error": ""},
         )
         assert response.status_code == 422
 
-        response = client.get(f"{prefix}/jobs/{job_id}")
+        response = client.get(f"{app.api_prefix}/jobs/{job_id}")
         assert response.status_code == 200
         assert response.json()["state"] == "pend"
         assert response.json()["error"] == ""

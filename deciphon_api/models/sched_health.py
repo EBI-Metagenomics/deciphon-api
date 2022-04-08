@@ -6,9 +6,9 @@ from typing import List
 
 from pydantic import BaseModel
 
-from deciphon_api.csched import ffi, lib
 from deciphon_api.core.errors import InternalError
 from deciphon_api.rc import RC
+from deciphon_api.sched.cffi import ffi, lib
 
 __all__ = ["SchedHealth"]
 

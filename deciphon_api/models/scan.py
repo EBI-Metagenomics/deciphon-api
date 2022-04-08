@@ -4,7 +4,6 @@ from typing import Any, List, Tuple
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.csched import ffi, lib
 from deciphon_api.core.errors import ConditionError, InternalError, NotFoundError
 from deciphon_api.models.db import DB
 from deciphon_api.models.job import Job, JobState
@@ -12,6 +11,7 @@ from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
 from deciphon_api.models.seq import Seq, SeqPost
 from deciphon_api.rc import RC
+from deciphon_api.sched.cffi import ffi, lib
 
 __all__ = ["Scan", "ScanPost"]
 

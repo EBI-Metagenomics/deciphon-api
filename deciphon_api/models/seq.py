@@ -5,8 +5,8 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from deciphon_api.core.errors import InternalError, NotFoundError
-from deciphon_api.csched import ffi, lib
 from deciphon_api.rc import RC
+from deciphon_api.sched.cffi import ffi, lib
 
 __all__ = ["Seq", "SeqPost"]
 

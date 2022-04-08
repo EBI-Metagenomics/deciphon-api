@@ -17,8 +17,8 @@ keywords = ["deciphon", "api"]
 classifiers = ["License :: OSI Approved :: MIT License"]
 
 include = [
-  { path = "deciphon_api/*.so", format = "wheel" },
-  { path = "deciphon_api/*.pyd", format = "wheel" },
+  { path = "deciphon_api/sched/*.so", format = "wheel" },
+  { path = "deciphon_api/sched/*.pyd", format = "wheel" },
   { path = "build_ext_deps", format = "sdist" },
   { path = ".env.example" },
 ]

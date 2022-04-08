@@ -9,11 +9,11 @@ folder = os.path.dirname(os.path.abspath(__file__))
 if not os.getenv("DECIPHON_API_SKIP_BUILD_DEPS", False):
     os.system("./build_ext_deps")
 
-with open(join(folder, "deciphon_api", "interface.h"), "r") as f:
+with open(join(folder, "deciphon_api", "sched", "interface.h"), "r") as f:
     ffibuilder.cdef(f.read())
 
 ffibuilder.set_source(
-    "deciphon_api.csched",
+    "deciphon_api.sched.cffi",
     """
         #include "sched/sched.h"
     """,

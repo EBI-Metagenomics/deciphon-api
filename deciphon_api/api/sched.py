@@ -3,10 +3,10 @@ from fastapi.responses import JSONResponse
 from starlette.status import HTTP_200_OK
 
 from deciphon_api.api.responses import responses
-from deciphon_api.csched import lib
 from deciphon_api.core.errors import InternalError
 from deciphon_api.models.sched_health import SchedHealth
 from deciphon_api.rc import RC
+from deciphon_api.sched.cffi import lib
 
 router = APIRouter()
 

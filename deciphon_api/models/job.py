@@ -5,11 +5,11 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.csched import ffi, lib
 from deciphon_api.core.errors import ConditionError, InternalError, NotFoundError
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.seq import Seq
 from deciphon_api.rc import RC
+from deciphon_api.sched.cffi import ffi, lib
 
 __all__ = ["Job", "JobStatePatch", "JobProgressPatch"]
 

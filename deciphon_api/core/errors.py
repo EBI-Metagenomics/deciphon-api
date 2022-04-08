@@ -15,8 +15,8 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from deciphon_api.csched import lib
 from deciphon_api.rc import RC, StrRC
+from deciphon_api.sched.cffi import lib
 
 __all__ = [
     "ConflictError",

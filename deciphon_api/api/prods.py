@@ -5,10 +5,10 @@ from fastapi import APIRouter, File, Path, UploadFile
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
-from deciphon_api.csched import lib
 from deciphon_api.core.errors import ConflictError, InternalError, ParseError
 from deciphon_api.models.prod import Prod
 from deciphon_api.rc import RC
+from deciphon_api.sched.cffi import lib
 
 router = APIRouter()
 

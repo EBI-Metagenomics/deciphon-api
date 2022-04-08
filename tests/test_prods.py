@@ -10,7 +10,9 @@ def test_upload_products(app: App, upload_minifam):
         upload_minifam(client, app)
 
         response = client.post(
-            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
+            f"{app.api_prefix}/scans/",
+            json=ScanPost.example().dict(),
+            headers={"X-API-Key": f"{app.api_key}"},
         )
         assert response.status_code == 201
 
@@ -29,6 +31,7 @@ def test_upload_products(app: App, upload_minifam):
                     "text/tab-separated-values",
                 )
             },
+            headers={"X-API-Key": f"{app.api_key}"},
         )
         assert response.status_code == 201
         assert response.json() == []

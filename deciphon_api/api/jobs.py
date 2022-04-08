@@ -1,11 +1,12 @@
 from typing import List
 
-from fastapi import APIRouter, Body, Path
+from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_200_OK
 
+from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import ForbiddenError, InternalError
+from deciphon_api.core.errors import ForbiddenError, InternalError, UnauthorizedError
 from deciphon_api.models.hmm import HMM
 from deciphon_api.models.job import Job, JobProgressPatch, JobState, JobStatePatch
 from deciphon_api.models.scan import Scan
@@ -70,7 +71,14 @@ def get_job_list():
     responses=responses,
     name="jobs:set-job-state",
 )
-def set_job_state(job_id: int = Path(..., gt=0), job_patch: JobStatePatch = Body(...)):
+def set_job_state(
+    job_id: int = Path(..., gt=0),
+    job_patch: JobStatePatch = Body(...),
+    authenticated: bool = Depends(auth_request),
+):
+    if not authenticated:
+        raise UnauthorizedError()
+
     job = Job.from_id(job_id)
 
     if job.state == job_patch.state:
@@ -106,8 +114,13 @@ def set_job_state(job_id: int = Path(..., gt=0), job_patch: JobStatePatch = Body
     name="jobs:add-job-progress",
 )
 def add_job_progress(
-    job_id: int = Path(..., gt=0), job_patch: JobProgressPatch = Body(...)
+    job_id: int = Path(..., gt=0),
+    job_patch: JobProgressPatch = Body(...),
+    authenticated: bool = Depends(auth_request),
 ):
+    if not authenticated:
+        raise UnauthorizedError()
+
     Job.add_progress(job_id, job_patch.add_progress)
     return Job.from_id(job_id)
 
@@ -144,6 +157,11 @@ def get_scan(job_id: int = Path(..., gt=0)):
     responses=responses,
     name="jobs:remove-job",
 )
-def remove_job(job_id: int = Path(..., gt=0)):
+def remove_job(
+    job_id: int = Path(..., gt=0), authenticated: bool = Depends(auth_request)
+):
+    if not authenticated:
+        raise UnauthorizedError()
+
     Job.remove(job_id)
     return JSONResponse({})

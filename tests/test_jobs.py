@@ -51,7 +51,9 @@ def test_set_job_state_run(app: App, upload_minifam):
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{app.api_prefix}/jobs/{job_id}/state", json={"state": "run", "error": ""}
+            f"{app.api_prefix}/jobs/{job_id}/state",
+            json={"state": "run", "error": ""},
+            headers={"X-API-Key": f"{app.api_key}"},
         )
         assert response.status_code == 200
 
@@ -72,13 +74,16 @@ def test_set_job_state_run_and_fail(app: App, upload_minifam):
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{app.api_prefix}/jobs/{job_id}/state", json={"state": "run", "error": ""}
+            f"{app.api_prefix}/jobs/{job_id}/state",
+            json={"state": "run", "error": ""},
+            headers={"X-API-Key": f"{app.api_key}"},
         )
         assert response.status_code == 200
 
         response = client.patch(
             f"{app.api_prefix}/jobs/{job_id}/state",
             json={"state": "fail", "error": "failed"},
+            headers={"X-API-Key": f"{app.api_key}"},
         )
         assert response.status_code == 200
 
@@ -99,13 +104,16 @@ def test_set_job_state_run_and_done(app: App, upload_minifam):
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{app.api_prefix}/jobs/{job_id}/state", json={"state": "run", "error": ""}
+            f"{app.api_prefix}/jobs/{job_id}/state",
+            json={"state": "run", "error": ""},
+            headers={"X-API-Key": f"{app.api_key}"},
         )
         assert response.status_code == 200
 
         response = client.patch(
             f"{app.api_prefix}/jobs/{job_id}/state",
             json={"state": "done", "error": ""},
+            headers={"X-API-Key": f"{app.api_key}"},
         )
         assert response.status_code == 200
 
@@ -128,6 +136,7 @@ def test_set_job_state_wrongly(app: App, upload_minifam):
         response = client.patch(
             f"{app.api_prefix}/jobs/{job_id}/state",
             json={"state": "invalid", "error": ""},
+            headers={"X-API-Key": f"{app.api_key}"},
         )
         assert response.status_code == 422
 

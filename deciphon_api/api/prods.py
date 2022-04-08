@@ -1,11 +1,17 @@
 import os
 from typing import List
 
-from fastapi import APIRouter, File, Path, UploadFile
+from fastapi import APIRouter, Depends, File, Path, UploadFile
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
+from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import ConflictError, InternalError, ParseError
+from deciphon_api.core.errors import (
+    ConflictError,
+    InternalError,
+    ParseError,
+    UnauthorizedError,
+)
 from deciphon_api.models.prod import Prod
 from deciphon_api.rc import RC
 from deciphon_api.sched.cffi import lib
@@ -48,8 +54,12 @@ def get_prod_list():
 def upload_products(
     prods_file: UploadFile = File(
         ..., content_type="text/tab-separated-values", description="file of products"
-    )
+    ),
+    authenticated: bool = Depends(auth_request),
 ):
+    if not authenticated:
+        raise UnauthorizedError()
+
     prods_file.file.flush()
     fd = os.dup(prods_file.file.fileno())
     fp = lib.fdopen(fd, b"rb")

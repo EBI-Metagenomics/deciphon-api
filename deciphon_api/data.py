@@ -7,7 +7,7 @@ import pooch
 import deciphon_api.resources
 from deciphon_api import __name__, __version__
 
-__all__ = ["FileName", "filepath", "prods_file_content"]
+__all__ = ["FileName", "filepath", "prods_file_content", "env_example_content"]
 
 GOODBOY = pooch.create(
     path=pooch.os_cache(__name__),
@@ -38,3 +38,7 @@ def filepath(file_name: FileName) -> Path:
 
 def prods_file_content() -> str:
     return importlib.resources.read_text(deciphon_api.resources, "prods_file.tsv")
+
+
+def env_example_content() -> str:
+    return importlib.resources.read_text(deciphon_api.resources, ".env.example")

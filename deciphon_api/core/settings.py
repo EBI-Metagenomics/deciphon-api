@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     api_prefix: str = ""
     api_key: str = "change-me"
 
+    host: str = "127.0.0.1"
+    port: int = 49329
+
     allowed_hosts: List[str] = ["*"]
 
     logging_level: int = logging.INFO

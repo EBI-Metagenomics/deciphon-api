@@ -12,6 +12,7 @@ if ! test -d deciphon_api; then
 fi
 
 EXT_DIR="$PWD/.ext_deps"
+echo
 echo "Using directory \`$EXT_DIR\` to build external dependencies."
 
 if test -d "$EXT_DIR"; then

@@ -6,7 +6,7 @@ If you happen to be using a supported Linux environment (which is likely the cas
 you would need:
 
 - [Python](https://www.python.org) >=3.8
-- [Pipx](https://pypa.github.io/pipx/) for easy installation. Feel free to use [Pip](https://pip.pypa.io/en/stable/) instead.
+- [Pipx](https://pypa.github.io/pipx/) for easy installation and environment isolation. Feel free to use [Pip](https://pip.pypa.io/en/stable/) instead though.
 
 ## Usage
 

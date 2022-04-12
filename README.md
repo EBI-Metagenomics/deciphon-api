@@ -1,15 +1,25 @@
 # deciphon-api
 
-## Install
+## Dependencies
+
+If you happen to be using a supported Linux environment (which is likely the case),
+you would need:
+
+- [Python](https://www.python.org) >=3.8
+- [Pipx](https://pypa.github.io/pipx/) for easy installation. Feel free to use [Pip](https://pip.pypa.io/en/stable/) instead.
+
+## Usage
+
+Generate a configuration file:
 
 ```bash
-pip install deciphon-api
+pipx run deciphon-api generate-config > .env
 ```
 
-## Production
+Tweak `.env` as needed, and then run
 
 ```bash
-uvicorn deciphon_api.main:app.api --host 127.0.0.1 --port 8000
+pipx run deciphon-api start
 ```
 
 ## Development

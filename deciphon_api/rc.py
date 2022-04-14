@@ -12,6 +12,7 @@ class RC(IntEnum):
     EINVAL = 5
     ENOMEM = 6
     EPARSE = 7
+    ECONSTRAINT = 8
 
 
 class StrRC(str, Enum):
@@ -23,3 +24,4 @@ class StrRC(str, Enum):
     EINVAL = "einval"
     ENOMEM = "enomem"
     EPARSE = "eparse"
+    ECONSTRAINT = "econstraint"

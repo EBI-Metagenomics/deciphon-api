@@ -5,7 +5,12 @@ from typing import Any, List, Tuple
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.core.errors import ConditionError, InternalError, NotFoundError
+from deciphon_api.core.errors import (
+    ConditionError,
+    ConstraintError,
+    InternalError,
+    NotFoundError,
+)
 from deciphon_api.rc import RC
 from deciphon_api.sched.cffi import ffi, lib
 
@@ -97,6 +102,9 @@ class HMM(BaseModel):
 
         if rc == RC.NOTFOUND:
             raise NotFoundError("hmm")
+
+        if rc == RC.ECONSTRAINT:
+            raise ConstraintError("can't remove referenced hmm")
 
         if rc != RC.OK:
             raise InternalError(rc)

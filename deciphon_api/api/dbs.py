@@ -90,5 +90,6 @@ def remove_db(
 ):
     if not authenticated:
         raise UnauthorizedError()
+
     DB.remove(db_id)
     return JSONResponse({})

@@ -28,12 +28,14 @@ __all__ = [
     "EIO",
     "ENOMEM",
     "EPARSE",
+    "ECONSTRAINT",
     "ErrorResponse",
     "InternalError",
     "ForbiddenError",
     "ParseError",
     "ConditionError",
     "UnauthorizedError",
+    "ConstraintError",
 ]
 
 
@@ -69,6 +71,11 @@ class EPARSE(DeciphonError):
         super().__init__(http_code, RC.EPARSE, msg)
 
 
+class ECONSTRAINT(DeciphonError):
+    def __init__(self, http_code: int, msg: str = "constraint error"):
+        super().__init__(http_code, RC.ECONSTRAINT, msg)
+
+
 class ParseError(EPARSE):
     def __init__(self, msg: str):
         super().__init__(HTTP_400_BAD_REQUEST, msg)
@@ -90,6 +97,11 @@ class UnauthorizedError(EINVAL):
 
 
 class ForbiddenError(EINVAL):
+    def __init__(self, msg: str):
+        super().__init__(HTTP_403_FORBIDDEN, msg)
+
+
+class ConstraintError(ECONSTRAINT):
     def __init__(self, msg: str):
         super().__init__(HTTP_403_FORBIDDEN, msg)
 

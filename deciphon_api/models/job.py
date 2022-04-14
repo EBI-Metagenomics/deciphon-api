@@ -5,7 +5,12 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.core.errors import ConditionError, InternalError, NotFoundError
+from deciphon_api.core.errors import (
+    ConditionError,
+    ConstraintError,
+    InternalError,
+    NotFoundError,
+)
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.seq import Seq
 from deciphon_api.rc import RC
@@ -113,6 +118,9 @@ class Job(BaseModel):
 
         if rc == RC.NOTFOUND:
             raise NotFoundError("job")
+
+        if rc == RC.ECONSTRAINT:
+            raise ConstraintError("can't remove referenced job")
 
         if rc != RC.OK:
             raise InternalError(rc)

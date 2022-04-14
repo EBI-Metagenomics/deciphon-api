@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, List
 
-from deciphon_api.core.errors import InternalError, NotFoundError
+from deciphon_api.core.errors import ConstraintError, InternalError, NotFoundError
 from deciphon_api.rc import RC
 from deciphon_api.sched.cffi import ffi, lib
 
@@ -43,6 +43,9 @@ def sched_db_remove(db_id: int):
     rc = RC(lib.sched_db_remove(db_id))
     if rc == RC.NOTFOUND:
         raise NotFoundError("database")
+
+    if rc == RC.ECONSTRAINT:
+        raise ConstraintError("can't remove referenced database")
 
     if rc != RC.OK:
         raise InternalError(rc)

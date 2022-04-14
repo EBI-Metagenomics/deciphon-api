@@ -7,7 +7,7 @@ from loguru import logger
 from pydantic import BaseSettings
 
 from deciphon_api import __version__
-from deciphon_api.core.logging import InterceptHandler
+from deciphon_api.core.logging import InterceptHandler, LoggingLevel
 
 __all__ = ["get_settings"]
 
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
 
     allowed_hosts: List[str] = ["*"]
 
-    logging_level: int = logging.INFO
+    logging_level: LoggingLevel = LoggingLevel("info")
     # Refer to loguru format for details.
     logging_format: str = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
@@ -57,7 +57,9 @@ class Settings(BaseSettings):
         }
 
     def configure_logging(self) -> None:
-        logging.getLogger().handlers = [InterceptHandler(level=self.logging_level)]
+        logging.getLogger().handlers = [
+            InterceptHandler(level=self.logging_level.level)
+        ]
 
         for name in logging.root.manager.loggerDict.keys():
             logging.getLogger(name).handlers = []
@@ -66,7 +68,7 @@ class Settings(BaseSettings):
             handlers=[
                 {
                     "sink": sys.stderr,
-                    "level": self.logging_level,
+                    "level": self.logging_level.level,
                     "format": self.logging_format,
                 }
             ]

@@ -1,5 +1,5 @@
 import json
-from typing import Union
+from typing import Optional, Union
 
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
@@ -99,24 +99,27 @@ class ConditionError(EINVAL):
         super().__init__(HTTP_412_PRECONDITION_FAILED, msg)
 
 
-def InternalError(rc: RC) -> DeciphonError:
+def InternalError(rc: RC, msg: Optional[str] = None) -> DeciphonError:
     assert rc != RC.OK
     assert rc != RC.END
     assert rc != RC.NOTFOUND
 
     http_code = HTTP_500_INTERNAL_SERVER_ERROR
+    kwargs = {}
+    if msg is not None:
+        kwargs["msg"] = msg
 
     if rc == RC.EFAIL:
-        return EFAIL(http_code)
+        return EFAIL(http_code, **kwargs)
     elif rc == RC.EIO:
-        return EIO(http_code)
+        return EIO(http_code, **kwargs)
     elif rc == RC.EINVAL:
-        return EINVAL(http_code)
+        return EINVAL(http_code, **kwargs)
     elif rc == RC.ENOMEM:
-        return ENOMEM(http_code)
+        return ENOMEM(http_code, **kwargs)
     else:
         assert rc == RC.EPARSE
-        return EPARSE(http_code)
+        return EPARSE(http_code, **kwargs)
 
 
 def truncate(msg: str):

@@ -14,10 +14,9 @@ run = typer.Typer()
 def generate_config():
     typer.echo(data.env_example_content(), nl=False)
 
-
 @run.command()
 def start():
     host = settings.host
     port = settings.port
     log_level = settings.logging_level
-    uvicorn.run("deciphon_api.main:app.api", host=host, port=port, log_level=log_level)
+    uvicorn.run("deciphon_api.main:app.api", host=host, port=port, log_level=log_level.value)

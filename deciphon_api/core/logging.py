@@ -1,10 +1,28 @@
 import logging
+from enum import Enum
 from types import FrameType
 from typing import cast
 
 from loguru import logger
 
-__all__ = ["InterceptHandler"]
+__all__ = ["InterceptHandler", "LoggingLevel"]
+
+
+import logging
+from enum import Enum
+
+
+class LoggingLevel(str, Enum):
+    CRITICAL = "critical"
+    ERROR = "error"
+    WARNING = "warning"
+    INFO = "info"
+    DEBUG = "debug"
+    NOTSET = "notset"
+
+    @property
+    def level(self) -> int:
+        return logging.getLevelName(self.name)
 
 
 class InterceptHandler(logging.Handler):

@@ -7,9 +7,9 @@ from loguru import logger
 from pydantic import BaseSettings
 
 from deciphon_api import __version__
-from deciphon_api.core.logging import InterceptHandler, LoggingLevel
+from deciphon_api.core.logging import LoggingLevel, get_intercept_handler
 
-__all__ = ["get_settings"]
+__all__ = ["settings"]
 
 
 class Settings(BaseSettings):
@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     )
 
     sched_filename: str = "deciphon.sched"
+    reload: bool = False
 
     class Config:
         env_file = ".env"
@@ -57,12 +58,13 @@ class Settings(BaseSettings):
         }
 
     def configure_logging(self) -> None:
-        logging.getLogger().handlers = [
-            InterceptHandler(level=self.logging_level.level)
-        ]
+        intercept = get_intercept_handler(self.logging_level.level)
+        logging.getLogger().handlers = [intercept]
 
         for name in logging.root.manager.loggerDict.keys():
             logging.getLogger(name).handlers = []
+
+        logging.getLogger("uvicorn.access").handlers = [intercept]
 
         logger.configure(
             handlers=[
@@ -78,3 +80,6 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+settings = get_settings()

@@ -1,14 +1,14 @@
 import shutil
-from typing import List
+from typing import List, Union
 
-from fastapi import APIRouter, Depends, File, Path, UploadFile
+from fastapi import APIRouter, Depends, File, Path, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
 from deciphon_api.core.errors import ConflictError, UnauthorizedError
-from deciphon_api.models.hmm import HMM
+from deciphon_api.models.hmm import HMM, HMMIDType
 
 router = APIRouter()
 
@@ -17,15 +17,17 @@ mime = "application/octet-stream"
 
 
 @router.get(
-    "/hmms/{hmm_id}",
+    "/hmms/{id}",
     summary="get hmm",
     response_model=HMM,
     status_code=HTTP_200_OK,
     responses=responses,
     name="hmms:get-hmm",
 )
-def get_hmm(hmm_id: int = Path(..., gt=0)):
-    return HMM.get_by_id(hmm_id)
+def get_hmm(
+    id: Union[int, str] = Path(...), id_type: HMMIDType = Query(HMMIDType.HMM_ID.value)
+):
+    return HMM.get(id, id_type)
 
 
 @router.get(

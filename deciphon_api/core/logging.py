@@ -1,11 +1,12 @@
 import logging
 from enum import Enum
+from functools import lru_cache
 from types import FrameType
 from typing import cast
 
 from loguru import logger
 
-__all__ = ["InterceptHandler", "LoggingLevel"]
+__all__ = ["get_intercept_handler", "LoggingLevel"]
 
 
 import logging
@@ -43,3 +44,8 @@ class InterceptHandler(logging.Handler):
             level,
             record.getMessage(),
         )
+
+
+@lru_cache
+def get_intercept_handler(logging_level: int) -> InterceptHandler:
+    return InterceptHandler(logging_level)

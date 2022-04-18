@@ -1,14 +1,14 @@
 import shutil
-from typing import List
+from typing import List, Union
 
-from fastapi import APIRouter, Depends, File, Path, UploadFile
+from fastapi import APIRouter, Depends, File, Path, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
 from deciphon_api.core.errors import ConflictError, UnauthorizedError
-from deciphon_api.models.db import DB
+from deciphon_api.models.db import DB, DBIDType
 
 router = APIRouter()
 
@@ -17,15 +17,17 @@ mime = "application/octet-stream"
 
 
 @router.get(
-    "/dbs/{db_id}",
+    "/dbs/{id}",
     summary="get database",
     response_model=DB,
     status_code=HTTP_200_OK,
     responses=responses,
     name="dbs:get-database",
 )
-def get_database(db_id: int = Path(..., gt=0)):
-    return DB.get_by_id(db_id)
+def get_database(
+    id: Union[int, str] = Path(...), id_type: DBIDType = Query(DBIDType.DB_ID.value)
+):
+    return DB.get(id, id_type)
 
 
 @router.get(
@@ -49,7 +51,7 @@ def get_database_list():
     name="dbs:download-database",
 )
 def download_database(db_id: int = Path(..., gt=0)):
-    db = DB.get_by_id(db_id)
+    db = DB.get(db_id, DBIDType.DB_ID)
     return FileResponse(db.filename, media_type=mime, filename=db.filename)
 
 

@@ -36,6 +36,7 @@ __all__ = [
     "ConditionError",
     "UnauthorizedError",
     "ConstraintError",
+    "InvalidTypeError",
 ]
 
 
@@ -107,6 +108,11 @@ class ConstraintError(ECONSTRAINT):
 
 
 class ConditionError(EINVAL):
+    def __init__(self, msg: str):
+        super().__init__(HTTP_412_PRECONDITION_FAILED, msg)
+
+
+class InvalidTypeError(EINVAL):
     def __init__(self, msg: str):
         super().__init__(HTTP_412_PRECONDITION_FAILED, msg)
 

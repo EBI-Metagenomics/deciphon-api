@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,14 +11,13 @@ from deciphon_api.core.errors import (
     http422_error_handler,
 )
 from deciphon_api.core.events import create_start_handler, create_stop_handler
-from deciphon_api.core.settings import get_settings
+from deciphon_api.core.settings import settings
 
 __all__ = ["App", "app"]
 
 
 class App:
     def __init__(self):
-        settings = get_settings()
 
         settings.configure_logging()
 
@@ -60,4 +61,9 @@ class App:
         return self._settings.api_key
 
 
-app = App()
+@lru_cache
+def get_add() -> App:
+    return App()
+
+
+app = get_add()

@@ -7,10 +7,12 @@ from deciphon_api.sched.cffi import ffi, lib
 
 __all__ = [
     "sched_db_add",
-    "sched_db_remove",
-    "sched_db_get_by_id",
-    "sched_db_get_by_filename",
     "sched_db_get_all",
+    "sched_db_get_by_filename",
+    "sched_db_get_by_hmm_id",
+    "sched_db_get_by_id",
+    "sched_db_get_by_xxh3",
+    "sched_db_remove",
 ]
 
 
@@ -59,9 +61,25 @@ def sched_db_get_by_id(db_id: int) -> sched_db:
     return possess(ptr)
 
 
+def sched_db_get_by_xxh3(xxh3: int) -> sched_db:
+    ptr = ffi.new("struct sched_db *")
+    rc = RC(lib.sched_db_get_by_xxh3(ptr, xxh3))
+    if rc == RC.NOTFOUND:
+        raise NotFoundError("database")
+    return possess(ptr)
+
+
 def sched_db_get_by_filename(filename: str) -> sched_db:
     ptr = ffi.new("struct sched_db *")
     rc = RC(lib.sched_db_get_by_filename(ptr, filename.encode()))
+    if rc == RC.NOTFOUND:
+        raise NotFoundError("database")
+    return possess(ptr)
+
+
+def sched_db_get_by_hmm_id(hmm_id: int) -> sched_db:
+    ptr = ffi.new("struct sched_db *")
+    rc = RC(lib.sched_db_get_by_hmm_id(ptr, hmm_id))
     if rc == RC.NOTFOUND:
         raise NotFoundError("database")
     return possess(ptr)

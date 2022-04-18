@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from enum import Enum
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Union
 
 from pydantic import BaseModel, Field
 
@@ -9,12 +10,20 @@ from deciphon_api.core.errors import (
     ConditionError,
     ConstraintError,
     InternalError,
+    InvalidTypeError,
     NotFoundError,
 )
 from deciphon_api.rc import RC
 from deciphon_api.sched.cffi import ffi, lib
 
-__all__ = ["HMM"]
+__all__ = ["HMM", "HMMIDType"]
+
+
+class HMMIDType(str, Enum):
+    HMM_ID = "hmm_id"
+    XXH3 = "xxh3"
+    FILENAME = "filename"
+    JOB_ID = "job_id"
 
 
 class HMM(BaseModel):
@@ -56,12 +65,39 @@ class HMM(BaseModel):
         return HMM.from_cdata(p_hmm[0])
 
     @staticmethod
+    def get(id: Union[int, str], id_type: HMMIDType) -> HMM:
+        if id_type == HMMIDType.FILENAME and not isinstance(id, str):
+            raise InvalidTypeError("Expected string")
+        elif id_type != HMMIDType.FILENAME and not isinstance(id, int):
+            raise InvalidTypeError("Expected integer")
+
+        if id_type == HMMIDType.HMM_ID:
+            assert isinstance(id, int)
+            return resolve_get_hmm(*get_by_id(id))
+
+        if id_type == HMMIDType.XXH3:
+            assert isinstance(id, int)
+            return resolve_get_hmm(*get_by_xxh3(id))
+
+        if id_type == HMMIDType.FILENAME:
+            assert isinstance(id, str)
+            return resolve_get_hmm(*get_by_filename(id))
+
+        if id_type == HMMIDType.JOB_ID:
+            assert isinstance(id, int)
+            return resolve_get_hmm(*get_by_job_id(id))
+
+    @staticmethod
     def get_by_id(hmm_id: int) -> HMM:
         return resolve_get_hmm(*get_by_id(hmm_id))
 
     @staticmethod
     def get_by_job_id(job_id: int) -> HMM:
         return resolve_get_hmm(*get_by_job_id(job_id))
+
+    @staticmethod
+    def get_by_xxh3(xxh3: int) -> HMM:
+        return resolve_get_hmm(*get_by_xxh3(xxh3))
 
     @staticmethod
     def get_by_filename(filename: str) -> HMM:
@@ -123,6 +159,15 @@ def get_by_job_id(job_id: int) -> Tuple[Any, RC]:
     ptr = ffi.new("struct sched_hmm *")
 
     rc = RC(lib.sched_hmm_get_by_job_id(ptr, job_id))
+    assert rc != RC.END
+
+    return (ptr, rc)
+
+
+def get_by_xxh3(xxh3: int) -> Tuple[Any, RC]:
+    ptr = ffi.new("struct sched_hmm *")
+
+    rc = RC(lib.sched_hmm_get_by_xxh3(ptr, xxh3))
     assert rc != RC.END
 
     return (ptr, rc)

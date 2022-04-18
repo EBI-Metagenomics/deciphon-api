@@ -1,21 +1,31 @@
 from __future__ import annotations
 
+from enum import Enum
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.core.errors import NotFoundError
+from deciphon_api.core.errors import InvalidTypeError, NotFoundError
 from deciphon_api.sched.db import (
     sched_db,
     sched_db_add,
     sched_db_get_all,
     sched_db_get_by_filename,
+    sched_db_get_by_hmm_id,
     sched_db_get_by_id,
+    sched_db_get_by_xxh3,
     sched_db_remove,
 )
 
-__all__ = ["DB"]
+__all__ = ["DB", "DBIDType"]
+
+
+class DBIDType(str, Enum):
+    DB_ID = "db_id"
+    XXH3 = "xxh3"
+    FILENAME = "filename"
+    HMM_ID = "hmm_id"
 
 
 class DB(BaseModel):
@@ -40,17 +50,32 @@ class DB(BaseModel):
         return DB.from_sched_db(sched_db_add(filename))
 
     @staticmethod
-    def get_by_id(db_id: int) -> DB:
-        return DB.from_sched_db(sched_db_get_by_id(db_id))
+    def get(id: Union[int, str], id_type: DBIDType) -> DB:
+        if id_type == DBIDType.FILENAME and not isinstance(id, str):
+            raise InvalidTypeError("Expected string")
+        elif id_type != DBIDType.FILENAME and not isinstance(id, int):
+            raise InvalidTypeError("Expected integer")
 
-    @staticmethod
-    def get_by_filename(filename: str) -> DB:
-        return DB.from_sched_db(sched_db_get_by_filename(filename))
+        if id_type == DBIDType.DB_ID:
+            assert isinstance(id, int)
+            return DB.from_sched_db(sched_db_get_by_id(id))
+
+        if id_type == DBIDType.XXH3:
+            assert isinstance(id, int)
+            return DB.from_sched_db(sched_db_get_by_xxh3(id))
+
+        if id_type == DBIDType.FILENAME:
+            assert isinstance(id, str)
+            return DB.from_sched_db(sched_db_get_by_filename(id))
+
+        if id_type == DBIDType.HMM_ID:
+            assert isinstance(id, int)
+            return DB.from_sched_db(sched_db_get_by_hmm_id(id))
 
     @staticmethod
     def exists_by_id(db_id: int) -> bool:
         try:
-            DB.get_by_id(db_id)
+            DB.get(db_id, DBIDType.DB_ID)
         except NotFoundError:
             return False
         return True
@@ -58,7 +83,7 @@ class DB(BaseModel):
     @staticmethod
     def exists_by_filename(filename: str) -> bool:
         try:
-            DB.get_by_filename(filename)
+            DB.get(filename, DBIDType.FILENAME)
         except NotFoundError:
             return False
         return True

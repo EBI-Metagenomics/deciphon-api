@@ -92,6 +92,8 @@ enum sched_rc sched_db_add(struct sched_db *, char const *filename);
 
 enum sched_rc sched_db_remove(int64_t id);
 
+void sched_db_to_hmm_filename(char *filename);
+
 /* --- HMM Section --- */
 struct sched_hmm
 {
@@ -114,6 +116,8 @@ enum sched_rc sched_hmm_get_all(sched_hmm_set_func_t, struct sched_hmm *,
                                 void *arg);
 
 enum sched_rc sched_hmm_remove(int64_t id);
+
+void sched_hmm_to_db_filename(char *filename);
 
 /* --- JOB Section --- */
 enum sched_job_type

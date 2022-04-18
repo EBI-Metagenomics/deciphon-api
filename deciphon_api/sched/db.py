@@ -4,6 +4,7 @@ from typing import Any, List
 from deciphon_api.core.errors import ConstraintError, InternalError, NotFoundError
 from deciphon_api.rc import RC
 from deciphon_api.sched.cffi import ffi, lib
+from deciphon_api.sched.hmm import sched_hmm_get_by_filename
 
 __all__ = [
     "sched_db_add",
@@ -13,6 +14,7 @@ __all__ = [
     "sched_db_get_by_id",
     "sched_db_get_by_xxh3",
     "sched_db_remove",
+    "sched_db_to_hmm_filename",
 ]
 
 
@@ -33,6 +35,12 @@ def possess(ptr):
 
 
 def sched_db_add(filename: str) -> sched_db:
+    hmm_filename = sched_db_to_hmm_filename(filename)
+    try:
+        sched_hmm_get_by_filename(hmm_filename)
+    except NotFoundError:
+        raise ConstraintError("corresponding hmm not found")
+
     ptr = ffi.new("struct sched_db *")
     rc = RC(lib.sched_db_add(ptr, filename.encode()))
     if rc != RC.OK:
@@ -92,6 +100,12 @@ def sched_db_get_all() -> List[sched_db]:
     if rc != RC.OK:
         raise InternalError(rc)
     return dbs
+
+
+def sched_db_to_hmm_filename(filename: str) -> str:
+    name = filename.encode()
+    lib.sched_db_to_hmm_filename(name)
+    return name.decode()
 
 
 @ffi.def_extern()

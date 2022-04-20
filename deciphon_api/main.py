@@ -1,17 +1,13 @@
 from functools import lru_cache
 
 from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from deciphon_api.api.api import router as api_router
-from deciphon_api.core.errors import (
-    DeciphonError,
-    deciphon_error_handler,
-    http422_error_handler,
-)
+from deciphon_api.core.errors import sched_error_handler
 from deciphon_api.core.events import create_start_handler, create_stop_handler
 from deciphon_api.core.settings import settings
+from deciphon_api.sched.error import SchedError, SchedWrapperError
 
 __all__ = ["App", "app"]
 
@@ -40,8 +36,8 @@ class App:
             create_stop_handler(),
         )
 
-        api.add_exception_handler(DeciphonError, deciphon_error_handler)
-        api.add_exception_handler(RequestValidationError, http422_error_handler)
+        api.add_exception_handler(SchedError, sched_error_handler)
+        api.add_exception_handler(SchedWrapperError, sched_error_handler)
 
         api.include_router(api_router, prefix=settings.api_prefix)
 

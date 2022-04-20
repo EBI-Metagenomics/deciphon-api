@@ -7,7 +7,7 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import ConflictError, UnauthorizedError
+from deciphon_api.core.errors import UnauthorizedError
 from deciphon_api.models.db import DB, DBIDType
 
 router = APIRouter()
@@ -69,9 +69,6 @@ def upload_database(
 ):
     if not authenticated:
         raise UnauthorizedError()
-
-    if DB.exists_by_filename(db_file.filename):
-        raise ConflictError("database already exists")
 
     with open(db_file.filename, "wb") as dst:
         shutil.copyfileobj(db_file.file, dst)

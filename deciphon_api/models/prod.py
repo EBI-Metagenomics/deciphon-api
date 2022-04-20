@@ -4,9 +4,9 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.core.errors import InternalError, NotFoundError
-from deciphon_api.rc import RC
+from deciphon_api.core.errors import InternalError
 from deciphon_api.sched.cffi import ffi, lib
+from deciphon_api.sched.prod import sched_prod
 
 __all__ = ["Prod"]
 
@@ -29,18 +29,18 @@ class Prod(BaseModel):
     match: str = ""
 
     @classmethod
-    def from_cdata(cls, cprod):
+    def from_sched_prod(cls, prod: sched_prod):
         return cls(
-            id=int(cprod.id),
-            scan_id=int(cprod.scan_id),
-            seq_id=int(cprod.seq_id),
-            profile_name=ffi.string(cprod.profile_name).decode(),
-            abc_name=ffi.string(cprod.abc_name).decode(),
-            alt_loglik=float(cprod.alt_loglik),
-            null_loglik=float(cprod.null_loglik),
-            profile_typeid=ffi.string(cprod.profile_typeid).decode(),
-            version=ffi.string(cprod.version).decode(),
-            match=ffi.string(cprod.match).decode(),
+            id=prod.id,
+            scan_id=prod.scan_id,
+            seq_id=prod.seq_id,
+            profile_name=prod.profile_name,
+            abc_name=prod.abc_name,
+            alt_loglik=prod.alt_loglik,
+            null_loglik=prod.null_loglik,
+            profile_typeid=prod.profile_typeid,
+            version=prod.version,
+            match=prod.match,
         )
 
     @classmethod

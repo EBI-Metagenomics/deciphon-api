@@ -4,10 +4,9 @@ from starlette.status import HTTP_200_OK
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import InternalError, UnauthorizedError
+from deciphon_api.core.errors import UnauthorizedError
 from deciphon_api.models.sched_health import SchedHealth
-from deciphon_api.rc import RC
-from deciphon_api.sched.cffi import lib
+from deciphon_api.sched.sched import sched_wipe
 
 router = APIRouter()
 
@@ -24,11 +23,7 @@ def wipe(authenticated: bool = Depends(auth_request)):
     if not authenticated:
         raise UnauthorizedError()
 
-    rc = RC(lib.sched_wipe())
-
-    if rc != RC.OK:
-        raise InternalError(rc)
-
+    sched_wipe()
     return JSONResponse([])
 
 

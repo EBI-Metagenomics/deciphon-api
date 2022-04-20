@@ -5,13 +5,43 @@ enum sched_rc
 {
     SCHED_OK,
     SCHED_END,
-    SCHED_NOTFOUND,
-    SCHED_EFAIL,
-    SCHED_EIO,
-    SCHED_EINVAL,
-    SCHED_ENOMEM,
-    SCHED_EPARSE,
-    SCHED_ECONSTRAINT,
+    SCHED_HMM_NOT_FOUND,
+    SCHED_SCAN_NOT_FOUND,
+    SCHED_DB_NOT_FOUND,
+    SCHED_JOB_NOT_FOUND,
+    SCHED_PROD_NOT_FOUND,
+    SCHED_SEQ_NOT_FOUND,
+    SCHED_NOT_ENOUGH_MEMORY,
+    SCHED_FAIL_PARSE_FILE,
+    SCHED_FAIL_OPEN_FILE,
+    SCHED_FAIL_CLOSE_FILE,
+    SCHED_FAIL_WRITE_FILE,
+    SCHED_FAIL_READ_FILE,
+    SCHED_FAIL_REMOVE_FILE,
+    SCHED_INVALID_FILE_NAME,
+    SCHED_INVALID_FILE_NAME_EXT,
+    SCHED_TOO_SHORT_FILE_NAME,
+    SCHED_TOO_LONG_FILE_NAME,
+    SCHED_TOO_LONG_FILE_PATH,
+    SCHED_FILE_NAME_NOT_SET,
+    SCHED_HMM_ALREADY_EXISTS,
+    SCHED_DB_ALREADY_EXISTS,
+    SCHED_ASSOC_HMM_NOT_FOUND,
+    SCHED_FAIL_BIND_STMT,
+    SCHED_FAIL_EVAL_STMT,
+    SCHED_FAIL_GET_FRESH_STMT,
+    SCHED_FAIL_GET_COLUMN_TEXT,
+    SCHED_FAIL_EXEC_STMT,
+    SCHED_FAIL_PREPARE_STMT,
+    SCHED_FAIL_FINALIZE_STMT,
+    SCHED_FAIL_RESET_STMT,
+    SCHED_FAIL_OPEN_SCHED_FILE,
+    SCHED_FAIL_CLOSE_SCHED_FILE,
+    SCHED_SQLITE3_NOT_THREAD_SAFE,
+    SCHED_SQLITE3_TOO_OLD,
+    SCHED_FAIL_BEGIN_TRANSACTION,
+    SCHED_FAIL_END_TRANSACTION,
+    SCHED_FAIL_ROLLBACK_TRANSACTION,
 };
 
 struct sched_db;
@@ -26,8 +56,6 @@ extern "Python" void append_scan(struct sched_scan *, void *arg);
 extern "Python" void append_job(struct sched_job *, void *arg);
 extern "Python" void append_prod(struct sched_prod *, void *arg);
 extern "Python" void append_seq(struct sched_seq *, void *arg);
-extern "Python" void sched_logger_print(char const *ctx, char const *msg,
-                                        void *arg);
 
 enum sched_limits
 {
@@ -65,11 +93,6 @@ enum sched_rc sched_cleanup(void);
 enum sched_rc sched_health_check(struct sched_health *);
 enum sched_rc sched_wipe(void);
 
-/* --- LOGGER Section --- */
-typedef void (*sched_logger_print_func_t)(char const *ctx, char const *msg,
-                                          void *arg);
-void sched_logger_setup(sched_logger_print_func_t, void *arg);
-
 /* --- DB Section --- */
 struct sched_db
 {
@@ -91,8 +114,6 @@ enum sched_rc sched_db_get_all(sched_db_set_func_t, struct sched_db *,
 enum sched_rc sched_db_add(struct sched_db *, char const *filename);
 
 enum sched_rc sched_db_remove(int64_t id);
-
-void sched_db_to_hmm_filename(char *filename);
 
 /* --- HMM Section --- */
 struct sched_hmm
@@ -116,8 +137,6 @@ enum sched_rc sched_hmm_get_all(sched_hmm_set_func_t, struct sched_hmm *,
                                 void *arg);
 
 enum sched_rc sched_hmm_remove(int64_t id);
-
-void sched_hmm_to_db_filename(char *filename);
 
 /* --- JOB Section --- */
 enum sched_job_type
@@ -248,3 +267,6 @@ enum sched_rc sched_seq_get_by_id(struct sched_seq *, int64_t id);
 enum sched_rc sched_seq_scan_next(struct sched_seq *);
 enum sched_rc sched_seq_get_all(sched_seq_set_func_t fn, struct sched_seq *,
                                 void *arg);
+
+/* --- ERROR Section --- */
+char const *sched_error_string(enum sched_rc rc);

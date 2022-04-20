@@ -1,28 +1,55 @@
-from loguru import logger
+import os
+from typing import List
 
-from deciphon_api.core.errors import InternalError
-from deciphon_api.csched import ffi, lib
-from deciphon_api.rc import RC
+from deciphon_api.sched.cffi import ffi, lib
+from deciphon_api.sched.error import SchedError, SchedWrapperError
+from deciphon_api.sched.rc import RC
 
-__all__ = ["sched_init", "sched_cleanup"]
+__all__ = ["sched_init", "sched_cleanup", "sched_wipe", "sched_health_check"]
 
 
 def sched_init(file_name: str):
-    lib.sched_logger_setup(lib.sched_logger_print, ffi.NULL)
-
     rc = RC(lib.sched_init(file_name.encode()))
-
-    if rc != RC.OK:
-        raise InternalError(rc)
+    rc.raise_for_status()
 
 
 def sched_cleanup():
     rc = RC(lib.sched_cleanup())
-
-    if rc != RC.OK:
-        raise InternalError(rc)
+    rc.raise_for_status()
 
 
-@ffi.def_extern()
-def sched_logger_print(ctx: bytes, msg: bytes, _):
-    logger.error(ffi.string(ctx).decode() + ": " + ffi.string(msg).decode())
+def sched_health_check(file) -> List[str]:
+    fd = os.dup(file.fileno())
+    if fd == -1:
+        raise SchedWrapperError(RC.SCHED_FAIL_OPEN_FILE)
+
+    fp = lib.fdopen(fd, b"r+")
+    if fp == ffi.NULL:
+        raise SchedWrapperError(RC.SCHED_FAIL_OPEN_FILE)
+
+    ptr = ffi.new("struct sched_health *")
+    if ptr == ffi.NULL:
+        lib.fclose(fp)
+        raise SchedError(RC.SCHED_NOT_ENOUGH_MEMORY)
+
+    ptr[0].fp = fp
+    ptr[0].num_errors = 0
+    rc = RC(lib.sched_health_check(ptr))
+    try:
+        rc.raise_for_status()
+    finally:
+        lib.fclose(fp)
+
+    file.flush()
+    file.seek(0)
+
+    errors: List[str] = []
+    for row in file:
+        errors.append(row.strip())
+
+    return errors
+
+
+def sched_wipe():
+    rc = RC(lib.sched_wipe())
+    rc.raise_for_status()

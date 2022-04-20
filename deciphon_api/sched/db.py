@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 from typing import Any, List
 
-from deciphon_api.core.errors import ConstraintError, InternalError, NotFoundError
-from deciphon_api.rc import RC
 from deciphon_api.sched.cffi import ffi, lib
-from deciphon_api.sched.hmm import sched_hmm_get_by_filename
+from deciphon_api.sched.error import SchedError
+from deciphon_api.sched.rc import RC
 
 __all__ = [
     "sched_db_add",
@@ -14,7 +13,6 @@ __all__ = [
     "sched_db_get_by_id",
     "sched_db_get_by_xxh3",
     "sched_db_remove",
-    "sched_db_to_hmm_filename",
 ]
 
 
@@ -34,78 +32,59 @@ def possess(ptr):
     )
 
 
-def sched_db_add(filename: str) -> sched_db:
-    hmm_filename = sched_db_to_hmm_filename(filename)
-    try:
-        sched_hmm_get_by_filename(hmm_filename)
-    except NotFoundError:
-        raise ConstraintError("corresponding hmm not found")
-
+def new_db():
     ptr = ffi.new("struct sched_db *")
-    rc = RC(lib.sched_db_add(ptr, filename.encode()))
-    if rc != RC.OK:
-        raise InternalError(rc)
+    if ptr == ffi.NULL:
+        raise SchedError(RC.SCHED_NOT_ENOUGH_MEMORY)
+    return ptr
 
+
+def sched_db_add(filename: str) -> sched_db:
+    ptr = new_db()
+    rc = RC(lib.sched_db_add(ptr, filename.encode()))
+    rc.raise_for_status()
     return possess(ptr)
 
 
 def sched_db_remove(db_id: int):
     rc = RC(lib.sched_db_remove(db_id))
-    if rc == RC.NOTFOUND:
-        raise NotFoundError("database")
-
-    if rc == RC.ECONSTRAINT:
-        raise ConstraintError("can't remove referenced database")
-
-    if rc != RC.OK:
-        raise InternalError(rc)
+    rc.raise_for_status()
 
 
 def sched_db_get_by_id(db_id: int) -> sched_db:
-    ptr = ffi.new("struct sched_db *")
+    ptr = new_db()
     rc = RC(lib.sched_db_get_by_id(ptr, db_id))
-    if rc == RC.NOTFOUND:
-        raise NotFoundError("database")
+    rc.raise_for_status()
     return possess(ptr)
 
 
 def sched_db_get_by_xxh3(xxh3: int) -> sched_db:
-    ptr = ffi.new("struct sched_db *")
+    ptr = new_db()
     rc = RC(lib.sched_db_get_by_xxh3(ptr, xxh3))
-    if rc == RC.NOTFOUND:
-        raise NotFoundError("database")
+    rc.raise_for_status()
     return possess(ptr)
 
 
 def sched_db_get_by_filename(filename: str) -> sched_db:
-    ptr = ffi.new("struct sched_db *")
+    ptr = new_db()
     rc = RC(lib.sched_db_get_by_filename(ptr, filename.encode()))
-    if rc == RC.NOTFOUND:
-        raise NotFoundError("database")
+    rc.raise_for_status()
     return possess(ptr)
 
 
 def sched_db_get_by_hmm_id(hmm_id: int) -> sched_db:
-    ptr = ffi.new("struct sched_db *")
+    ptr = new_db()
     rc = RC(lib.sched_db_get_by_hmm_id(ptr, hmm_id))
-    if rc == RC.NOTFOUND:
-        raise NotFoundError("database")
+    rc.raise_for_status()
     return possess(ptr)
 
 
 def sched_db_get_all() -> List[sched_db]:
     dbs: List[sched_db] = []
-    ptr = ffi.new("struct sched_db *")
+    ptr = new_db()
     rc = RC(lib.sched_db_get_all(lib.append_db, ptr, ffi.new_handle(dbs)))
-    if rc != RC.OK:
-        raise InternalError(rc)
+    rc.raise_for_status()
     return dbs
-
-
-def sched_db_to_hmm_filename(filename: str) -> str:
-    name = filename.encode()
-    lib.sched_db_to_hmm_filename(name)
-    return name.decode()
 
 
 @ffi.def_extern()

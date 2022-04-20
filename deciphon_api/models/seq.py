@@ -4,9 +4,9 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.core.errors import InternalError, NotFoundError
-from deciphon_api.rc import RC
+from deciphon_api.core.errors import InternalError
 from deciphon_api.sched.cffi import ffi, lib
+from deciphon_api.sched.seq import sched_seq
 
 __all__ = ["Seq", "SeqPost"]
 
@@ -24,6 +24,15 @@ class Seq(BaseModel):
             scan_id=int(cseq.scan_id),
             name=ffi.string(cseq.name).decode(),
             data=ffi.string(cseq.data).decode(),
+        )
+
+    @classmethod
+    def from_sched_seq(cls, seq: sched_seq):
+        return cls(
+            id=seq.id,
+            scan_id=seq.scan_id,
+            name=seq.name,
+            data=seq.data,
         )
 
     @classmethod

@@ -1,143 +1,30 @@
-import json
-from typing import Optional, Union
-
 from fastapi import Request
-from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 from starlette.status import (
-    HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
-    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
-    HTTP_412_PRECONDITION_FAILED,
-    HTTP_422_UNPROCESSABLE_ENTITY,
-    HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_418_IM_A_TEAPOT,
 )
 
-from deciphon_api.rc import RC, StrRC
 from deciphon_api.sched.cffi import lib
+from deciphon_api.sched.error import SchedError
+from deciphon_api.sched.rc import RC
 
 __all__ = [
-    "ConflictError",
-    "NotFoundError",
-    "DeciphonError",
-    "EFAIL",
-    "EINVAL",
-    "EIO",
-    "ENOMEM",
-    "EPARSE",
-    "ECONSTRAINT",
-    "ErrorResponse",
     "InternalError",
-    "ForbiddenError",
-    "ParseError",
-    "ConditionError",
     "UnauthorizedError",
-    "ConstraintError",
-    "InvalidTypeError",
+    "ErrorResponse",
 ]
 
 
-class DeciphonError(Exception):
-    def __init__(self, http_code: int, rc: RC, msg: str = ""):
-        self.http_code = http_code
-        self.rc = rc
-        self.msg = msg
-
-
-class EFAIL(DeciphonError):
-    def __init__(self, http_code: int, msg: str = "unspecified failure"):
-        super().__init__(http_code, RC.EFAIL, msg)
-
-
-class EIO(DeciphonError):
-    def __init__(self, http_code: int, msg: str = "io failure"):
-        super().__init__(http_code, RC.EIO, msg)
-
-
-class EINVAL(DeciphonError):
-    def __init__(self, http_code: int, msg: str = "invalid value"):
-        super().__init__(http_code, RC.EINVAL, msg)
-
-
-class ENOMEM(DeciphonError):
-    def __init__(self, http_code: int, msg: str = "not enough memory"):
-        super().__init__(http_code, RC.ENOMEM, msg)
-
-
-class EPARSE(DeciphonError):
-    def __init__(self, http_code: int, msg: str = "parse error"):
-        super().__init__(http_code, RC.EPARSE, msg)
-
-
-class ECONSTRAINT(DeciphonError):
-    def __init__(self, http_code: int, msg: str = "constraint error"):
-        super().__init__(http_code, RC.ECONSTRAINT, msg)
-
-
-class ParseError(EPARSE):
-    def __init__(self, msg: str):
-        super().__init__(HTTP_400_BAD_REQUEST, msg)
-
-
-class NotFoundError(EINVAL):
-    def __init__(self, what: str):
-        super().__init__(HTTP_404_NOT_FOUND, f"{what} not found")
-
-
-class ConflictError(EINVAL):
-    def __init__(self, msg: str):
-        super().__init__(HTTP_409_CONFLICT, msg)
-
-
-class UnauthorizedError(EINVAL):
+class UnauthorizedError(Exception):
     def __init__(self):
         super().__init__(HTTP_401_UNAUTHORIZED, "Failed to validate credentials")
 
 
-class ForbiddenError(EINVAL):
-    def __init__(self, msg: str):
-        super().__init__(HTTP_403_FORBIDDEN, msg)
-
-
-class ConstraintError(ECONSTRAINT):
-    def __init__(self, msg: str):
-        super().__init__(HTTP_403_FORBIDDEN, msg)
-
-
-class ConditionError(EINVAL):
-    def __init__(self, msg: str):
-        super().__init__(HTTP_412_PRECONDITION_FAILED, msg)
-
-
-class InvalidTypeError(EINVAL):
-    def __init__(self, msg: str):
-        super().__init__(HTTP_412_PRECONDITION_FAILED, msg)
-
-
-def InternalError(rc: RC, msg: Optional[str] = None) -> DeciphonError:
-    assert rc != RC.OK
-    assert rc != RC.END
-    assert rc != RC.NOTFOUND
-
-    http_code = HTTP_500_INTERNAL_SERVER_ERROR
-    kwargs = {}
-    if msg is not None:
-        kwargs["msg"] = msg
-
-    if rc == RC.EFAIL:
-        return EFAIL(http_code, **kwargs)
-    elif rc == RC.EIO:
-        return EIO(http_code, **kwargs)
-    elif rc == RC.EINVAL:
-        return EINVAL(http_code, **kwargs)
-    elif rc == RC.ENOMEM:
-        return ENOMEM(http_code, **kwargs)
-    else:
-        assert rc == RC.EPARSE
-        return EPARSE(http_code, **kwargs)
+class InternalError(Exception):
+    pass
 
 
 def truncate(msg: str):
@@ -146,28 +33,36 @@ def truncate(msg: str):
 
 
 class ErrorResponse(BaseModel):
-    rc: StrRC = StrRC.EFAIL
-    msg: str = "something went wrong"
+    rc: RC
+    msg: str
+
+    class Config:
+        use_enum_values = False
 
     @classmethod
     def create(cls, rc: RC, msg: str):
-        return cls(rc=StrRC[rc.name], msg=truncate(msg))
+        return cls(rc=rc, msg=truncate(msg))
 
 
-def deciphon_error_handler(_: Request, exc: DeciphonError):
+def sched_error_handler(_: Request, exc: SchedError):
     content = ErrorResponse.create(exc.rc, exc.msg)
-    return JSONResponse(
-        status_code=exc.http_code,
-        content=content.dict(),
-    )
 
+    http_code = HTTP_418_IM_A_TEAPOT
 
-def http422_error_handler(
-    _: Request,
-    exc: Union[RequestValidationError, ValidationError],
-) -> JSONResponse:
-    content = ErrorResponse.create(RC.EINVAL, json.dumps(exc.errors()))
+    if content.rc == RC.SCHED_DB_NOT_FOUND:
+        http_code = HTTP_404_NOT_FOUND
+    elif content.rc == RC.SCHED_HMM_NOT_FOUND:
+        http_code = HTTP_404_NOT_FOUND
+    elif content.rc == RC.SCHED_JOB_NOT_FOUND:
+        http_code = HTTP_404_NOT_FOUND
+    elif content.rc == RC.SCHED_PROD_NOT_FOUND:
+        http_code = HTTP_404_NOT_FOUND
+    elif content.rc == RC.SCHED_SEQ_NOT_FOUND:
+        http_code = HTTP_404_NOT_FOUND
+    elif content.rc == RC.SCHED_SCAN_NOT_FOUND:
+        http_code = HTTP_404_NOT_FOUND
+
     return JSONResponse(
-        status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=http_code,
         content=content.dict(),
     )

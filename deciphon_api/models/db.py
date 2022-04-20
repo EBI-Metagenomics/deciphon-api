@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 from enum import Enum
-from pathlib import Path
 from typing import List, Union
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.core.errors import InvalidTypeError, NotFoundError
 from deciphon_api.sched.db import (
     sched_db,
     sched_db_add,
@@ -17,6 +15,8 @@ from deciphon_api.sched.db import (
     sched_db_get_by_xxh3,
     sched_db_remove,
 )
+from deciphon_api.sched.error import SchedError
+from deciphon_api.sched.rc import RC
 
 __all__ = ["DB", "DBIDType"]
 
@@ -45,16 +45,14 @@ class DB(BaseModel):
 
     @staticmethod
     def add(filename: str):
-        if not Path(filename).exists():
-            raise NotFoundError(filename)
         return DB.from_sched_db(sched_db_add(filename))
 
     @staticmethod
     def get(id: Union[int, str], id_type: DBIDType) -> DB:
-        if id_type == DBIDType.FILENAME and not isinstance(id, str):
-            raise InvalidTypeError("Expected string")
-        elif id_type != DBIDType.FILENAME and not isinstance(id, int):
-            raise InvalidTypeError("Expected integer")
+        # if id_type == DBIDType.FILENAME and not isinstance(id, str):
+        #     raise InvalidTypeError("Expected string")
+        # elif id_type != DBIDType.FILENAME and not isinstance(id, int):
+        #     raise InvalidTypeError("Expected integer")
 
         if id_type == DBIDType.DB_ID:
             assert isinstance(id, int)
@@ -76,16 +74,20 @@ class DB(BaseModel):
     def exists_by_id(db_id: int) -> bool:
         try:
             DB.get(db_id, DBIDType.DB_ID)
-        except NotFoundError:
-            return False
+        except SchedError as error:
+            if error.rc == RC.SCHED_HMM_NOT_FOUND:
+                return False
+            raise
         return True
 
     @staticmethod
     def exists_by_filename(filename: str) -> bool:
         try:
             DB.get(filename, DBIDType.FILENAME)
-        except NotFoundError:
-            return False
+        except SchedError as error:
+            if error.rc == RC.SCHED_DB_NOT_FOUND:
+                return False
+            raise
         return True
 
     @staticmethod

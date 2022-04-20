@@ -7,7 +7,7 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import ConflictError, UnauthorizedError
+from deciphon_api.core.errors import UnauthorizedError
 from deciphon_api.models.hmm import HMM, HMMIDType
 
 router = APIRouter()
@@ -51,7 +51,7 @@ def get_hmm_list():
     name="hmms:download-hmm",
 )
 def download_hmm(hmm_id: int = Path(..., gt=0)):
-    hmm = HMM.get_by_id(hmm_id)
+    hmm = HMM.get(hmm_id, HMMIDType.HMM_ID)
     return FileResponse(hmm.filename, media_type=mime, filename=hmm.filename)
 
 

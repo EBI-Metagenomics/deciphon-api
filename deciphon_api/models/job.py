@@ -6,14 +6,10 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from deciphon_api.core.errors import (
-    ConditionError,
-    ConstraintError,
     InternalError,
-    NotFoundError,
 )
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.seq import Seq
-from deciphon_api.rc import RC
 from deciphon_api.sched.cffi import ffi, lib
 
 __all__ = ["Job", "JobStatePatch", "JobProgressPatch"]
@@ -146,9 +142,3 @@ class JobStatePatch(BaseModel):
 
 class JobProgressPatch(BaseModel):
     add_progress: int = Field(..., ge=0, le=100)
-
-
-@ffi.def_extern()
-def append_job(ptr, arg):
-    jobs = ffi.from_handle(arg)
-    jobs.append(Job.from_cdata(ptr[0]))

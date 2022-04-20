@@ -1,79 +1,65 @@
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from enum import Enum
+from typing import List
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.core.errors import ConditionError, InternalError, NotFoundError
-from deciphon_api.models.db import DB
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
 from deciphon_api.models.seq import Seq, SeqPost
-from deciphon_api.rc import RC
-from deciphon_api.sched.cffi import ffi, lib
+from deciphon_api.sched.job import sched_job_submit
+from deciphon_api.sched.scan import (
+    sched_scan,
+    sched_scan_get_all,
+    sched_scan_get_by_id,
+    sched_scan_get_by_job_id,
+    sched_scan_get_prods,
+    sched_scan_get_seqs,
+    sched_scan_new,
+)
 
 __all__ = ["Scan", "ScanPost"]
+
+
+class ScanIDType(str, Enum):
+    SCAN_ID = "scan_id"
+    JOB_ID = "job_id"
 
 
 class Scan(BaseModel):
     id: int = Field(..., gt=0)
     db_id: int = Field(..., gt=0)
 
-    multi_hits: bool = Field(False)
+    multi_hits: bool = Field(True)
     hmmer3_compat: bool = Field(False)
 
     job_id: int = Field(..., gt=0)
 
     @classmethod
-    def from_cdata(cls, cscan):
+    def from_sched_scan(cls, scan: sched_scan):
         return cls(
-            id=int(cscan.id),
-            db_id=int(cscan.db_id),
-            multi_hits=bool(cscan.multi_hits),
-            hmmer3_compat=bool(cscan.hmmer3_compat),
-            job_id=int(cscan.job_id),
+            id=int(scan.id),
+            db_id=int(scan.db_id),
+            multi_hits=bool(scan.multi_hits),
+            hmmer3_compat=bool(scan.hmmer3_compat),
+            job_id=scan.job_id,
         )
 
     @classmethod
-    def get_by_id(cls, scan_id: int) -> Scan:
-        return resolve_get_scan(*get_by_id(scan_id))
+    def get(cls, id: int, id_type: ScanIDType) -> Scan:
+        if id_type == ScanIDType.SCAN_ID:
+            return Scan.from_sched_scan(sched_scan_get_by_id(id))
 
-    @staticmethod
-    def get_by_job_id(job_id: int) -> Scan:
-        return resolve_get_scan(*get_by_job_id(job_id))
+        if id_type == ScanIDType.JOB_ID:
+            return Scan.from_sched_scan(sched_scan_get_by_job_id(id))
 
     def prods(self) -> List[Prod]:
-        ptr = ffi.new("struct sched_prod *")
-        prods: List[Prod] = []
-
-        prods_hdl = ffi.new_handle(prods)
-        rc = RC(lib.sched_scan_get_prods(self.id, lib.append_prod, ptr, prods_hdl))
-        assert rc != RC.END
-
-        if rc == RC.NOTFOUND:
-            raise NotFoundError("scan")
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return prods
+        return [Prod.from_sched_prod(prod) for prod in sched_scan_get_prods(self.id)]
 
     def seqs(self) -> List[Seq]:
-        ptr = ffi.new("struct sched_seq *")
-        seqs: List[Seq] = []
-
-        seqs_hdl = ffi.new_handle(seqs)
-        rc = RC(lib.sched_scan_get_seqs(self.id, lib.append_seq, ptr, seqs_hdl))
-        assert rc != RC.END
-
-        if rc == RC.NOTFOUND:
-            raise NotFoundError("scan")
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return seqs
+        return [Seq.from_sched_seq(seq) for seq in sched_scan_get_seqs(self.id)]
 
     def result(self) -> ScanResult:
         job = self.job()
@@ -88,44 +74,7 @@ class Scan(BaseModel):
 
     @staticmethod
     def get_list() -> List[Scan]:
-        ptr = ffi.new("struct sched_scan *")
-
-        scans: List[Scan] = []
-        rc = RC(lib.sched_scan_get_all(lib.append_scan, ptr, ffi.new_handle(scans)))
-        assert rc != RC.END
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return scans
-
-
-def get_by_id(scan_id: int) -> Tuple[Any, RC]:
-    ptr = ffi.new("struct sched_scan *")
-
-    rc = RC(lib.sched_scan_get_by_id(ptr, scan_id))
-    assert rc != RC.END
-
-    return (ptr, rc)
-
-
-def get_by_job_id(job_id: int) -> Tuple[Any, RC]:
-    ptr = ffi.new("struct sched_scan *")
-
-    rc = RC(lib.sched_scan_get_by_job_id(ptr, job_id))
-    assert rc != RC.END
-
-    return (ptr, rc)
-
-
-def resolve_get_scan(ptr: Any, rc: RC) -> Scan:
-    if rc == RC.OK:
-        return Scan.from_cdata(ptr[0])
-
-    if rc == RC.NOTFOUND:
-        raise NotFoundError("scan")
-
-    raise InternalError(rc)
+        return [Scan.from_sched_scan(scan) for scan in sched_scan_get_all()]
 
 
 class ScanPost(BaseModel):
@@ -137,29 +86,9 @@ class ScanPost(BaseModel):
     seqs: List[SeqPost] = []
 
     def submit(self):
-        if not DB.exists_by_id(self.db_id):
-            raise NotFoundError("database")
-
-        seqs = self.seqs
-        if len(seqs) > lib.NUM_SEQS_PER_JOB:
-            raise ConditionError("too many sequences")
-
-        scan_ptr = ffi.new("struct sched_scan *")
-        lib.sched_scan_init(scan_ptr, self.db_id, self.multi_hits, self.hmmer3_compat)
-
-        for seq in self.seqs:
-            lib.sched_scan_add_seq(scan_ptr, seq.name.encode(), seq.data.encode())
-
-        job_ptr = ffi.new("struct sched_job *")
-        lib.sched_job_init(job_ptr, lib.SCHED_SCAN)
-        rc = RC(lib.sched_job_submit(job_ptr, scan_ptr))
-        assert rc != RC.END
-        assert rc != RC.NOTFOUND
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return Job.from_cdata(job_ptr[0])
+        scan = sched_scan_new(self.db_id, self.multi_hits, self.hmmer3_compat)
+        sched_job_submit(scan)
+        return Scan.from_sched_scan(scan)
 
     @classmethod
     def example(cls):
@@ -210,9 +139,3 @@ class ScanPost(BaseModel):
                 ),
             ],
         )
-
-
-@ffi.def_extern()
-def append_scan(ptr, arg):
-    scans = ffi.from_handle(arg)
-    scans.append(Scan.from_cdata(ptr[0]))

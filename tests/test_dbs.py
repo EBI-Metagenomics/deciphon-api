@@ -45,7 +45,7 @@ def test_get_database_notfound(app: App):
         response = client.get(app.api_prefix + "/dbs/1")
         assert response.status_code == 404
         assert response.json() == {
-            "rc": "einval",
+            "rc": 4,
             "msg": "database not found",
         }
 
@@ -78,7 +78,7 @@ def test_download_database_notfound(app: App):
     with TestClient(app.api) as client:
         response = client.get(app.api_prefix + "/dbs/1/download")
         assert response.status_code == 404
-        assert response.json() == {"msg": "database not found", "rc": "einval"}
+        assert response.json() == {"msg": "database not found", "rc": 4}
 
 
 def test_get_database_list(app: App, upload_minifam, upload_pfam1):

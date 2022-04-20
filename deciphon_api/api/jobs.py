@@ -7,10 +7,9 @@ from starlette.status import HTTP_200_OK
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
 from deciphon_api.core.errors import UnauthorizedError
-from deciphon_api.models.hmm import HMM
-from deciphon_api.models.job import Job, JobProgressPatch, JobState, JobStatePatch
-from deciphon_api.models.scan import Scan
-from deciphon_api.sched.cffi import ffi, lib
+from deciphon_api.models.hmm import HMM, HMMIDType
+from deciphon_api.models.job import Job, JobProgressPatch, JobStatePatch
+from deciphon_api.models.scan import Scan, ScanIDType
 
 router = APIRouter()
 
@@ -18,24 +17,13 @@ router = APIRouter()
 @router.get(
     "/jobs/next_pend",
     summary="get next pending job",
-    response_model=List[Job],
+    response_model=Job,
     status_code=HTTP_200_OK,
     responses=responses,
     name="jobs:get-next-pend-job",
 )
 def get_next_pend_job():
-    ptr = ffi.new("struct sched_job *")
-
-    rc = RC(lib.sched_job_next_pend(ptr))
-    assert rc != RC.END
-
-    if rc == RC.NOTFOUND:
-        return []
-
-    if rc != RC.OK:
-        raise InternalError(rc)
-
-    return [Job.from_cdata(ptr[0])]
+    return Job.next_pend()
 
 
 @router.get(
@@ -47,7 +35,7 @@ def get_next_pend_job():
     name="jobs:get-job",
 )
 def get_job(job_id: int = Path(..., gt=0)):
-    return Job.from_id(job_id)
+    return Job.get(job_id)
 
 
 @router.get(
@@ -78,30 +66,7 @@ def set_job_state(
     if not authenticated:
         raise UnauthorizedError()
 
-    job = Job.from_id(job_id)
-
-    if job.state == job_patch.state:
-        raise ForbiddenError("redundant job state update")
-
-    if job.state == JobState.pend and job_patch.state == JobState.run:
-
-        rc = RC(lib.sched_job_set_run(job_id))
-
-    elif job.state == JobState.run and job_patch.state == JobState.done:
-
-        rc = RC(lib.sched_job_set_done(job_id))
-
-    elif job.state == JobState.run and job_patch.state == JobState.fail:
-
-        rc = RC(lib.sched_job_set_fail(job_id, job_patch.error.encode()))
-
-    else:
-        raise ForbiddenError("invalid job state update")
-
-    if rc != RC.OK:
-        raise InternalError(rc)
-
-    return Job.from_id(job_id)
+    return Job.set_state(job_id, job_patch)
 
 
 @router.patch(
@@ -121,7 +86,7 @@ def add_job_progress(
         raise UnauthorizedError()
 
     Job.add_progress(job_id, job_patch.add_progress)
-    return Job.from_id(job_id)
+    return Job.get(job_id)
 
 
 @router.get(
@@ -133,7 +98,7 @@ def add_job_progress(
     name="jobs:get-hmm",
 )
 def get_hmm(job_id: int = Path(..., gt=0)):
-    return HMM.get_by_job_id(job_id)
+    return HMM.get(job_id, HMMIDType.JOB_ID)
 
 
 @router.get(
@@ -145,7 +110,7 @@ def get_hmm(job_id: int = Path(..., gt=0)):
     name="jobs:get-scan",
 )
 def get_scan(job_id: int = Path(..., gt=0)):
-    return Scan.get_by_job_id(job_id)
+    return Scan.get(job_id, ScanIDType.JOB_ID)
 
 
 @router.delete(

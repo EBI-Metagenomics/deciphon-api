@@ -10,7 +10,7 @@ def test_submit_scan_with_non_existent_database(app: App):
             f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
         )
         assert response.status_code == 404
-        assert response.json() == {"rc": "einval", "msg": "database not found"}
+        assert response.json() == {"rc": 4, "msg": "database not found"}
 
 
 def test_submit_scan(app: App, upload_minifam):

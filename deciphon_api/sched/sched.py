@@ -35,10 +35,9 @@ def sched_health_check(file) -> List[str]:
     ptr[0].fp = fp
     ptr[0].num_errors = 0
     rc = RC(lib.sched_health_check(ptr))
-    try:
-        rc.raise_for_status()
-    finally:
-        lib.fclose(fp)
+
+    lib.fclose(fp)
+    rc.raise_for_status()
 
     file.flush()
     file.seek(0)

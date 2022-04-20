@@ -33,7 +33,6 @@ enum sched_rc
     SCHED_FAIL_GET_COLUMN_TEXT,
     SCHED_FAIL_EXEC_STMT,
     SCHED_FAIL_PREPARE_STMT,
-    SCHED_FAIL_FINALIZE_STMT,
     SCHED_FAIL_RESET_STMT,
     SCHED_FAIL_OPEN_SCHED_FILE,
     SCHED_FAIL_CLOSE_SCHED_FILE,
@@ -208,8 +207,7 @@ enum sched_rc sched_scan_get_prods(int64_t job_id, sched_prod_set_func_t,
 enum sched_rc sched_scan_get_by_id(struct sched_scan *, int64_t scan_id);
 enum sched_rc sched_scan_get_by_job_id(struct sched_scan *, int64_t job_id);
 
-void sched_scan_add_seq(struct sched_scan *, char const *name,
-                        char const *data);
+void sched_scan_add_seq(char const *name, char const *data);
 
 enum sched_rc sched_scan_get_all(sched_scan_set_func_t fn, struct sched_scan *,
                                  void *arg);

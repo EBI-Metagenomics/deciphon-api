@@ -12,6 +12,7 @@ from deciphon_api.models.seq import Seq, SeqPost
 from deciphon_api.sched.job import sched_job_submit
 from deciphon_api.sched.scan import (
     sched_scan,
+    sched_scan_add_seq,
     sched_scan_get_all,
     sched_scan_get_by_id,
     sched_scan_get_by_job_id,
@@ -40,10 +41,10 @@ class Scan(BaseModel):
     @classmethod
     def from_sched_scan(cls, scan: sched_scan):
         return cls(
-            id=int(scan.id),
-            db_id=int(scan.db_id),
-            multi_hits=bool(scan.multi_hits),
-            hmmer3_compat=bool(scan.hmmer3_compat),
+            id=scan.id,
+            db_id=scan.db_id,
+            multi_hits=scan.multi_hits,
+            hmmer3_compat=scan.hmmer3_compat,
             job_id=scan.job_id,
         )
 
@@ -63,14 +64,14 @@ class Scan(BaseModel):
 
     def result(self) -> ScanResult:
         job = self.job()
-        job.assert_state(JobState.done)
+        job.assert_state(JobState.SCHED_DONE)
 
         prods: List[Prod] = self.prods()
         seqs: List[Seq] = self.seqs()
         return ScanResult(self, prods, seqs)
 
     def job(self) -> Job:
-        return Job.from_id(self.job_id)
+        return Job.get(self.job_id)
 
     @staticmethod
     def get_list() -> List[Scan]:
@@ -85,10 +86,11 @@ class ScanPost(BaseModel):
 
     seqs: List[SeqPost] = []
 
-    def submit(self):
+    def submit(self) -> Job:
         scan = sched_scan_new(self.db_id, self.multi_hits, self.hmmer3_compat)
-        sched_job_submit(scan)
-        return Scan.from_sched_scan(scan)
+        for seq in self.seqs:
+            sched_scan_add_seq(seq.name, seq.data)
+        return Job.from_sched_job(sched_job_submit(scan))
 
     @classmethod
     def example(cls):

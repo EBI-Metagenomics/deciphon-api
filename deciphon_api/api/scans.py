@@ -1,13 +1,13 @@
 from typing import List
 
-from fastapi import APIRouter, Body, Path
+from fastapi import APIRouter, Body, Path, Query
 from fastapi.responses import PlainTextResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
-from deciphon_api.models.scan import Scan, ScanPost
+from deciphon_api.models.scan import Scan, ScanIDType, ScanPost
 from deciphon_api.models.seq import Seq
 
 router = APIRouter()
@@ -21,8 +21,10 @@ router = APIRouter()
     responses=responses,
     name="scans:get-scan",
 )
-def get_scan(scan_id: int = Path(..., gt=0)):
-    return Scan.get_by_id(scan_id)
+def get_scan(
+    id: int = Path(...), id_type: ScanIDType = Query(ScanIDType.SCAN_ID.value)
+):
+    return Scan.get(id, id_type)
 
 
 @router.post(
@@ -46,7 +48,7 @@ def submit_scan(scan: ScanPost = Body(..., example=ScanPost.example())):
     name="scans:get-sequences-of-scan",
 )
 def get_sequences_of_scan(scan_id: int = Path(..., gt=0)):
-    return Scan.get_by_id(scan_id).seqs()
+    return Scan.get(scan_id, ScanIDType.SCAN_ID).seqs()
 
 
 @router.get(
@@ -84,9 +86,9 @@ def get_next_sequence_of_scan(
     name="scans:get-products-of-scan",
 )
 def get_products_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get_by_id(scan_id)
+    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
     job = scan.job()
-    job.assert_state(JobState.done)
+    job.assert_state(JobState.SCHED_DONE)
     return scan.prods()
 
 
@@ -99,9 +101,9 @@ def get_products_of_scan(scan_id: int = Path(..., gt=0)):
     name="scans:get-products-of-scan-as-gff",
 )
 def get_products_of_scan_as_gff(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get_by_id(scan_id)
+    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
     job = scan.job()
-    job.assert_state(JobState.done)
+    job.assert_state(JobState.SCHED_DONE)
     return scan.result().gff()
 
 
@@ -114,9 +116,9 @@ def get_products_of_scan_as_gff(scan_id: int = Path(..., gt=0)):
     name="scans:get-path-of-scan",
 )
 def get_path_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get_by_id(scan_id)
+    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
     job = scan.job()
-    job.assert_state(JobState.done)
+    job.assert_state(JobState.SCHED_DONE)
     return scan.result().fasta("state")
 
 
@@ -129,9 +131,9 @@ def get_path_of_scan(scan_id: int = Path(..., gt=0)):
     name="scans:get-fragments-of-scan",
 )
 def get_fragment_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get_by_id(scan_id)
+    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
     job = scan.job()
-    job.assert_state(JobState.done)
+    job.assert_state(JobState.SCHED_DONE)
     return scan.result().fasta("frag")
 
 
@@ -144,9 +146,9 @@ def get_fragment_of_scan(scan_id: int = Path(..., gt=0)):
     name="scans:get-codons-of-scan",
 )
 def get_codons_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get_by_id(scan_id)
+    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
     job = scan.job()
-    job.assert_state(JobState.done)
+    job.assert_state(JobState.SCHED_DONE)
     return scan.result().fasta("codon")
 
 
@@ -159,7 +161,7 @@ def get_codons_of_scan(scan_id: int = Path(..., gt=0)):
     name="scans:get-aminos-of-scan",
 )
 def get_aminos_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get_by_id(scan_id)
+    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
     job = scan.job()
-    job.assert_state(JobState.done)
+    job.assert_state(JobState.SCHED_DONE)
     return scan.result().fasta("amino")

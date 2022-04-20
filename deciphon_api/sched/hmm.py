@@ -35,11 +35,13 @@ class sched_hmm:
         self.job_id = int(c.job_id)
 
 
+def string(cdata) -> str:
+    return ffi.string(cdata).decode()
+
+
 def possess(ptr) -> sched_hmm:
     c = ptr[0]
-    return sched_hmm(
-        int(c.id), int(c.xxh3), ffi.string(c.filename).decode(), int(c.job_id), ptr
-    )
+    return sched_hmm(int(c.id), int(c.xxh3), string(c.filename), int(c.job_id), ptr)
 
 
 def new_hmm() -> sched_hmm:

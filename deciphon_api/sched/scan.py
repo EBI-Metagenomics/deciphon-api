@@ -15,6 +15,7 @@ __all__ = [
     "sched_scan_get_prods",
     "sched_scan_get_all",
     "sched_scan_new",
+    "sched_scan_add_seq",
 ]
 
 
@@ -23,8 +24,8 @@ class sched_scan:
     id: int
     db_id: int
 
-    multi_hits: int
-    hmmer3_compat: int
+    multi_hits: bool
+    hmmer3_compat: bool
 
     job_id: int
 
@@ -36,8 +37,8 @@ class sched_scan:
         self.id = int(c.id)
         self.db_id = int(c.db_id)
 
-        self.multi_hits = int(c.multi_hits)
-        self.hmmer3_compat = int(c.hmmer3_compat)
+        self.multi_hits = bool(c.multi_hits)
+        self.hmmer3_compat = bool(c.hmmer3_compat)
 
         self.job_id = int(c.job_id)
 
@@ -47,8 +48,8 @@ def possess(ptr):
     return sched_scan(
         int(c.id),
         int(c.db_id),
-        int(c.multi_hits),
-        int(c.hmmer3_compat),
+        bool(c.multi_hits),
+        bool(c.hmmer3_compat),
         int(c.job_id),
         ptr,
     )
@@ -61,8 +62,12 @@ def new_scan():
     return ptr
 
 
+def sched_scan_add_seq(name: str, data: str):
+    lib.sched_scan_add_seq(name.encode(), data.encode())
+
+
 def sched_scan_new(db_id: int, multi_hits: bool, hmmer3_compat: bool) -> sched_scan:
-    ptr = new_scan().ptr
+    ptr = new_scan()
     lib.sched_scan_init(ptr, db_id, multi_hits, hmmer3_compat)
     return possess(ptr)
 
@@ -83,7 +88,7 @@ def sched_scan_get_by_job_id(job_id: int) -> sched_scan:
 
 def sched_scan_get_seqs(scan_id: int):
     seqs: List[sched_seq] = []
-    ptr = sched_seq_new()
+    ptr = sched_seq_new(0, scan_id)
     rc = RC(lib.sched_scan_get_seqs(scan_id, lib.append_seq, ptr, ffi.new_handle(seqs)))
     rc.raise_for_status()
     return seqs

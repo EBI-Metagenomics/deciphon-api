@@ -26,24 +26,15 @@ class sched_job_type(int, Enum):
     SCHED_HMM = 1
 
 
-class sched_job_state(int, Enum):
-    SCHED_PEND = 0
-    SCHED_RUN = 1
-    SCHED_DONE = 2
-    SCHED_FAIL = 3
+class sched_job_state(str, Enum):
+    SCHED_PEND = "pend"
+    SCHED_RUN = "run"
+    SCHED_DONE = "done"
+    SCHED_FAIL = "fail"
 
-    @classmethod
-    def from_cdata(cls, cstate):
-        state = ffi.string(cstate).decode()
-        if state == "pend":
-            return cls(0)
-        elif state == "run":
-            return cls(1)
-        elif state == "done":
-            return cls(2)
-        elif state == "fail":
-            return cls(3)
-        assert False
+
+def string(cdata) -> str:
+    return ffi.string(cdata).decode()
 
 
 @dataclass
@@ -67,7 +58,7 @@ class sched_job:
         self.id = int(c.id)
         self.type = sched_job_type(int(c.type))
 
-        self.state = sched_job_state.from_cdata(c.data)
+        self.state = sched_job_state(string(c.state))
         self.progress = int(c.progress)
         self.error = ffi.string(c.error).decode()
 
@@ -81,7 +72,7 @@ def possess(ptr) -> sched_job:
     return sched_job(
         int(c.id),
         sched_job_type(int(c.type)),
-        sched_job_state.from_cdata(c.state),
+        sched_job_state(string(c.state)),
         int(c.progress),
         ffi.string(c.error).decode(),
         int(c.submission),
@@ -91,20 +82,16 @@ def possess(ptr) -> sched_job:
     )
 
 
+def new_job(job_type: sched_job_type = sched_job_type.SCHED_SCAN) -> sched_job:
+    ptr = ffi.new("struct sched_job *")
+    if ptr == ffi.NULL:
+        raise SchedError(RC.SCHED_NOT_ENOUGH_MEMORY)
+    lib.sched_job_init(ptr, job_type.value)
+    return possess(ptr)
+
+
 def sched_job_new(job_type: sched_job_type) -> sched_job:
-    ptr = ffi.new("struct sched_job *")
-    if ptr == ffi.NULL:
-        raise SchedError(RC.SCHED_NOT_ENOUGH_MEMORY)
-    lib.sched_job_init(ptr, job_type)
-    return possess(ptr)
-
-
-def new_job() -> sched_job:
-    ptr = ffi.new("struct sched_job *")
-    if ptr == ffi.NULL:
-        raise SchedError(RC.SCHED_NOT_ENOUGH_MEMORY)
-    lib.sched_job_init(ptr, sched_job_type.SCHED_SCAN)
-    return possess(ptr)
+    return new_job(job_type)
 
 
 def sched_job_get_by_id(job_id: int) -> sched_job:
@@ -144,17 +131,18 @@ def sched_job_set_done(job_id: int):
     rc.raise_for_status()
 
 
-def sched_job_submit(actual_job: Union[sched_hmm, sched_scan]):
+def sched_job_submit(actual_job: Union[sched_hmm, sched_scan]) -> sched_job:
     if isinstance(actual_job, sched_hmm):
         ptr = sched_job_new(sched_job_type.SCHED_HMM).ptr
     else:
         assert isinstance(actual_job, sched_scan)
-        ptr = sched_job_new(sched_job_type.SCHED_SCAN)
+        ptr = sched_job_new(sched_job_type.SCHED_SCAN).ptr
 
     rc = RC(lib.sched_job_submit(ptr, actual_job.ptr))
     rc.raise_for_status()
 
     actual_job.refresh()
+    return possess(ptr)
 
 
 def sched_job_add_progress(job_id: int, progress: int):

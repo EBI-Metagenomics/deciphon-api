@@ -1,11 +1,18 @@
+import os
 from dataclasses import dataclass
 from typing import Any, List
 
 from deciphon_api.sched.cffi import ffi, lib
-from deciphon_api.sched.error import SchedError
+from deciphon_api.sched.error import SchedError, SchedWrapperError
 from deciphon_api.sched.rc import RC
 
-__all__ = ["sched_prod", "sched_prod_new", "sched_prod_get_by_id", "sched_prod_get_all"]
+__all__ = [
+    "sched_prod",
+    "sched_prod_new",
+    "sched_prod_get_by_id",
+    "sched_prod_get_all",
+    "sched_prod_add_file",
+]
 
 
 @dataclass
@@ -29,19 +36,23 @@ class sched_prod:
     ptr: Any
 
 
+def string(cdata) -> str:
+    return ffi.string(cdata).decode()
+
+
 def possess(ptr):
     c = ptr[0]
     return sched_prod(
         int(c.id),
         int(c.scan_id),
         int(c.seq_id),
-        ffi.string(c.profile_name).decode(),
-        ffi.string(c.abc_name).decode(),
+        string(c.profile_name),
+        string(c.abc_name),
         float(c.alt_loglik),
         float(c.null_loglik),
-        ffi.string(c.profile_typeid).decode(),
-        ffi.string(c.version).decode(),
-        ffi.string(c.match).decode(),
+        string(c.profile_typeid),
+        string(c.version),
+        string(c.match),
         ptr,
     )
 
@@ -65,6 +76,20 @@ def sched_prod_get_all() -> List[sched_prod]:
     rc = RC(lib.sched_prod_get_all(lib.append_prod, ptr, ffi.new_handle(prods)))
     rc.raise_for_status()
     return prods
+
+
+def sched_prod_add_file(file):
+    fd = os.dup(file.fileno())
+    if fd == -1:
+        raise SchedWrapperError(RC.SCHED_FAIL_OPEN_FILE)
+
+    fp = lib.fdopen(fd, b"r+")
+    if fp == ffi.NULL:
+        raise SchedWrapperError(RC.SCHED_FAIL_OPEN_FILE)
+
+    rc = RC(lib.sched_prod_add_file(fp))
+    lib.fclose(fp)
+    rc.raise_for_status()
 
 
 @ffi.def_extern()

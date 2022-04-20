@@ -18,7 +18,7 @@ router = APIRouter()
     name="seqs:get-sequence",
 )
 def get_sequence(seq_id: int = Path(..., gt=0)):
-    return Seq.from_id(seq_id)
+    return Seq.get(seq_id)
 
 
 @router.get(

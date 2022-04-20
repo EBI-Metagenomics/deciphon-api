@@ -5,28 +5,38 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.core.errors import (
-    InternalError,
+from deciphon_api.sched.job import (
+    sched_job,
+    sched_job_add_progress,
+    sched_job_get_all,
+    sched_job_get_by_id,
+    sched_job_next_pend,
+    sched_job_remove,
+    sched_job_set_done,
+    sched_job_set_fail,
+    sched_job_set_run,
+    sched_job_state,
 )
-from deciphon_api.models.prod import Prod
-from deciphon_api.models.seq import Seq
-from deciphon_api.sched.cffi import ffi, lib
 
 __all__ = ["Job", "JobStatePatch", "JobProgressPatch"]
 
 
 class JobState(str, Enum):
-    pend = "pend"
-    run = "run"
-    done = "done"
-    fail = "fail"
+    SCHED_PEND = "pend"
+    SCHED_RUN = "run"
+    SCHED_DONE = "done"
+    SCHED_FAIL = "fail"
+
+    @classmethod
+    def from_sched_job_state(cls, job_state: sched_job_state):
+        return cls[job_state.name]
 
 
 class Job(BaseModel):
     id: int = Field(..., gt=0)
     type: int = Field(..., ge=0, le=1)
 
-    state: JobState = JobState.pend
+    state: JobState = JobState.SCHED_PEND
     progress: int = Field(..., ge=0, le=100)
     error: str = ""
 
@@ -35,108 +45,59 @@ class Job(BaseModel):
     exec_ended: int = Field(..., ge=0)
 
     @classmethod
-    def from_cdata(cls, cjob):
+    def from_sched_job(cls, job: sched_job):
         return cls(
-            id=int(cjob.id),
-            type=int(cjob.type),
-            state=ffi.string(cjob.state).decode(),
-            progress=int(cjob.progress),
-            error=ffi.string(cjob.error).decode(),
-            submission=int(cjob.submission),
-            exec_started=int(cjob.exec_started),
-            exec_ended=int(cjob.exec_ended),
+            id=job.id,
+            type=job.type,
+            state=JobState.from_sched_job_state(job.state),
+            progress=job.progress,
+            error=job.error,
+            submission=job.submission,
+            exec_started=job.exec_started,
+            exec_ended=job.exec_ended,
         )
 
-    @classmethod
-    def from_id(cls, job_id: int):
-        ptr = ffi.new("struct sched_job *")
+    @staticmethod
+    def get(job_id: int) -> Job:
+        return Job.from_sched_job(sched_job_get_by_id(job_id))
 
-        rc = RC(lib.sched_job_get_by_id(ptr, job_id))
-        assert rc != RC.END
+    @staticmethod
+    def set_state(job_id: int, state_patch: JobStatePatch) -> Job:
+        if state_patch.state == JobState.SCHED_RUN:
+            sched_job_set_run(job_id)
 
-        if rc == RC.NOTFOUND:
-            raise NotFoundError("job")
+        elif state_patch.state == JobState.SCHED_FAIL:
+            sched_job_set_fail(job_id, state_patch.error)
 
-        if rc != RC.OK:
-            raise InternalError(rc)
+        elif state_patch.state == JobState.SCHED_DONE:
+            sched_job_set_done(job_id)
 
-        return Job.from_cdata(ptr[0])
+        return Job.get(job_id)
 
-    def prods(self) -> List[Prod]:
-        ptr = ffi.new("struct sched_prod *")
-        prods: List[Prod] = []
-
-        prods_hdl = ffi.new_handle(prods)
-        rc = RC(lib.sched_job_get_prods(self.id, lib.append_prod, ptr, prods_hdl))
-        assert rc != RC.END
-
-        if rc == RC.NOTFOUND:
-            raise NotFoundError("job")
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return prods
-
-    def seqs(self) -> List[Seq]:
-        ptr = ffi.new("struct sched_seq *")
-        seqs: List[Seq] = []
-
-        seqs_hdl = ffi.new_handle(seqs)
-        rc = RC(lib.sched_job_get_seqs(self.id, lib.append_seq, ptr, seqs_hdl))
-        assert rc != RC.END
-
-        if rc == RC.NOTFOUND:
-            raise NotFoundError("job")
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return seqs
+    @staticmethod
+    def next_pend() -> Job:
+        return Job.from_sched_job(sched_job_next_pend())
 
     def assert_state(self, state: JobState):
-        if self.state != state:
-            raise ConditionError(f"job not in {str(state.done)} state")
+        pass
+        # if self.state != state:
+        #     raise ConditionError(f"job not in {str(state.done)} state")
 
     @staticmethod
     def add_progress(job_id: int, progress: int):
-        rc = RC(lib.sched_job_add_progress(job_id, progress))
-
-        if rc == RC.NOTFOUND:
-            raise NotFoundError("job")
-
-        if rc != RC.OK:
-            raise InternalError(rc)
+        sched_job_add_progress(job_id, progress)
 
     @staticmethod
     def remove(job_id: int):
-        rc = RC(lib.sched_job_remove(job_id))
-
-        if rc == RC.NOTFOUND:
-            raise NotFoundError("job")
-
-        if rc == RC.ECONSTRAINT:
-            raise ConstraintError("can't remove referenced job")
-
-        if rc != RC.OK:
-            raise InternalError(rc)
+        sched_job_remove(job_id)
 
     @staticmethod
     def get_list() -> List[Job]:
-        ptr = ffi.new("struct sched_job *")
-
-        jobs: List[Job] = []
-        rc = RC(lib.sched_job_get_all(lib.append_job, ptr, ffi.new_handle(jobs)))
-        assert rc != RC.END
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return jobs
+        return [Job.from_sched_job(job) for job in sched_job_get_all()]
 
 
 class JobStatePatch(BaseModel):
-    state: JobState = JobState.pend
+    state: JobState = JobState.SCHED_PEND
     error: str = ""
 
 

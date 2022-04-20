@@ -4,9 +4,12 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from deciphon_api.core.errors import InternalError
-from deciphon_api.sched.cffi import ffi, lib
-from deciphon_api.sched.prod import sched_prod
+from deciphon_api.sched.prod import (
+    sched_prod,
+    sched_prod_add_file,
+    sched_prod_get_all,
+    sched_prod_get_by_id,
+)
 
 __all__ = ["Prod"]
 
@@ -44,35 +47,13 @@ class Prod(BaseModel):
         )
 
     @classmethod
-    def from_id(cls, prod_id: int):
-        ptr = ffi.new("struct sched_prod *")
-
-        rc = RC(lib.sched_prod_get_by_id(ptr, prod_id))
-        assert rc != RC.END
-
-        if rc == RC.NOTFOUND:
-            raise NotFoundError("prod")
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return Prod.from_cdata(ptr[0])
+    def get(cls, prod_id: int) -> Prod:
+        return Prod.from_sched_prod(sched_prod_get_by_id(prod_id))
 
     @staticmethod
     def get_list() -> List[Prod]:
-        ptr = ffi.new("struct sched_prod *")
+        return [Prod.from_sched_prod(prod) for prod in sched_prod_get_all()]
 
-        prods: List[Prod] = []
-        rc = RC(lib.sched_prod_get_all(lib.append_prod, ptr, ffi.new_handle(prods)))
-        assert rc != RC.END
-
-        if rc != RC.OK:
-            raise InternalError(rc)
-
-        return prods
-
-
-@ffi.def_extern()
-def append_prod(ptr, arg):
-    prods = ffi.from_handle(arg)
-    prods.append(Prod.from_cdata(ptr[0]))
+    @staticmethod
+    def add_file(file):
+        sched_prod_add_file(file)

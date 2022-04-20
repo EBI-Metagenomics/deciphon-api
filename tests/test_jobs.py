@@ -7,8 +7,7 @@ from deciphon_api.models.scan import ScanPost
 def test_get_next_pend_job_empty(app: App):
     with TestClient(app.api) as client:
         response = client.get(f"{app.api_prefix}/jobs/next_pend")
-        assert response.status_code == 200
-        assert response.json() == []
+        assert response.status_code == 404
 
 
 def test_get_next_pend_job(app: App, upload_minifam):
@@ -24,20 +23,18 @@ def test_get_next_pend_job(app: App, upload_minifam):
         assert response.status_code == 200
 
         json = response.json()
-        assert "submission" in json[0]
-        del json[0]["submission"]
+        assert "submission" in json
+        del json["submission"]
 
-        assert json == [
-            {
-                "id": 1,
-                "type": 1,
-                "state": "pend",
-                "progress": 0,
-                "error": "",
-                "exec_ended": 0,
-                "exec_started": 0,
-            },
-        ]
+        assert json == {
+            "id": 1,
+            "type": 1,
+            "state": "pend",
+            "progress": 0,
+            "error": "",
+            "exec_ended": 0,
+            "exec_started": 0,
+        }
 
 
 def test_set_job_state_run(app: App, upload_minifam):

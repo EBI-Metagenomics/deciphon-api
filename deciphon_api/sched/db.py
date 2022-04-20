@@ -25,11 +25,13 @@ class sched_db:
     ptr: Any
 
 
+def string(cdata) -> str:
+    return ffi.string(cdata).decode()
+
+
 def possess(ptr):
     c = ptr[0]
-    return sched_db(
-        int(c.id), int(c.xxh3), ffi.string(c.filename).decode(), int(c.hmm_id), ptr
-    )
+    return sched_db(int(c.id), int(c.xxh3), string(c.filename), int(c.hmm_id), ptr)
 
 
 def new_db():

@@ -7,9 +7,9 @@ from pydantic import BaseModel, Field
 
 from deciphon_api.sched.job import (
     sched_job,
-    sched_job_add_progress,
     sched_job_get_all,
     sched_job_get_by_id,
+    sched_job_increment_progress,
     sched_job_next_pend,
     sched_job_remove,
     sched_job_set_done,
@@ -84,8 +84,8 @@ class Job(BaseModel):
         #     raise ConditionError(f"job not in {str(state.done)} state")
 
     @staticmethod
-    def add_progress(job_id: int, progress: int):
-        sched_job_add_progress(job_id, progress)
+    def increment_progress(job_id: int, progress: int):
+        sched_job_increment_progress(job_id, progress)
 
     @staticmethod
     def remove(job_id: int):
@@ -102,4 +102,4 @@ class JobStatePatch(BaseModel):
 
 
 class JobProgressPatch(BaseModel):
-    add_progress: int = Field(..., ge=0, le=100)
+    increment: int = Field(..., ge=0, le=100)

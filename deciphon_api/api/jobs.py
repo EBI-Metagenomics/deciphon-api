@@ -70,14 +70,14 @@ def set_job_state(
 
 
 @router.patch(
-    "/jobs/{job_id}/progress/add",
+    "/jobs/{job_id}/progress",
     summary="patch job progress",
     response_model=Job,
     status_code=HTTP_200_OK,
     responses=responses,
-    name="jobs:add-job-progress",
+    name="jobs:increment-job-progress",
 )
-def add_job_progress(
+def increment_job_progress(
     job_id: int = Path(..., gt=0),
     job_patch: JobProgressPatch = Body(...),
     authenticated: bool = Depends(auth_request),
@@ -85,7 +85,7 @@ def add_job_progress(
     if not authenticated:
         raise UnauthorizedError()
 
-    Job.add_progress(job_id, job_patch.add_progress)
+    Job.increment_progress(job_id, job_patch.increment)
     return Job.get(job_id)
 
 

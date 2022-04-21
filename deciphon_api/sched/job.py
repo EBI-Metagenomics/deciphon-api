@@ -16,7 +16,7 @@ __all__ = [
     "sched_job_set_fail",
     "sched_job_set_done",
     "sched_job_submit",
-    "sched_job_add_progress",
+    "sched_job_increment_progress",
     "sched_job_remove",
 ]
 
@@ -145,8 +145,8 @@ def sched_job_submit(actual_job: Union[sched_hmm, sched_scan]) -> sched_job:
     return possess(ptr)
 
 
-def sched_job_add_progress(job_id: int, progress: int):
-    rc = RC(lib.sched_job_add_progress(job_id, progress))
+def sched_job_increment_progress(job_id: int, progress: int):
+    rc = RC(lib.sched_job_increment_progress(job_id, progress))
     rc.raise_for_status()
 
 

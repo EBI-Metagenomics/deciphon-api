@@ -45,6 +45,8 @@ isort = "*"
 pyright = "*"
 pytest = "*"
 requests = "*"
+coverage = "*"
+pytest-cov = "*"
 
 [tool.poetry.build]
 script = "build_ext.py"
@@ -59,3 +61,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.cibuildwheel]
 skip = "cp36-* cp37-* pp*"
+
+[tool.pytest.ini_options]
+addopts = "--cov=deciphon_api --cov-report html"
+testpaths = ["tests"]

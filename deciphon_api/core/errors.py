@@ -1,9 +1,10 @@
-from fastapi import Request
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.status import (
     HTTP_401_UNAUTHORIZED,
     HTTP_404_NOT_FOUND,
+    HTTP_406_NOT_ACCEPTABLE,
     HTTP_418_IM_A_TEAPOT,
 )
 
@@ -12,19 +13,20 @@ from deciphon_api.sched.error import SchedError
 from deciphon_api.sched.rc import RC
 
 __all__ = [
-    "InternalError",
     "UnauthorizedError",
     "ErrorResponse",
+    "InvalidTypeError",
 ]
 
 
-class UnauthorizedError(Exception):
+class UnauthorizedError(HTTPException):
     def __init__(self):
         super().__init__(HTTP_401_UNAUTHORIZED, "Failed to validate credentials")
 
 
-class InternalError(Exception):
-    pass
+class InvalidTypeError(HTTPException):
+    def __init__(self, expected_type: str):
+        super().__init__(HTTP_406_NOT_ACCEPTABLE, f"Expected {expected_type} type")
 
 
 def truncate(msg: str):

@@ -5,6 +5,7 @@ from typing import List, Union
 
 from pydantic import BaseModel, Field
 
+from deciphon_api.core.errors import InvalidTypeError
 from deciphon_api.sched.error import SchedError
 from deciphon_api.sched.hmm import (
     sched_hmm,
@@ -58,19 +59,23 @@ class HMM(BaseModel):
         #     raise InvalidTypeError("Expected integer")
 
         if id_type == HMMIDType.HMM_ID:
-            assert isinstance(id, int)
+            if not isinstance(id, int):
+                raise InvalidTypeError("integer")
             return HMM.from_sched_hmm(sched_hmm_get_by_id(id))
 
         if id_type == HMMIDType.XXH3:
-            assert isinstance(id, int)
+            if not isinstance(id, int):
+                raise InvalidTypeError("integer")
             return HMM.from_sched_hmm(sched_hmm_get_by_xxh3(id))
 
         if id_type == HMMIDType.FILENAME:
-            assert isinstance(id, str)
+            if not isinstance(id, str):
+                raise InvalidTypeError("string")
             return HMM.from_sched_hmm(sched_hmm_get_by_filename(id))
 
         if id_type == HMMIDType.JOB_ID:
-            assert isinstance(id, int)
+            if not isinstance(id, int):
+                raise InvalidTypeError("integer")
             return HMM.from_sched_hmm(sched_hmm_get_by_job_id(id))
 
     @staticmethod

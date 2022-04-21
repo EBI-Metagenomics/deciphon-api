@@ -88,7 +88,7 @@ def sched_scan_get_by_job_id(job_id: int) -> sched_scan:
 
 def sched_scan_get_seqs(scan_id: int):
     seqs: List[sched_seq] = []
-    ptr = sched_seq_new(0, scan_id)
+    ptr = sched_seq_new(0, scan_id).ptr
     rc = RC(lib.sched_scan_get_seqs(scan_id, lib.append_seq, ptr, ffi.new_handle(seqs)))
     rc.raise_for_status()
     return seqs
@@ -105,7 +105,7 @@ def sched_scan_get_prods(scan_id: int) -> List[sched_prod]:
 
 def sched_scan_get_all() -> List[sched_scan]:
     scans: List[sched_scan] = []
-    ptr = new_scan().ptr
+    ptr = new_scan()
     rc = RC(lib.sched_scan_get_all(lib.append_scan, ptr, ffi.new_handle(scans)))
     rc.raise_for_status()
     return scans

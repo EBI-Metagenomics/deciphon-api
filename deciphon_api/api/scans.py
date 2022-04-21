@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.get(
-    "/scans/{scan_id}",
+    "/scans/{id}",
     summary="get hmm",
     response_model=Scan,
     status_code=HTTP_200_OK,
@@ -66,7 +66,7 @@ def get_scan_list():
 @router.get(
     "/scans/{scan_id}/seqs/next/{seq_id}",
     summary="get next sequence",
-    response_model=List[Seq],
+    response_model=Seq,
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-next-sequence-of-scan",

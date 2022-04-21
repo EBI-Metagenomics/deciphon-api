@@ -51,7 +51,7 @@ def sched_seq_new(seq_id: int, scan_id: int) -> sched_seq:
     ptr = ffi.new("struct sched_seq *")
     if ptr == ffi.NULL:
         raise SchedError(RC.SCHED_NOT_ENOUGH_MEMORY)
-    lib.sched_seq_init(ptr, seq_id, scan_id, "", "")
+    lib.sched_seq_init(ptr, seq_id, scan_id, "".encode(), "".encode())
     return possess(ptr)
 
 

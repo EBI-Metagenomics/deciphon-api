@@ -1,13 +1,16 @@
 import os
+import subprocess
 from os.path import join
+from pathlib import Path
 
 from cffi import FFI
 
 ffibuilder = FFI()
 
-folder = os.path.dirname(os.path.abspath(__file__))
+folder = Path(os.path.dirname(os.path.abspath(__file__)))
+
 if not os.getenv("DECIPHON_API_SKIP_BUILD_DEPS", False):
-    os.system("./build_ext_deps")
+    subprocess.check_call("tools/build_ext_deps", cwd=folder)
 
 with open(join(folder, "deciphon_api", "sched", "interface.h"), "r") as f:
     ffibuilder.cdef(f.read())

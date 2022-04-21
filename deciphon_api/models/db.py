@@ -15,8 +15,6 @@ from deciphon_api.sched.db import (
     sched_db_get_by_xxh3,
     sched_db_remove,
 )
-from deciphon_api.sched.error import SchedError
-from deciphon_api.sched.rc import RC
 
 __all__ = ["DB", "DBIDType"]
 
@@ -69,26 +67,6 @@ class DB(BaseModel):
         if id_type == DBIDType.HMM_ID:
             assert isinstance(id, int)
             return DB.from_sched_db(sched_db_get_by_hmm_id(id))
-
-    @staticmethod
-    def exists_by_id(db_id: int) -> bool:
-        try:
-            DB.get(db_id, DBIDType.DB_ID)
-        except SchedError as error:
-            if error.rc == RC.SCHED_HMM_NOT_FOUND:
-                return False
-            raise
-        return True
-
-    @staticmethod
-    def exists_by_filename(filename: str) -> bool:
-        try:
-            DB.get(filename, DBIDType.FILENAME)
-        except SchedError as error:
-            if error.rc == RC.SCHED_DB_NOT_FOUND:
-                return False
-            raise
-        return True
 
     @staticmethod
     def get_list() -> List[DB]:

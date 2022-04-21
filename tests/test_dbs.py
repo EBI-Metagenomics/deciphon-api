@@ -24,6 +24,13 @@ def test_upload_database(app: App, upload_minifam_hmm, upload_minifam_db):
 
 
 def test_get_database(app: App, upload_minifam_hmm, upload_minifam_db):
+    expect = {
+        "id": 1,
+        "xxh3": -3907098992699871052,
+        "filename": "minifam.dcp",
+        "hmm_id": 1,
+    }
+
     with TestClient(app.api) as client:
         response = upload_minifam_hmm(client, app)
         assert response.status_code == 201
@@ -32,12 +39,30 @@ def test_get_database(app: App, upload_minifam_hmm, upload_minifam_db):
         assert response.status_code == 201
 
         response = client.get(app.api_prefix + "/dbs/1")
-        assert response.json() == {
-            "id": 1,
-            "xxh3": -3907098992699871052,
-            "filename": "minifam.dcp",
-            "hmm_id": 1,
-        }
+        assert response.status_code == 200
+        assert response.json() == expect
+
+        params = {"id_type": "db_id"}
+        response = client.get(app.api_prefix + "/dbs/1", params=params)
+        assert response.status_code == 200
+        assert response.json() == expect
+
+        params = {"id_type": "xxh3"}
+        response = client.get(
+            app.api_prefix + "/dbs/-3907098992699871052", params=params
+        )
+        assert response.status_code == 200
+        assert response.json() == expect
+
+        params = {"id_type": "filename"}
+        response = client.get(app.api_prefix + "/dbs/minifam.dcp", params=params)
+        assert response.status_code == 200
+        assert response.json() == expect
+
+        params = {"id_type": "hmm_id"}
+        response = client.get(app.api_prefix + "/dbs/1", params=params)
+        assert response.status_code == 200
+        assert response.json() == expect
 
 
 def test_get_database_notfound(app: App):
@@ -103,3 +128,17 @@ def test_get_database_list(app: App, upload_minifam, upload_pfam1):
                 "hmm_id": 2,
             },
         ]
+
+
+def test_remove_database(app: App, upload_minifam):
+    prefix = app.api_prefix
+    with TestClient(app.api) as client:
+        upload_minifam(client, app)
+
+        response = client.delete(f"{prefix}/dbs/1")
+        assert response.status_code == 403
+
+        hdrs = {"X-API-Key": f"{app.api_key}"}
+        response = client.delete(f"{prefix}/dbs/1", headers=hdrs)
+        assert response.status_code == 200
+        assert response.json() == {}

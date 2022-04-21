@@ -278,3 +278,7 @@ void sched_scan_add_seq(char const *name, char const *data);
 enum sched_rc sched_scan_get_all(sched_scan_set_func_t, struct sched_scan *,
                                  void *arg);
 
+/* --- error.h file --- */
+
+char const *sched_error_string(enum sched_rc rc);
+

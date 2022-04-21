@@ -9,6 +9,9 @@ ffibuilder = FFI()
 
 folder = Path(os.path.dirname(os.path.abspath(__file__)))
 
+if not os.getenv("DECIPHON_API_SKIP_UPDATE_INTERFACE", False):
+    subprocess.check_call("tools/update_sched_interface", cwd=folder)
+
 if not os.getenv("DECIPHON_API_SKIP_BUILD_DEPS", False):
     subprocess.check_call("tools/build_ext_deps", cwd=folder)
 

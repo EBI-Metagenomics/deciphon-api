@@ -70,9 +70,6 @@ def upload_hmm(
     if not authenticated:
         raise UnauthorizedError()
 
-    if HMM.exists_by_filename(hmm_file.filename):
-        raise ConflictError("hmm already exists")
-
     with open(hmm_file.filename, "wb") as dst:
         shutil.copyfileobj(hmm_file.file, dst)
 

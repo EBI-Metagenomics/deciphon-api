@@ -96,10 +96,9 @@ def sched_scan_get_seqs(scan_id: int):
 
 def sched_scan_get_prods(scan_id: int) -> List[sched_prod]:
     prods: List[sched_prod] = []
-    ptr = sched_prod_new()
-    rc = RC(
-        lib.sched_scan_get_prods(scan_id, lib.append_prod, ptr, ffi.new_handle(prods))
-    )
+    ptr = sched_prod_new().ptr
+    hdl = ffi.new_handle(prods)
+    rc = RC(lib.sched_scan_get_prods(scan_id, lib.append_prod, ptr, hdl))
     rc.raise_for_status()
     return prods
 

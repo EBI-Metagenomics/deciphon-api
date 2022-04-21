@@ -47,21 +47,20 @@ def possess(ptr):
     )
 
 
-def sched_seq_new(seq_id: int, scan_id: int):
+def sched_seq_new(seq_id: int, scan_id: int) -> sched_seq:
     ptr = ffi.new("struct sched_seq *")
     if ptr == ffi.NULL:
         raise SchedError(RC.SCHED_NOT_ENOUGH_MEMORY)
-    lib.sched_seq_init(ptr, scan_id, "", "")
-    ptr[0].id = seq_id
+    lib.sched_seq_init(ptr, seq_id, scan_id, "", "")
     return possess(ptr)
 
 
 def new_seq():
-    return sched_seq_new(0, 0)
+    return sched_seq_new(0, 0).ptr
 
 
 def sched_seq_get_by_id(seq_id: int) -> sched_seq:
-    ptr = new_seq().ptr
+    ptr = new_seq()
     rc = RC(lib.sched_seq_get_by_id(ptr, seq_id))
     rc.raise_for_status()
     return possess(ptr)
@@ -69,7 +68,7 @@ def sched_seq_get_by_id(seq_id: int) -> sched_seq:
 
 def sched_seq_get_all() -> List[sched_seq]:
     seqs: List[sched_seq] = []
-    ptr = new_seq().ptr
+    ptr = new_seq()
     rc = RC(lib.sched_seq_get_all(lib.append_seq, ptr, ffi.new_handle(seqs)))
     rc.raise_for_status()
     return seqs

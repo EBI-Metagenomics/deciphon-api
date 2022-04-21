@@ -57,14 +57,19 @@ def possess(ptr):
     )
 
 
-def sched_prod_new():
+def new_prod():
     ptr = ffi.new("struct sched_prod *")
     if ptr == ffi.NULL:
         raise SchedError(RC.SCHED_NOT_ENOUGH_MEMORY)
+    return ptr
+
+
+def sched_prod_new() -> sched_prod:
+    return possess(new_prod())
 
 
 def sched_prod_get_by_id(prod_id: int) -> sched_prod:
-    ptr = sched_prod_new()
+    ptr = new_prod()
     rc = RC(lib.sched_prod_get_by_id(ptr, prod_id))
     rc.raise_for_status()
     return possess(ptr)
@@ -72,7 +77,7 @@ def sched_prod_get_by_id(prod_id: int) -> sched_prod:
 
 def sched_prod_get_all() -> List[sched_prod]:
     prods: List[sched_prod] = []
-    ptr = sched_prod_new()
+    ptr = new_prod()
     rc = RC(lib.sched_prod_get_all(lib.append_prod, ptr, ffi.new_handle(prods)))
     rc.raise_for_status()
     return prods

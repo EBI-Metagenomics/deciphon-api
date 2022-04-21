@@ -1,7 +1,7 @@
 from deciphon_api.sched.cffi import ffi, lib
 from deciphon_api.sched.rc import RC
 
-__all__ = ["sched_error_string", "SchedError", "SchedWrapperError"]
+__all__ = ["SchedError", "SchedWrapperError"]
 
 
 def sched_error_string(rc: RC) -> str:

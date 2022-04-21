@@ -82,27 +82,27 @@ def possess(ptr) -> sched_job:
     )
 
 
-def new_job(job_type: sched_job_type = sched_job_type.SCHED_SCAN) -> sched_job:
+def new_job(job_type: sched_job_type = sched_job_type.SCHED_SCAN):
     ptr = ffi.new("struct sched_job *")
     if ptr == ffi.NULL:
         raise SchedError(RC.SCHED_NOT_ENOUGH_MEMORY)
     lib.sched_job_init(ptr, job_type.value)
-    return possess(ptr)
+    return ptr
 
 
 def sched_job_new(job_type: sched_job_type) -> sched_job:
-    return new_job(job_type)
+    return possess(new_job(job_type))
 
 
 def sched_job_get_by_id(job_id: int) -> sched_job:
-    ptr = new_job().ptr
+    ptr = new_job()
     rc = RC(lib.sched_job_get_by_id(ptr, job_id))
     rc.raise_for_status()
     return possess(ptr)
 
 
 def sched_job_next_pend():
-    ptr = new_job().ptr
+    ptr = new_job()
     rc = RC(lib.sched_job_next_pend(ptr))
     rc.raise_for_status()
     return possess(ptr)
@@ -110,7 +110,7 @@ def sched_job_next_pend():
 
 def sched_job_get_all() -> List[sched_job]:
     jobs: List[sched_job] = []
-    ptr = new_job().ptr
+    ptr = new_job()
     rc = RC(lib.sched_job_get_all(lib.append_job, ptr, ffi.new_handle(jobs)))
     rc.raise_for_status()
     return jobs

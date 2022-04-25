@@ -1,32 +1,38 @@
+import pytest
 from fastapi.testclient import TestClient
+from upload import upload_minifam, upload_pfam1
 
-from deciphon_api.main import App
+from deciphon_api.main import app, settings
 from deciphon_api.models.scan import ScanPost
 
+api_prefix = settings.api_prefix
+api_key = settings.api_key
 
-def test_get_not_found_job(app: App):
-    with TestClient(app.api) as client:
-        response = client.get(f"{app.api_prefix}/jobs/1")
+
+@pytest.mark.usefixtures("cleandir")
+def test_get_not_found_job():
+    with TestClient(app) as client:
+        response = client.get(f"{api_prefix}/jobs/1")
         assert response.status_code == 404
         assert response.json() == {"msg": "job not found", "rc": 5}
 
 
-def test_get_next_pend_job_empty(app: App):
-    with TestClient(app.api) as client:
-        response = client.get(f"{app.api_prefix}/jobs/next_pend")
+@pytest.mark.usefixtures("cleandir")
+def test_get_next_pend_job_empty():
+    with TestClient(app) as client:
+        response = client.get(f"{api_prefix}/jobs/next_pend")
         assert response.status_code == 404
 
 
-def test_get_next_pend_job(app: App, upload_minifam):
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_next_pend_job():
+    with TestClient(app) as client:
+        upload_minifam(client)
 
-        response = client.post(
-            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
-        )
+        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
 
-        response = client.get(f"{app.api_prefix}/jobs/next_pend")
+        response = client.get(f"{api_prefix}/jobs/next_pend")
         assert response.status_code == 200
 
         json = response.json()
@@ -44,122 +50,119 @@ def test_get_next_pend_job(app: App, upload_minifam):
         }
 
 
-def test_set_job_state_run(app: App, upload_minifam):
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_set_job_state_run():
+    with TestClient(app) as client:
+        upload_minifam(client)
 
-        response = client.post(
-            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
-        )
+        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{app.api_prefix}/jobs/{job_id}/state",
+            f"{api_prefix}/jobs/{job_id}/state",
             json={"state": "run", "error": ""},
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 200
 
-        response = client.get(f"{app.api_prefix}/jobs/{job_id}")
+        response = client.get(f"{api_prefix}/jobs/{job_id}")
         assert response.status_code == 200
         assert response.json()["state"] == "run"
         assert response.json()["error"] == ""
 
 
-def test_set_job_state_run_and_fail(app: App, upload_minifam):
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_set_job_state_run_and_fail():
+    with TestClient(app) as client:
+        upload_minifam(client)
 
-        response = client.post(
-            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
-        )
+        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{app.api_prefix}/jobs/{job_id}/state",
+            f"{api_prefix}/jobs/{job_id}/state",
             json={"state": "run", "error": ""},
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 200
 
         response = client.patch(
-            f"{app.api_prefix}/jobs/{job_id}/state",
+            f"{api_prefix}/jobs/{job_id}/state",
             json={"state": "fail", "error": "failed"},
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 200
 
-        response = client.get(f"{app.api_prefix}/jobs/{job_id}")
+        response = client.get(f"{api_prefix}/jobs/{job_id}")
         assert response.status_code == 200
         assert response.json()["state"] == "fail"
         assert response.json()["error"] == "failed"
 
 
-def test_set_job_state_run_and_done(app: App, upload_minifam):
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_set_job_state_run_and_done():
+    with TestClient(app) as client:
+        upload_minifam(client)
 
-        response = client.post(
-            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
-        )
+        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{app.api_prefix}/jobs/{job_id}/state",
+            f"{api_prefix}/jobs/{job_id}/state",
             json={"state": "run", "error": ""},
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 200
 
         response = client.patch(
-            f"{app.api_prefix}/jobs/{job_id}/state",
+            f"{api_prefix}/jobs/{job_id}/state",
             json={"state": "done", "error": ""},
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 200
 
-        response = client.get(f"{app.api_prefix}/jobs/{job_id}")
+        response = client.get(f"{api_prefix}/jobs/{job_id}")
         assert response.status_code == 200
         assert response.json()["state"] == "done"
         assert response.json()["error"] == ""
 
 
-def test_set_job_state_wrongly(app: App, upload_minifam):
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_set_job_state_wrongly():
+    with TestClient(app) as client:
+        upload_minifam(client)
 
-        response = client.post(
-            f"{app.api_prefix}/scans/", json=ScanPost.example().dict()
-        )
+        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{app.api_prefix}/jobs/{job_id}/state",
+            f"{api_prefix}/jobs/{job_id}/state",
             json={"state": "invalid", "error": ""},
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 422
 
-        response = client.get(f"{app.api_prefix}/jobs/{job_id}")
+        response = client.get(f"{api_prefix}/jobs/{job_id}")
         assert response.status_code == 200
         assert response.json()["state"] == "pend"
         assert response.json()["error"] == ""
 
 
-def test_get_job_list(app: App, upload_minifam, upload_pfam1):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
-        upload_pfam1(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_job_list():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
+        upload_pfam1(client)
 
         response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
 
-        response = client.get(f"{app.api_prefix}/jobs")
+        response = client.get(f"{api_prefix}/jobs")
         assert response.status_code == 200
         data = response.json().copy()
         for v in data:
@@ -198,11 +201,12 @@ def test_get_job_list(app: App, upload_minifam, upload_pfam1):
         ]
 
 
-def test_get_hmm_from_job(app: App, upload_minifam):
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_hmm_from_job():
+    with TestClient(app) as client:
+        upload_minifam(client)
 
-        response = client.get(f"{app.api_prefix}/jobs/1/hmm")
+        response = client.get(f"{api_prefix}/jobs/1/hmm")
         assert response.status_code == 200
         assert response.json() == {
             "id": 1,
@@ -212,14 +216,15 @@ def test_get_hmm_from_job(app: App, upload_minifam):
         }
 
 
-def test_get_scan_from_job(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan_from_job():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
         response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
 
-        response = client.get(f"{app.api_prefix}/jobs/2/scan")
+        response = client.get(f"{api_prefix}/jobs/2/scan")
         assert response.status_code == 200
         assert response.json() == {
             "id": 1,
@@ -230,15 +235,16 @@ def test_get_scan_from_job(app: App, upload_minifam):
         }
 
 
-def test_remove_job(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_remove_job():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         response = client.delete(f"{prefix}/dbs/1")
         assert response.status_code == 403
 
-        hdrs = {"X-API-Key": f"{app.api_key}"}
+        hdrs = {"X-API-Key": f"{api_key}"}
         response = client.delete(f"{prefix}/dbs/1", headers=hdrs)
         assert response.status_code == 200
         assert response.json() == {}
@@ -250,7 +256,7 @@ def test_remove_job(app: App, upload_minifam):
         response = client.delete(f"{prefix}/jobs/1")
         assert response.status_code == 403
 
-        hdrs = {"X-API-Key": f"{app.api_key}"}
+        hdrs = {"X-API-Key": f"{api_key}"}
         response = client.delete(f"{prefix}/jobs/1", headers=hdrs)
         assert response.status_code == 418
         assert response.json() == {"rc": 25, "msg": "failed to evaluate sql statememt"}
@@ -268,15 +274,16 @@ def test_remove_job(app: App, upload_minifam):
         assert response.json() == {"rc": 5, "msg": "job not found"}
 
 
-def test_add_job_progress(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_add_job_progress():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         response = client.delete(f"{prefix}/dbs/1")
         assert response.status_code == 403
 
-        hdrs = {"X-API-Key": f"{app.api_key}"}
+        hdrs = {"X-API-Key": f"{api_key}"}
         response = client.patch(
             f"{prefix}/jobs/1/progress", json={"increment": 10}, headers=hdrs
         )

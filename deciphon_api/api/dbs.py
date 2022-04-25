@@ -50,7 +50,7 @@ def get_database_list():
     responses=responses,
     name="dbs:download-database",
 )
-def download_database(db_id: int = Path(..., gt=0)):
+async def download_database(db_id: int = Path(..., gt=0)):
     db = DB.get(db_id, DBIDType.DB_ID)
     return FileResponse(db.filename, media_type=mime, filename=db.filename)
 
@@ -63,7 +63,7 @@ def download_database(db_id: int = Path(..., gt=0)):
     responses=responses,
     name="dbs:upload-database",
 )
-def upload_database(
+async def upload_database(
     db_file: UploadFile = File(..., content_type=mime, description="deciphon database"),
     authenticated: bool = Depends(auth_request),
 ):

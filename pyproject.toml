@@ -36,7 +36,7 @@ python = "^3.8"
 python-multipart = "*"
 toml = "^0.9"
 typer = "*"
-uvicorn = "*"
+uvicorn = { extras = ["uvloop", "httptools"], version = "*" }
 xxhash = "*"
 
 [tool.poetry.dev-dependencies]

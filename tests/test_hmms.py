@@ -1,11 +1,17 @@
+import pytest
 from fastapi.testclient import TestClient
+from upload import upload_minifam_hmm
 
-from deciphon_api.main import App
+from deciphon_api.main import app, settings
+
+api_prefix = settings.api_prefix
+api_key = settings.api_key
 
 
-def test_get_not_found_hmm(app: App):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
+@pytest.mark.usefixtures("cleandir")
+def test_get_not_found_hmm():
+    prefix = api_prefix
+    with TestClient(app) as client:
         response = client.get(f"{prefix}/hmms/1")
         assert response.status_code == 404
         assert response.json() == {"rc": 2, "msg": "hmm not found"}
@@ -19,9 +25,10 @@ def test_get_not_found_hmm(app: App):
         assert response.json() == {"rc": 2, "msg": "hmm not found"}
 
 
-def test_upload_hmm(app: App, upload_minifam_hmm):
-    with TestClient(app.api) as client:
-        response = upload_minifam_hmm(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_upload_hmm():
+    with TestClient(app) as client:
+        response = upload_minifam_hmm(client)
         assert response.status_code == 201
         assert response.json() == {
             "id": 1,
@@ -30,7 +37,7 @@ def test_upload_hmm(app: App, upload_minifam_hmm):
             "job_id": 1,
         }
 
-        response = upload_minifam_hmm(client, app)
+        response = upload_minifam_hmm(client)
         assert response.status_code == 418
         assert response.json() == {
             "rc": 21,
@@ -38,8 +45,9 @@ def test_upload_hmm(app: App, upload_minifam_hmm):
         }
 
 
-def test_get_hmm(app: App, upload_minifam_hmm):
-    prefix = app.api_prefix
+@pytest.mark.usefixtures("cleandir")
+def test_get_hmm():
+    prefix = api_prefix
     expect = {
         "id": 1,
         "xxh3": -1400478458576472411,
@@ -47,8 +55,8 @@ def test_get_hmm(app: App, upload_minifam_hmm):
         "job_id": 1,
     }
 
-    with TestClient(app.api) as client:
-        response = upload_minifam_hmm(client, app)
+    with TestClient(app) as client:
+        response = upload_minifam_hmm(client)
         assert response.status_code == 201
         assert response.json() == expect
 
@@ -77,8 +85,9 @@ def test_get_hmm(app: App, upload_minifam_hmm):
         assert response.json() == expect
 
 
-def test_get_list(app: App, upload_minifam_hmm):
-    prefix = app.api_prefix
+@pytest.mark.usefixtures("cleandir")
+def test_get_list():
+    prefix = api_prefix
     expect = {
         "id": 1,
         "xxh3": -1400478458576472411,
@@ -86,8 +95,8 @@ def test_get_list(app: App, upload_minifam_hmm):
         "job_id": 1,
     }
 
-    with TestClient(app.api) as client:
-        response = upload_minifam_hmm(client, app)
+    with TestClient(app) as client:
+        response = upload_minifam_hmm(client)
         assert response.status_code == 201
         assert response.json() == expect
 
@@ -96,23 +105,24 @@ def test_get_list(app: App, upload_minifam_hmm):
         assert response.json() == [expect]
 
 
-def test_remove_hmm(app: App, upload_minifam_hmm):
-    prefix = app.api_prefix
+@pytest.mark.usefixtures("cleandir")
+def test_remove_hmm():
+    prefix = api_prefix
     expect = {
         "id": 1,
         "xxh3": -1400478458576472411,
         "filename": "minifam.hmm",
         "job_id": 1,
     }
-    with TestClient(app.api) as client:
-        response = upload_minifam_hmm(client, app)
+    with TestClient(app) as client:
+        response = upload_minifam_hmm(client)
         assert response.status_code == 201
         assert response.json() == expect
 
         response = client.delete(f"{prefix}/hmms/1")
         assert response.status_code == 403
 
-        hdrs = {"X-API-Key": f"{app.api_key}"}
+        hdrs = {"X-API-Key": f"{api_key}"}
         response = client.delete(f"{prefix}/hmms/1", headers=hdrs)
         assert response.status_code == 200
         assert response.json() == {}
@@ -122,16 +132,17 @@ def test_remove_hmm(app: App, upload_minifam_hmm):
         assert response.json() == {"rc": 2, "msg": "hmm not found"}
 
 
-def test_download_hmm(app: App, upload_minifam_hmm):
-    prefix = app.api_prefix
+@pytest.mark.usefixtures("cleandir")
+def test_download_hmm():
+    prefix = api_prefix
     expect = {
         "id": 1,
         "xxh3": -1400478458576472411,
         "filename": "minifam.hmm",
         "job_id": 1,
     }
-    with TestClient(app.api) as client:
-        response = upload_minifam_hmm(client, app)
+    with TestClient(app) as client:
+        response = upload_minifam_hmm(client)
         assert response.status_code == 201
         assert response.json() == expect
 

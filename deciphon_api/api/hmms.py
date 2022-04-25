@@ -50,7 +50,7 @@ def get_hmm_list():
     responses=responses,
     name="hmms:download-hmm",
 )
-def download_hmm(hmm_id: int = Path(..., gt=0)):
+async def download_hmm(hmm_id: int = Path(..., gt=0)):
     hmm = HMM.get(hmm_id, HMMIDType.HMM_ID)
     return FileResponse(hmm.filename, media_type=mime, filename=hmm.filename)
 
@@ -63,7 +63,7 @@ def download_hmm(hmm_id: int = Path(..., gt=0)):
     responses=responses,
     name="hmms:upload-hmm",
 )
-def upload_hmm(
+async def upload_hmm(
     hmm_file: UploadFile = File(..., content_type=mime, description="hmmer3 file"),
     authenticated: bool = Depends(auth_request),
 ):

@@ -1,22 +1,29 @@
+import pytest
 from fastapi.testclient import TestClient
+from upload import upload_minifam
 
 import deciphon_api.data as data
-from deciphon_api.main import App
+from deciphon_api.main import app, settings
 from deciphon_api.models.scan import ScanPost
 
+api_prefix = settings.api_prefix
+api_key = settings.api_key
 
-def test_submit_scan_with_non_existent_database(app: App):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
+
+@pytest.mark.usefixtures("cleandir")
+def test_submit_scan_with_non_existent_database():
+    prefix = api_prefix
+    with TestClient(app) as client:
         response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 404
         assert response.json() == {"rc": 4, "msg": "database not found"}
 
 
-def test_submit_scan(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_submit_scan():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
@@ -36,10 +43,11 @@ def test_submit_scan(app: App, upload_minifam):
         }
 
 
-def test_get_scan(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
@@ -59,10 +67,11 @@ def test_get_scan(app: App, upload_minifam):
         assert response.json() == {"rc": 3, "msg": "scan not found"}
 
 
-def test_get_scan_list(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan_list():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
         assert response.status_code == 201
@@ -80,10 +89,11 @@ def test_get_scan_list(app: App, upload_minifam):
         ]
 
 
-def test_get_next_scan_seq(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_next_scan_seq():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         scan_post = ScanPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
@@ -122,10 +132,11 @@ def test_get_next_scan_seq(app: App, upload_minifam):
         assert response.json() == {"rc": 7, "msg": "sequence not found"}
 
 
-def test_get_scan_seqs(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan_seqs():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         scan_post = ScanPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
@@ -156,10 +167,11 @@ def test_get_scan_seqs(app: App, upload_minifam):
         ]
 
 
-def test_get_scan_prods(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan_prods():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         scan_post = ScanPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
@@ -169,7 +181,7 @@ def test_get_scan_prods(app: App, upload_minifam):
             f.write(data.prods_file_content().encode())
 
         response = client.post(
-            f"{app.api_prefix}/prods/",
+            f"{api_prefix}/prods/",
             files={
                 "prods_file": (
                     "prods_file.tsv",
@@ -177,7 +189,7 @@ def test_get_scan_prods(app: App, upload_minifam):
                     "text/tab-separated-values",
                 )
             },
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
         assert response.json() == []
@@ -213,10 +225,11 @@ def test_get_scan_prods(app: App, upload_minifam):
         ]
 
 
-def test_get_scan_prods_as_gff(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan_prods_as_gff():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         scan_post = ScanPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
@@ -226,7 +239,7 @@ def test_get_scan_prods_as_gff(app: App, upload_minifam):
             f.write(data.prods_file_content().encode())
 
         response = client.post(
-            f"{app.api_prefix}/prods/",
+            f"{api_prefix}/prods/",
             files={
                 "prods_file": (
                     "prods_file.tsv",
@@ -234,7 +247,7 @@ def test_get_scan_prods_as_gff(app: App, upload_minifam):
                     "text/tab-separated-values",
                 )
             },
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
         assert response.json() == []
@@ -244,10 +257,11 @@ def test_get_scan_prods_as_gff(app: App, upload_minifam):
         assert response.text == data.prods_as_gff_content()
 
 
-def test_get_scan_prods_as_amino(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan_prods_as_amino():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         scan_post = ScanPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
@@ -257,7 +271,7 @@ def test_get_scan_prods_as_amino(app: App, upload_minifam):
             f.write(data.prods_file_content().encode())
 
         response = client.post(
-            f"{app.api_prefix}/prods/",
+            f"{api_prefix}/prods/",
             files={
                 "prods_file": (
                     "prods_file.tsv",
@@ -265,7 +279,7 @@ def test_get_scan_prods_as_amino(app: App, upload_minifam):
                     "text/tab-separated-values",
                 )
             },
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
         assert response.json() == []
@@ -275,10 +289,11 @@ def test_get_scan_prods_as_amino(app: App, upload_minifam):
         assert response.text == data.prods_as_amino_content()
 
 
-def test_get_scan_prods_as_path(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan_prods_as_path():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         scan_post = ScanPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
@@ -288,7 +303,7 @@ def test_get_scan_prods_as_path(app: App, upload_minifam):
             f.write(data.prods_file_content().encode())
 
         response = client.post(
-            f"{app.api_prefix}/prods/",
+            f"{api_prefix}/prods/",
             files={
                 "prods_file": (
                     "prods_file.tsv",
@@ -296,7 +311,7 @@ def test_get_scan_prods_as_path(app: App, upload_minifam):
                     "text/tab-separated-values",
                 )
             },
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
         assert response.json() == []
@@ -306,10 +321,11 @@ def test_get_scan_prods_as_path(app: App, upload_minifam):
         assert response.text == data.prods_as_path_content()
 
 
-def test_get_scan_prods_as_fragment(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan_prods_as_fragment():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         scan_post = ScanPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
@@ -319,7 +335,7 @@ def test_get_scan_prods_as_fragment(app: App, upload_minifam):
             f.write(data.prods_file_content().encode())
 
         response = client.post(
-            f"{app.api_prefix}/prods/",
+            f"{api_prefix}/prods/",
             files={
                 "prods_file": (
                     "prods_file.tsv",
@@ -327,7 +343,7 @@ def test_get_scan_prods_as_fragment(app: App, upload_minifam):
                     "text/tab-separated-values",
                 )
             },
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
         assert response.json() == []
@@ -337,10 +353,11 @@ def test_get_scan_prods_as_fragment(app: App, upload_minifam):
         assert response.text == data.prods_as_fragment_content()
 
 
-def test_get_scan_prods_as_codon(app: App, upload_minifam):
-    prefix = app.api_prefix
-    with TestClient(app.api) as client:
-        upload_minifam(client, app)
+@pytest.mark.usefixtures("cleandir")
+def test_get_scan_prods_as_codon():
+    prefix = api_prefix
+    with TestClient(app) as client:
+        upload_minifam(client)
 
         scan_post = ScanPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
@@ -350,7 +367,7 @@ def test_get_scan_prods_as_codon(app: App, upload_minifam):
             f.write(data.prods_file_content().encode())
 
         response = client.post(
-            f"{app.api_prefix}/prods/",
+            f"{api_prefix}/prods/",
             files={
                 "prods_file": (
                     "prods_file.tsv",
@@ -358,7 +375,7 @@ def test_get_scan_prods_as_codon(app: App, upload_minifam):
                     "text/tab-separated-values",
                 )
             },
-            headers={"X-API-Key": f"{app.api_key}"},
+            headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
         assert response.json() == []

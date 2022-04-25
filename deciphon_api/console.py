@@ -21,7 +21,7 @@ def start():
     log_level = settings.logging_level
     reload = settings.reload
     uvicorn.run(
-        "deciphon_api.main:app.api",
+        "deciphon_api.main:app",
         host=host,
         port=port,
         log_level=log_level.value,

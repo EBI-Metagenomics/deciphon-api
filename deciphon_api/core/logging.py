@@ -1,4 +1,5 @@
 import logging
+import sys
 from enum import Enum
 from functools import lru_cache
 from types import FrameType
@@ -6,11 +7,25 @@ from typing import cast
 
 from loguru import logger
 
-__all__ = ["get_intercept_handler", "LoggingLevel"]
+__all__ = ["get_intercept_handler", "LoggingLevel", "RepeatMessageHandler"]
 
 
-import logging
-from enum import Enum
+class RepeatMessageHandler:
+    def __init__(self, target=sys.stderr):
+        self._target = target
+        self._previous_args = None
+        self._repeats = 0
+
+    def write(self, message):
+        args = (message.record["message"], message.record["level"].no)
+        if self._previous_args == args:
+            self._repeats += 1
+            return
+        if self._repeats > 0:
+            self._target.write(f"[Previous message repeats ×{self._repeats}]\n")
+        self._target.write(message)
+        self._repeats = 0
+        self._previous_args = args
 
 
 class LoggingLevel(str, Enum):

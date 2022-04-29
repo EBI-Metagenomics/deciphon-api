@@ -1,5 +1,4 @@
 import logging
-import sys
 from functools import lru_cache
 from typing import Any, Dict, List
 
@@ -7,7 +6,11 @@ from loguru import logger
 from pydantic import BaseSettings
 
 from deciphon_api import __version__
-from deciphon_api.core.logging import LoggingLevel, get_intercept_handler
+from deciphon_api.core.logging import (
+    LoggingLevel,
+    RepeatMessageHandler,
+    get_intercept_handler,
+)
 
 __all__ = ["settings"]
 
@@ -60,6 +63,7 @@ class Settings(BaseSettings):
     def configure_logging(self) -> None:
         intercept = get_intercept_handler(self.logging_level.level)
         logging.getLogger().handlers = [intercept]
+        sink = RepeatMessageHandler()
 
         for name in logging.root.manager.loggerDict.keys():
             logging.getLogger(name).handlers = []
@@ -69,7 +73,7 @@ class Settings(BaseSettings):
         logger.configure(
             handlers=[
                 {
-                    "sink": sys.stderr,
+                    "sink": sink,
                     "level": self.logging_level.level,
                     "format": self.logging_format,
                 }

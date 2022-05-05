@@ -24,7 +24,7 @@ ffibuilder.set_source(
         #include "sched/sched.h"
     """,
     language="c",
-    libraries=["sched"],
+    libraries=["sched", "c_toolbelt"],
     library_dirs=[".ext_deps/lib"],
     include_dirs=[".ext_deps/include"],
 )

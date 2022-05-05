@@ -38,7 +38,7 @@ class InvalidTypeError(HTTPException):
 
 
 def truncate(msg: str):
-    limit = int(lib.JOB_ERROR_SIZE)
+    limit = int(lib.SCHED_JOB_ERROR_SIZE)
     return (msg[: limit - 3] + "...") if len(msg) > limit else msg
 
 

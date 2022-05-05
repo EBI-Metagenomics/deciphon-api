@@ -21,7 +21,7 @@ with open(join(folder, "deciphon_api", "sched", "interface.h"), "r") as f:
 ffibuilder.set_source(
     "deciphon_api.sched.cffi",
     """
-        #include "sched/sched.h"
+    #include "sched/sched.h"
     """,
     language="c",
     libraries=["sched", "c_toolbelt"],

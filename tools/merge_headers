@@ -2,7 +2,7 @@
 
 headers_dir="$1"
 
-files="limits.h rc.h sched.h hmm.h db.h job.h prod.h seq.h scan.h error.h structs.h"
+files="limits.h rc.h structs.h sched.h hmm.h db.h job.h prod.h seq.h scan.h error.h"
 
 {
     for file in $files; do

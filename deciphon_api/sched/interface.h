@@ -12,19 +12,19 @@ extern "Python" void append_seq(struct sched_seq *, void *arg);
 
 enum sched_limits
 {
-    ABC_NAME_SIZE = 16,
-    FILENAME_SIZE = 128,
-    JOB_ERROR_SIZE = 256,
-    JOB_STATE_SIZE = 5,
-    MATCH_SIZE = 5 * (1024 * 1024),
-    MAX_NUM_THREADS = 64,
-    NUM_SEQS_PER_JOB = 512,
-    PATH_SIZE = 4096,
-    PROFILE_NAME_SIZE = 64,
-    PROFILE_TYPEID_SIZE = 16,
-    SEQ_NAME_SIZE = 256,
-    SEQ_SIZE = (1024 * 1024),
-    VERSION_SIZE = 16,
+    SCHED_ABC_NAME_SIZE = 16,
+    SCHED_FILENAME_SIZE = 128,
+    SCHED_JOB_ERROR_SIZE = 256,
+    SCHED_JOB_STATE_SIZE = 5,
+    SCHED_MATCH_SIZE = 5 * (1024 * 1024),
+    SCHED_MAX_NUM_THREADS = 64,
+    SCHED_NUM_SEQS_PER_JOB = 512,
+    SCHED_PATH_SIZE = 4096,
+    SCHED_PROFILE_NAME_SIZE = 64,
+    SCHED_PROFILE_TYPEID_SIZE = 16,
+    SCHED_SEQ_NAME_SIZE = 256,
+    SCHED_SEQ_SIZE = (1024 * 1024),
+    SCHED_VERSION_SIZE = 16,
 };
 
 /* --- rc.h file --- */
@@ -86,14 +86,6 @@ enum sched_rc sched_wipe(void);
 
 /* --- hmm.h file --- */
 
-struct sched_hmm
-{
-    int64_t id;
-    int64_t xxh3;
-    char filename[FILENAME_SIZE];
-    int64_t job_id;
-};
-
 typedef void(sched_hmm_set_func_t)(struct sched_hmm *, void *arg);
 
 void sched_hmm_init(struct sched_hmm *);
@@ -112,14 +104,6 @@ enum sched_rc sched_hmm_remove(int64_t id);
 
 /* --- db.h file --- */
 
-struct sched_db
-{
-    int64_t id;
-    int64_t xxh3;
-    char filename[FILENAME_SIZE];
-    int64_t hmm_id;
-};
-
 typedef void(sched_db_set_func_t)(struct sched_db *, void *arg);
 
 void sched_db_init(struct sched_db *);
@@ -137,34 +121,6 @@ enum sched_rc sched_db_add(struct sched_db *, char const *filename);
 enum sched_rc sched_db_remove(int64_t id);
 
 /* --- job.h file --- */
-
-enum sched_job_type
-{
-    SCHED_SCAN,
-    SCHED_HMM
-};
-
-enum sched_job_state
-{
-    SCHED_PEND,
-    SCHED_RUN,
-    SCHED_DONE,
-    SCHED_FAIL
-};
-
-struct sched_job
-{
-    int64_t id;
-    int type;
-
-    char state[JOB_STATE_SIZE];
-    int progress;
-    char error[JOB_ERROR_SIZE];
-
-    int64_t submission;
-    int64_t exec_started;
-    int64_t exec_ended;
-};
 
 typedef void(sched_job_set_func_t)(struct sched_job *, void *arg);
 
@@ -187,25 +143,6 @@ enum sched_rc sched_job_remove(int64_t id);
 
 /* --- prod.h file --- */
 
-struct sched_prod
-{
-    int64_t id;
-
-    int64_t scan_id;
-    int64_t seq_id;
-
-    char profile_name[PROFILE_NAME_SIZE];
-    char abc_name[ABC_NAME_SIZE];
-
-    double alt_loglik;
-    double null_loglik;
-
-    char profile_typeid[PROFILE_TYPEID_SIZE];
-    char version[VERSION_SIZE];
-
-    char match[MATCH_SIZE];
-};
-
 typedef int(sched_prod_write_match_func_t)(FILE *fp, void const *match);
 typedef void(sched_prod_set_func_t)(struct sched_prod *, void *arg);
 
@@ -226,14 +163,6 @@ enum sched_rc sched_prod_get_all(sched_prod_set_func_t fn, struct sched_prod *,
 
 /* --- seq.h file --- */
 
-struct sched_seq
-{
-    int64_t id;
-    int64_t scan_id;
-    char name[SEQ_NAME_SIZE];
-    char data[SEQ_SIZE];
-};
-
 typedef void(sched_seq_set_func_t)(struct sched_seq *, void *arg);
 
 void sched_seq_init(struct sched_seq *seq, int64_t seq_id, int64_t scan_id,
@@ -245,17 +174,6 @@ enum sched_rc sched_seq_get_all(sched_seq_set_func_t fn, struct sched_seq *,
                                 void *arg);
 
 /* --- scan.h file --- */
-
-struct sched_scan
-{
-    int64_t id;
-    int64_t db_id;
-
-    int multi_hits;
-    int hmmer3_compat;
-
-    int64_t job_id;
-};
 
 struct sched_prod;
 struct sched_seq;
@@ -282,4 +200,88 @@ enum sched_rc sched_scan_get_all(sched_scan_set_func_t, struct sched_scan *,
 /* --- error.h file --- */
 
 char const *sched_error_string(enum sched_rc rc);
+
+/* --- structs.h file --- */
+
+struct sched_scan
+{
+    int64_t id;
+    int64_t db_id;
+
+    int multi_hits;
+    int hmmer3_compat;
+
+    int64_t job_id;
+};
+
+struct sched_hmm
+{
+    int64_t id;
+    int64_t xxh3;
+    char filename[SCHED_FILENAME_SIZE];
+    int64_t job_id;
+};
+
+struct sched_db
+{
+    int64_t id;
+    int64_t xxh3;
+    char filename[SCHED_FILENAME_SIZE];
+    int64_t hmm_id;
+};
+
+struct sched_prod
+{
+    int64_t id;
+
+    int64_t scan_id;
+    int64_t seq_id;
+
+    char profile_name[SCHED_PROFILE_NAME_SIZE];
+    char abc_name[SCHED_ABC_NAME_SIZE];
+
+    double alt_loglik;
+    double null_loglik;
+
+    char profile_typeid[SCHED_PROFILE_TYPEID_SIZE];
+    char version[SCHED_VERSION_SIZE];
+
+    char match[SCHED_MATCH_SIZE];
+};
+
+enum sched_job_type
+{
+    SCHED_SCAN,
+    SCHED_HMM
+};
+
+enum sched_job_state
+{
+    SCHED_PEND,
+    SCHED_RUN,
+    SCHED_DONE,
+    SCHED_FAIL
+};
+
+struct sched_job
+{
+    int64_t id;
+    int type;
+
+    char state[SCHED_JOB_STATE_SIZE];
+    int progress;
+    char error[SCHED_JOB_ERROR_SIZE];
+
+    int64_t submission;
+    int64_t exec_started;
+    int64_t exec_ended;
+};
+
+struct sched_seq
+{
+    int64_t id;
+    int64_t scan_id;
+    char name[SCHED_SEQ_NAME_SIZE];
+    char data[SCHED_SEQ_SIZE];
+};
 

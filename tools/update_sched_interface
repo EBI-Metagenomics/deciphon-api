@@ -32,7 +32,7 @@ VERSION=$(bash -c "$(curl -fsSL https://bit.ly/36UxPPz)" -s EBI-Metagenomics/dec
 echo " done."
 
 TARFILE="$PROJECT-$VERSION.tar.gz"
-TARURL="https://github.com/$USER/$PROJECT/archive/$VERSION.tar.gz"
+TARURL="https://github.com/$USER/$PROJECT/archive/refs/tags/v$VERSION.tar.gz"
 
 echo -n "Downloading $TARFILE... "
 curl -o "$TARFILE" -L "$TARURL" --silent || exit 1

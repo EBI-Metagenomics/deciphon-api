@@ -43,6 +43,10 @@ class Hit:
     feature_end: int = 0
 
 
+def is_core_state(state: str):
+    return state.startswith("M") or state.startswith("I") or state.startswith("D")
+
+
 class ScanResult:
     scan: Scan
     prods: List[Prod]
@@ -68,14 +72,14 @@ class ScanResult:
         for frag_match in prod.match.split(";"):
             frag, state, codon, amino = frag_match.split(",")
 
-            if not hit_start_found and (state.startswith("M") or state.startswith("I")):
+            if not hit_start_found and is_core_state(state):
                 hit_start = offset
                 hit_start_found = True
                 lrt = -2 * (prod.null_loglik - prod.alt_loglik)
                 name = self.seqs[prod.seq_id].name
                 self.hits.append(Hit(len(self.hits) + 1, name, prod.id, lrt))
 
-            if hit_start_found and not (state.startswith("M") or state.startswith("I")):
+            if hit_start_found and not is_core_state(state):
                 hit_end = offset + len(frag)
                 hit_end_found = True
 

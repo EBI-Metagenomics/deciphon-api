@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -75,8 +75,11 @@ class Job(BaseModel):
         return Job.get(job_id)
 
     @staticmethod
-    def next_pend() -> Job:
-        return Job.from_sched_job(sched_job_next_pend())
+    def next_pend() -> Optional[Job]:
+        sched_job = sched_job_next_pend()
+        if sched_job is None:
+            return None
+        return Job.from_sched_job(sched_job)
 
     def assert_state(self, state: JobState):
         pass

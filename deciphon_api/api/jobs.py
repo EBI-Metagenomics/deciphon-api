@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
-from starlette.status import HTTP_200_OK
+from starlette.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
@@ -23,7 +23,9 @@ router = APIRouter()
     name="jobs:get-next-pend-job",
 )
 def get_next_pend_job():
-    return Job.next_pend()
+    sched_job = Job.next_pend()
+    if sched_job is None:
+        return JSONResponse({}, status_code=HTTP_204_NO_CONTENT)
 
 
 @router.get(

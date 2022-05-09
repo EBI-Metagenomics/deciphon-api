@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 
 from deciphon_api.sched.cffi import ffi, lib
 from deciphon_api.sched.error import SchedError
@@ -101,9 +101,11 @@ def sched_job_get_by_id(job_id: int) -> sched_job:
     return possess(ptr)
 
 
-def sched_job_next_pend():
+def sched_job_next_pend() -> Optional[sched_job]:
     ptr = new_job()
     rc = RC(lib.sched_job_next_pend(ptr))
+    if rc == RC.SCHED_JOB_NOT_FOUND:
+        return None
     rc.raise_for_status()
     return possess(ptr)
 

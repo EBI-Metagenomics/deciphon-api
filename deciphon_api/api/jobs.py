@@ -23,9 +23,10 @@ router = APIRouter()
     name="jobs:get-next-pend-job",
 )
 def get_next_pend_job():
-    sched_job = Job.next_pend()
-    if sched_job is None:
+    job = Job.next_pend()
+    if job is None:
         return JSONResponse({}, status_code=HTTP_204_NO_CONTENT)
+    return job
 
 
 @router.get(

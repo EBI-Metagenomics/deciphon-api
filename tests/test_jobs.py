@@ -21,7 +21,7 @@ def test_get_not_found_job():
 def test_get_next_pend_job_empty():
     with TestClient(app) as client:
         response = client.get(f"{api_prefix}/jobs/next_pend")
-        assert response.status_code == 404
+        assert response.status_code == 204
 
 
 @pytest.mark.usefixtures("cleandir")

@@ -2,15 +2,14 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import BaseModel, Field
-
-from deciphon_api.sched.seq import (
+from deciphon_sched.seq import (
     sched_seq,
     sched_seq_get_all,
     sched_seq_get_by_id,
     sched_seq_new,
     sched_seq_scan_next,
 )
+from pydantic import BaseModel, Field
 
 __all__ = ["Seq", "SeqPost"]
 

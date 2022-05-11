@@ -3,9 +3,8 @@ from __future__ import annotations
 import tempfile
 from typing import List
 
+from deciphon_sched.sched import sched_health_check
 from pydantic import BaseModel
-
-from deciphon_api.sched.sched import sched_health_check
 
 __all__ = ["SchedHealth"]
 

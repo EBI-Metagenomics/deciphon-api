@@ -1,3 +1,4 @@
+from deciphon_sched.sched import sched_wipe
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_200_OK
@@ -6,7 +7,6 @@ from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
 from deciphon_api.core.errors import UnauthorizedError
 from deciphon_api.models.sched_health import SchedHealth
-from deciphon_api.sched.sched import sched_wipe
 
 router = APIRouter()
 

@@ -3,9 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Union
 
-from pydantic import BaseModel, Field
-
-from deciphon_api.sched.db import (
+from deciphon_sched.db import (
     sched_db,
     sched_db_add,
     sched_db_get_all,
@@ -15,6 +13,7 @@ from deciphon_api.sched.db import (
     sched_db_get_by_xxh3,
     sched_db_remove,
 )
+from pydantic import BaseModel, Field
 
 __all__ = ["DB", "DBIDType"]
 

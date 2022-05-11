@@ -26,6 +26,14 @@ def test_get_not_found_hmm():
 
 
 @pytest.mark.usefixtures("cleandir")
+def test_upload_hmm_no_api_key():
+    with TestClient(app) as client:
+        response = upload_minifam_hmm(client, False)
+        assert response.status_code == 403
+        assert response.json() == {"msg": "Not authenticated", "rc": 129}
+
+
+@pytest.mark.usefixtures("cleandir")
 def test_upload_hmm():
     with TestClient(app) as client:
         response = upload_minifam_hmm(client)

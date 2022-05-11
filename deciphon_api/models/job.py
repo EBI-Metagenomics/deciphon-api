@@ -3,9 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
-
-from deciphon_api.sched.job import (
+from deciphon_sched.job import (
     sched_job,
     sched_job_get_all,
     sched_job_get_by_id,
@@ -17,6 +15,7 @@ from deciphon_api.sched.job import (
     sched_job_set_run,
     sched_job_state,
 )
+from pydantic import BaseModel, Field
 
 __all__ = ["Job", "JobStatePatch", "JobProgressPatch"]
 

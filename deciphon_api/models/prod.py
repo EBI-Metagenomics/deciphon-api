@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import BaseModel, Field
-
-from deciphon_api.sched.prod import (
+from deciphon_sched.prod import (
     sched_prod,
     sched_prod_add_file,
     sched_prod_get_all,
     sched_prod_get_by_id,
 )
+from pydantic import BaseModel, Field
 
 __all__ = ["Prod"]
 

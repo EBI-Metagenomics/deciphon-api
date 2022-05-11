@@ -3,14 +3,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import List
 
-from pydantic import BaseModel, Field
-
-from deciphon_api.models.job import Job, JobState
-from deciphon_api.models.prod import Prod
-from deciphon_api.models.scan_result import ScanResult
-from deciphon_api.models.seq import Seq, SeqPost
-from deciphon_api.sched.job import sched_job_submit
-from deciphon_api.sched.scan import (
+from deciphon_sched.job import sched_job_submit
+from deciphon_sched.scan import (
     sched_scan,
     sched_scan_add_seq,
     sched_scan_get_all,
@@ -20,6 +14,12 @@ from deciphon_api.sched.scan import (
     sched_scan_get_seqs,
     sched_scan_new,
 )
+from pydantic import BaseModel, Field
+
+from deciphon_api.models.job import Job, JobState
+from deciphon_api.models.prod import Prod
+from deciphon_api.models.scan_result import ScanResult
+from deciphon_api.models.seq import Seq, SeqPost
 
 __all__ = ["Scan", "ScanPost"]
 

@@ -16,18 +16,12 @@ keywords = ["deciphon", "api"]
 
 classifiers = ["License :: OSI Approved :: MIT License"]
 
-include = [
-  { path = "deciphon_api/sched/*.so", format = "wheel" },
-  { path = "deciphon_api/sched/*.pyd", format = "wheel" },
-  { path = "build_ext_deps", format = "sdist" },
-  { path = ".env.example" },
-]
+include = [{ path = ".env.example" }]
 
 [tool.poetry.dependencies]
 bcbio-gff = "*"
 biopython = "*"
-build = "*"
-cffi = "*"
+deciphon-sched = "*"
 fastapi = "*"
 loguru = "*"
 pooch = "*"
@@ -48,15 +42,11 @@ requests = "*"
 coverage = "*"
 pytest-cov = "*"
 
-[tool.poetry.build]
-script = "build_ext.py"
-generate-setup-file = false
-
 [tool.poetry.scripts]
 deciphon-api = "deciphon_api.console:run"
 
 [build-system]
-requires = ["poetry_core>=1.0.0", "cffi"]
+requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.cibuildwheel]

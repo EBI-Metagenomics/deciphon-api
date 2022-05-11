@@ -1,15 +1,15 @@
 import logging
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from loguru import logger
 from pydantic import BaseSettings
 
 from deciphon_api import __version__
 from deciphon_api.core.logging import (
+    InterceptHandler,
     LoggingLevel,
     RepeatMessageHandler,
-    get_intercept_handler,
 )
 
 __all__ = ["settings"]
@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     allowed_hosts: List[str] = ["*"]
 
     logging_level: LoggingLevel = LoggingLevel("info")
+    loggers: Tuple[str, str] = ("uvicorn.asgi", "uvicorn.access")
     # Refer to loguru format for details.
     logging_format: str = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
@@ -61,19 +62,15 @@ class Settings(BaseSettings):
         }
 
     def configure_logging(self) -> None:
-        intercept = get_intercept_handler(self.logging_level.level)
-        logging.getLogger().handlers = [intercept]
-        sink = RepeatMessageHandler()
-
-        for name in logging.root.manager.loggerDict.keys():
-            logging.getLogger(name).handlers = []
-
-        logging.getLogger("uvicorn.access").handlers = [intercept]
+        logging.getLogger().handlers = [InterceptHandler()]
+        for logger_name in self.loggers:
+            logging_logger = logging.getLogger(logger_name)
+            logging_logger.handlers = [InterceptHandler(level=self.logging_level.level)]
 
         logger.configure(
             handlers=[
                 {
-                    "sink": sink,
+                    "sink": RepeatMessageHandler(),
                     "level": self.logging_level.level,
                     "format": self.logging_format,
                 }

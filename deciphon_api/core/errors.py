@@ -1,5 +1,8 @@
 from typing import Union
 
+from deciphon_sched.cffi import lib
+from deciphon_sched.error import SchedError
+from deciphon_sched.rc import RC as SchedRC
 from fastapi import HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -13,9 +16,6 @@ from starlette.status import (
 )
 
 from deciphon_api.core.rc import RC
-from deciphon_api.sched.cffi import lib
-from deciphon_api.sched.error import SchedError
-from deciphon_api.sched.rc import RC as SchedRC
 
 __all__ = [
     "UnauthorizedError",

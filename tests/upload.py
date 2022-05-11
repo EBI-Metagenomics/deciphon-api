@@ -7,13 +7,14 @@ from deciphon_api.main import settings
 
 
 def _upload(
-    client: TestClient,
-    file_type: str,
-    file_field: str,
-    path: Path,
+    client: TestClient, file_type: str, file_field: str, path: Path, with_api_key=True
 ):
     api_prefix = settings.api_prefix
     api_key = settings.api_key
+    if with_api_key:
+        headers = {"X-API-Key": f"{api_key}"}
+    else:
+        headers = {}
     return client.post(
         f"{api_prefix}/{file_type}/",
         files={
@@ -23,13 +24,13 @@ def _upload(
                 "application/octet-stream",
             )
         },
-        headers={"X-API-Key": f"{api_key}"},
+        headers=headers,
     )
 
 
-def upload_minifam_hmm(client: TestClient):
+def upload_minifam_hmm(client: TestClient, with_api_key=True):
     minifam_hmm = data.filepath(data.FileName.minifam_hmm)
-    return _upload(client, "hmms", "hmm_file", minifam_hmm)
+    return _upload(client, "hmms", "hmm_file", minifam_hmm, with_api_key)
 
 
 def upload_minifam_db(client: TestClient):

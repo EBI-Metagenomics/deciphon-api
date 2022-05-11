@@ -1,8 +1,10 @@
 from functools import lru_cache
 
-from fastapi import FastAPI, HTTPException
+from deciphon_sched.error import SchedError, SchedWrapperError
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException
 
 from deciphon_api.api.api import router as api_router
 from deciphon_api.core.errors import (
@@ -12,7 +14,6 @@ from deciphon_api.core.errors import (
 )
 from deciphon_api.core.events import create_start_handler, create_stop_handler
 from deciphon_api.core.settings import settings
-from deciphon_api.sched.error import SchedError, SchedWrapperError
 
 __all__ = ["app", "settings"]
 

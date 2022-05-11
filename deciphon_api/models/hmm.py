@@ -3,11 +3,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Union
 
-from pydantic import BaseModel, Field
-
-from deciphon_api.core.errors import InvalidTypeError
-from deciphon_api.sched.error import SchedError
-from deciphon_api.sched.hmm import (
+from deciphon_sched.error import SchedError
+from deciphon_sched.hmm import (
     sched_hmm,
     sched_hmm_get_all,
     sched_hmm_get_by_filename,
@@ -17,8 +14,11 @@ from deciphon_api.sched.hmm import (
     sched_hmm_new,
     sched_hmm_remove,
 )
-from deciphon_api.sched.job import sched_job_submit
-from deciphon_api.sched.rc import RC
+from deciphon_sched.job import sched_job_submit
+from deciphon_sched.rc import RC
+from pydantic import BaseModel, Field
+
+from deciphon_api.core.errors import InvalidTypeError
 
 __all__ = ["HMM", "HMMIDType"]
 

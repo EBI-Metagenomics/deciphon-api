@@ -1,5 +1,6 @@
 import json
 import typing
+
 from fastapi.responses import Response
 
 __all__ = ["PrettyJSONResponse"]

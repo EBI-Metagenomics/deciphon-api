@@ -6,7 +6,6 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import UnauthorizedError
 from deciphon_api.models.prod import Prod
 
 router = APIRouter()
@@ -43,16 +42,13 @@ def get_prod_list():
     status_code=HTTP_201_CREATED,
     responses=responses,
     name="prods:upload-products",
+    dependencies=[Depends(auth_request)],
 )
 def upload_products(
     prods_file: UploadFile = File(
         ..., content_type="text/tab-separated-values", description="file of products"
     ),
-    authenticated: bool = Depends(auth_request),
 ):
-    if not authenticated:
-        raise UnauthorizedError()
-
     prods_file.file.flush()
     Prod.add_file(prods_file.file)
     return []

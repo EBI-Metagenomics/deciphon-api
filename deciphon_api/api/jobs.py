@@ -6,7 +6,6 @@ from starlette.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import UnauthorizedError
 from deciphon_api.models.hmm import HMM, HMMIDType
 from deciphon_api.models.job import Job, JobProgressPatch, JobStatePatch
 from deciphon_api.models.scan import Scan, ScanIDType
@@ -60,15 +59,12 @@ def get_job_list():
     status_code=HTTP_200_OK,
     responses=responses,
     name="jobs:set-job-state",
+    dependencies=[Depends(auth_request)],
 )
 def set_job_state(
     job_id: int = Path(..., gt=0),
     job_patch: JobStatePatch = Body(...),
-    authenticated: bool = Depends(auth_request),
 ):
-    if not authenticated:
-        raise UnauthorizedError()
-
     return Job.set_state(job_id, job_patch)
 
 
@@ -79,15 +75,12 @@ def set_job_state(
     status_code=HTTP_200_OK,
     responses=responses,
     name="jobs:increment-job-progress",
+    dependencies=[Depends(auth_request)],
 )
 def increment_job_progress(
     job_id: int = Path(..., gt=0),
     job_patch: JobProgressPatch = Body(...),
-    authenticated: bool = Depends(auth_request),
 ):
-    if not authenticated:
-        raise UnauthorizedError()
-
     Job.increment_progress(job_id, job_patch.increment)
     return Job.get(job_id)
 
@@ -123,12 +116,8 @@ def get_scan(job_id: int = Path(..., gt=0)):
     status_code=HTTP_200_OK,
     responses=responses,
     name="jobs:remove-job",
+    dependencies=[Depends(auth_request)],
 )
-def remove_job(
-    job_id: int = Path(..., gt=0), authenticated: bool = Depends(auth_request)
-):
-    if not authenticated:
-        raise UnauthorizedError()
-
+def remove_job(job_id: int = Path(..., gt=0)):
     Job.remove(job_id)
     return JSONResponse({})

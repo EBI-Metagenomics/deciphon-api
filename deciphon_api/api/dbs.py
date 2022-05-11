@@ -7,7 +7,6 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import UnauthorizedError
 from deciphon_api.models.db import DB, DBIDType
 
 router = APIRouter()
@@ -62,14 +61,11 @@ async def download_database(db_id: int = Path(..., gt=0)):
     status_code=HTTP_201_CREATED,
     responses=responses,
     name="dbs:upload-database",
+    dependencies=[Depends(auth_request)],
 )
 async def upload_database(
     db_file: UploadFile = File(..., content_type=mime, description="deciphon database"),
-    authenticated: bool = Depends(auth_request),
 ):
-    if not authenticated:
-        raise UnauthorizedError()
-
     with open(db_file.filename, "wb") as dst:
         shutil.copyfileobj(db_file.file, dst)
 
@@ -83,12 +79,8 @@ async def upload_database(
     status_code=HTTP_200_OK,
     responses=responses,
     name="dbs:remove-db",
+    dependencies=[Depends(auth_request)],
 )
-def remove_db(
-    db_id: int = Path(..., gt=0), authenticated: bool = Depends(auth_request)
-):
-    if not authenticated:
-        raise UnauthorizedError()
-
+def remove_db(db_id: int = Path(..., gt=0)):
     DB.remove(db_id)
     return JSONResponse({})

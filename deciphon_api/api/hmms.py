@@ -7,7 +7,6 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.core.errors import UnauthorizedError
 from deciphon_api.models.hmm import HMM, HMMIDType
 
 router = APIRouter()
@@ -62,14 +61,11 @@ async def download_hmm(hmm_id: int = Path(..., gt=0)):
     status_code=HTTP_201_CREATED,
     responses=responses,
     name="hmms:upload-hmm",
+    dependencies=[Depends(auth_request)],
 )
 async def upload_hmm(
     hmm_file: UploadFile = File(..., content_type=mime, description="hmmer3 file"),
-    authenticated: bool = Depends(auth_request),
 ):
-    if not authenticated:
-        raise UnauthorizedError()
-
     with open(hmm_file.filename, "wb") as dst:
         shutil.copyfileobj(hmm_file.file, dst)
 
@@ -83,13 +79,10 @@ async def upload_hmm(
     status_code=HTTP_200_OK,
     responses=responses,
     name="hmms:remove-hmm",
+    dependencies=[Depends(auth_request)],
 )
 def remove_hmm(
     hmm_id: int = Path(..., gt=0),
-    authenticated: bool = Depends(auth_request),
 ):
-    if not authenticated:
-        raise UnauthorizedError()
-
     HMM.remove(hmm_id)
     return JSONResponse({})

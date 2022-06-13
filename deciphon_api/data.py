@@ -21,7 +21,7 @@ __all__ = [
 
 GOODBOY = pooch.create(
     path=pooch.os_cache(__name__),
-    base_url="https://f002.backblazeb2.com/file/deciphon/",
+    base_url="https://uk1s3.embassy.ebi.ac.uk/deciphon/",
     version=__version__,
     version_dev="main",
     registry={

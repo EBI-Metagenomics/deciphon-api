@@ -28,7 +28,6 @@ pooch = "*"
 pydantic = { extras = ["dotenv"], version = "*" }
 python = "^3.8"
 python-multipart = "*"
-toml = "^0.9"
 typer = "*"
 uvicorn = { extras = ["uvloop", "httptools"], version = "*" }
 xxhash = "*"

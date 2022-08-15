@@ -46,11 +46,6 @@ class DB(BaseModel):
 
     @staticmethod
     def get(id: Union[int, str], id_type: DBIDType) -> DB:
-        # if id_type == DBIDType.FILENAME and not isinstance(id, str):
-        #     raise InvalidTypeError("Expected string")
-        # elif id_type != DBIDType.FILENAME and not isinstance(id, int):
-        #     raise InvalidTypeError("Expected integer")
-
         if id_type == DBIDType.DB_ID:
             assert isinstance(id, int)
             return DB.from_sched_db(sched_db_get_by_id(id))

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deciphon-api"
-version = "0.4.0"
+version = "0.4.1"
 description = "RESTful API for Deciphon scheduler"
 
 license = "MIT"
@@ -21,7 +21,7 @@ include = [{ path = ".env.example" }]
 [tool.poetry.dependencies]
 bcbio-gff = "*"
 biopython = "*"
-deciphon-sched = "*"
+deciphon-sched = "^0.0.3"
 fastapi = "*"
 loguru = "*"
 pooch = "*"

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deciphon-api"
-version = "0.4.2"
+version = "0.4.3"
 description = "RESTful API for Deciphon scheduler"
 
 license = "MIT"
@@ -21,7 +21,7 @@ include = [{ path = ".env.example" }]
 [tool.poetry.dependencies]
 bcbio-gff = "*"
 biopython = "*"
-deciphon-sched = "^0.0.3"
+deciphon-sched = "^0.0.4"
 fastapi = "*"
 loguru = "*"
 pooch = "*"
@@ -45,7 +45,7 @@ pytest-cov = "*"
 deciphon-api = "deciphon_api.console:run"
 
 [build-system]
-requires = ["poetry_core>=1.0.0"]
+requires = ["poetry_core>=1.0.8"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.cibuildwheel]

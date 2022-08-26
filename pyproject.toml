@@ -2,21 +2,13 @@
 name = "deciphon-api"
 version = "0.4.3"
 description = "RESTful API for Deciphon scheduler"
-
 license = "MIT"
-
 authors = ["Danilo Horta <danilo.horta@pm.me>"]
-
 readme = "README.md"
-
 repository = "https://github.com/EBI-Metagenomics/deciphon-api"
 homepage = "https://github.com/EBI-Metagenomics/deciphon-api"
-
 keywords = ["deciphon", "api"]
-
 classifiers = ["License :: OSI Approved :: MIT License"]
-
-include = [{ path = ".env.example" }]
 
 [tool.poetry.dependencies]
 bcbio-gff = "*"
@@ -31,16 +23,16 @@ python = "^3.8"
 python-multipart = "*"
 typer = "*"
 uvicorn = { extras = ["uvloop", "httptools"], version = "*" }
-xxhash = "*"
 
 [tool.poetry.dev-dependencies]
 black = "*"
+coverage = "*"
 isort = "*"
 pyright = "*"
 pytest = "*"
-requests = "*"
-coverage = "*"
 pytest-cov = "*"
+requests = "*"
+xxhash = "*"
 
 [tool.poetry.scripts]
 deciphon-api = "deciphon_api.console:run"

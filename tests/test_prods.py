@@ -4,7 +4,6 @@ from upload import upload_minifam
 
 import deciphon_api.data as data
 from deciphon_api.main import app, settings
-from deciphon_api.models.scan import ScanConfigPost
 
 api_prefix = settings.api_prefix
 api_key = settings.api_key
@@ -15,10 +14,17 @@ def test_upload_products():
     with TestClient(app) as client:
         upload_minifam(client)
 
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
         response = client.post(
             f"{api_prefix}/scans/",
-            json=ScanConfigPost.example().dict(),
-            headers={"X-API-Key": f"{api_key}"},
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
         )
         assert response.status_code == 201
 

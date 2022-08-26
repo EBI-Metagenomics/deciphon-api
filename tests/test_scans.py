@@ -1,10 +1,10 @@
 import pytest
+from fasta_reader import read_fasta
 from fastapi.testclient import TestClient
 from upload import upload_minifam
 
 import deciphon_api.data as data
 from deciphon_api.main import app, settings
-from deciphon_api.models.scan import ScanConfigPost
 
 api_prefix = settings.api_prefix
 api_key = settings.api_key
@@ -12,20 +12,43 @@ api_key = settings.api_key
 
 @pytest.mark.usefixtures("cleandir")
 def test_submit_scan_with_non_existent_database():
-    prefix = api_prefix
     with TestClient(app) as client:
-        response = client.post(f"{prefix}/scans/", json=ScanConfigPost.example().dict())
+
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
+
         assert response.status_code == 404
         assert response.json() == {"rc": 4, "msg": "database not found"}
 
 
 @pytest.mark.usefixtures("cleandir")
 def test_submit_scan():
-    prefix = api_prefix
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{prefix}/scans/", json=ScanConfigPost.example().dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
+
         assert response.status_code == 201
 
         json = response.json()
@@ -45,14 +68,25 @@ def test_submit_scan():
 
 @pytest.mark.usefixtures("cleandir")
 def test_get_scan():
-    prefix = api_prefix
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{prefix}/scans/", json=ScanConfigPost.example().dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
+
         assert response.status_code == 201
 
-        response = client.get(f"{prefix}/scans/1")
+        response = client.get(f"{api_prefix}/scans/1")
         assert response.status_code == 200
         assert response.json() == {
             "id": 1,
@@ -62,21 +96,32 @@ def test_get_scan():
             "job_id": 2,
         }
 
-        response = client.get(f"{prefix}/scans/2")
+        response = client.get(f"{api_prefix}/scans/2")
         assert response.status_code == 404
         assert response.json() == {"rc": 3, "msg": "scan not found"}
 
 
 @pytest.mark.usefixtures("cleandir")
 def test_get_scan_list():
-    prefix = api_prefix
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{prefix}/scans/", json=ScanConfigPost.example().dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
+
         assert response.status_code == 201
 
-        response = client.get(f"{prefix}/scans")
+        response = client.get(f"{api_prefix}/scans")
         assert response.status_code == 200
         assert response.json() == [
             {
@@ -95,9 +140,20 @@ def test_get_next_scan_seq():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanConfigPost.example()
-        response = client.post(f"{prefix}/scans/", json=scan_post.dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
+        items = read_fasta(consensus_faa).read_items()
 
         response = client.get(f"{prefix}/scans/1/seqs/next/0")
         assert response.status_code == 200
@@ -105,8 +161,8 @@ def test_get_next_scan_seq():
         assert response.json() == {
             "id": 1,
             "scan_id": 1,
-            "name": scan_post.seqs[0].name,
-            "data": scan_post.seqs[0].data,
+            "name": items[0].id,
+            "data": items[0].sequence,
         }
 
         response = client.get(f"{prefix}/scans/1/seqs/next/1")
@@ -114,8 +170,8 @@ def test_get_next_scan_seq():
         assert response.json() == {
             "id": 2,
             "scan_id": 1,
-            "name": scan_post.seqs[1].name,
-            "data": scan_post.seqs[1].data,
+            "name": items[1].id,
+            "data": items[1].sequence,
         }
 
         response = client.get(f"{prefix}/scans/1/seqs/next/2")
@@ -123,8 +179,8 @@ def test_get_next_scan_seq():
         assert response.json() == {
             "id": 3,
             "scan_id": 1,
-            "name": scan_post.seqs[2].name,
-            "data": scan_post.seqs[2].data,
+            "name": items[2].id,
+            "data": items[2].sequence,
         }
 
         response = client.get(f"{prefix}/scans/1/seqs/next/3")
@@ -138,9 +194,20 @@ def test_get_scan_seqs():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanConfigPost.example()
-        response = client.post(f"{prefix}/scans/", json=scan_post.dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
+        items = read_fasta(consensus_faa).read_items()
 
         response = client.get(f"{prefix}/scans/1/seqs")
         assert response.status_code == 200
@@ -149,20 +216,20 @@ def test_get_scan_seqs():
             {
                 "id": 1,
                 "scan_id": 1,
-                "name": scan_post.seqs[0].name,
-                "data": scan_post.seqs[0].data,
+                "name": items[0].id,
+                "data": items[0].sequence,
             },
             {
                 "id": 2,
                 "scan_id": 1,
-                "name": scan_post.seqs[1].name,
-                "data": scan_post.seqs[1].data,
+                "name": items[1].id,
+                "data": items[1].sequence,
             },
             {
                 "id": 3,
                 "scan_id": 1,
-                "name": scan_post.seqs[2].name,
-                "data": scan_post.seqs[2].data,
+                "name": items[2].id,
+                "data": items[2].sequence,
             },
         ]
 
@@ -173,8 +240,18 @@ def test_get_scan_prods():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanConfigPost.example()
-        response = client.post(f"{prefix}/scans/", json=scan_post.dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
 
         with open("prods_file.tsv", "wb") as f:
@@ -231,8 +308,18 @@ def test_get_scan_prods_as_gff():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanConfigPost.example()
-        response = client.post(f"{prefix}/scans/", json=scan_post.dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
 
         with open("prods_file.tsv", "wb") as f:
@@ -263,8 +350,18 @@ def test_get_scan_prods_as_amino():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanConfigPost.example()
-        response = client.post(f"{prefix}/scans/", json=scan_post.dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
 
         with open("prods_file.tsv", "wb") as f:
@@ -295,8 +392,18 @@ def test_get_scan_prods_as_path():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanConfigPost.example()
-        response = client.post(f"{prefix}/scans/", json=scan_post.dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
 
         with open("prods_file.tsv", "wb") as f:
@@ -327,8 +434,18 @@ def test_get_scan_prods_as_fragment():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanConfigPost.example()
-        response = client.post(f"{prefix}/scans/", json=scan_post.dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
 
         with open("prods_file.tsv", "wb") as f:
@@ -359,8 +476,18 @@ def test_get_scan_prods_as_codon():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanConfigPost.example()
-        response = client.post(f"{prefix}/scans/", json=scan_post.dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
 
         with open("prods_file.tsv", "wb") as f:

@@ -4,7 +4,6 @@ from upload import upload_minifam, upload_pfam1
 
 import deciphon_api.data as data
 from deciphon_api.main import app, settings
-from deciphon_api.models.scan import ScanConfigPost
 
 api_prefix = settings.api_prefix
 api_key = settings.api_key

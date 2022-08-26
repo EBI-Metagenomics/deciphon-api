@@ -21,7 +21,8 @@ include = [{ path = ".env.example" }]
 [tool.poetry.dependencies]
 bcbio-gff = "*"
 biopython = "*"
-deciphon-sched = "^0.0.4"
+deciphon-sched = ">=0.0.4"
+fasta-reader = ">=1.0.2"
 fastapi = "*"
 loguru = "*"
 pooch = "*"

@@ -21,7 +21,7 @@ from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
 from deciphon_api.models.seq import Seq, SeqPost
 
-__all__ = ["Scan", "ScanPost"]
+__all__ = ["Scan", "ScanConfigPost", "ScanPost"]
 
 
 class ScanIDType(str, Enum):
@@ -78,66 +78,20 @@ class Scan(BaseModel):
         return [Scan.from_sched_scan(scan) for scan in sched_scan_get_all()]
 
 
-class ScanPost(BaseModel):
+class ScanConfigPost(BaseModel):
     db_id: int = 0
-
     multi_hits: bool = False
     hmmer3_compat: bool = False
+
+
+class ScanPost(BaseModel):
+    config: ScanConfigPost
 
     seqs: List[SeqPost] = []
 
     def submit(self) -> Job:
-        scan = sched_scan_new(self.db_id, self.multi_hits, self.hmmer3_compat)
+        cfg = self.config
+        scan = sched_scan_new(cfg.db_id, cfg.multi_hits, cfg.hmmer3_compat)
         for seq in self.seqs:
             sched_scan_add_seq(seq.name, seq.data)
         return Job.from_sched_job(sched_job_submit(scan))
-
-    @classmethod
-    def example(cls):
-        return cls(
-            db_id=1,
-            multi_hits=True,
-            hmmer3_compat=False,
-            seqs=[
-                SeqPost(
-                    name="Homoserine_dh-consensus",
-                    data="CCTATCATTTCGACGCTCAAGGAGTCGCTGACAGGTGACCGTATTACTCGAATCGAAGGG"
-                    "ATATTAAACGGCACCCTGAATTACATTCTCACTGAGATGGAGGAAGAGGGGGCTTCATTC"
-                    "TCTGAGGCGCTGAAGGAGGCACAGGAATTGGGCTACGCGGAAGCGGATCCTACGGACGAT"
-                    "GTGGAAGGGCTAGATGCTGCTAGAAAGCTGGCAATTCTAGCCAGATTGGCATTTGGGTTA"
-                    "GAGGTCGAGTTGGAGGACGTAGAGGTGGAAGGAATTGAAAAGCTGACTGCCGAAGATATT"
-                    "GAAGAAGCGAAGGAAGAGGGTAAAGTTTTAAAACTAGTGGCAAGCGCCGTCGAAGCCAGG"
-                    "GTCAAGCCTGAGCTGGTACCTAAGTCACATCCATTAGCCTCGGTAAAAGGCTCTGACAAC"
-                    "GCCGTGGCTGTAGAAACGGAACGGGTAGGCGAACTCGTAGTGCAGGGACCAGGGGCTGGC"
-                    "GCAGAGCCAACCGCATCCGCTGTACTCGCTGACCTTCTC",
-                ),
-                SeqPost(
-                    name="AA_kinase-consensus",
-                    data="AAACGTGTAGTTGTAAAGCTTGGGGGTAGTTCTCTGACAGATAAGGAAGAGGCATCACTC"
-                    "AGGCGTTTAGCTGAGCAGATTGCAGCATTAAAAGAGAGTGGCAATAAACTAGTGGTCGTG"
-                    "CATGGAGGCGGCAGCTTCACTGATGGTCTGCTGGCATTGAAAAGTGGCCTGAGCTCGGGC"
-                    "GAATTAGCTGCGGGGTTGAGGAGCACGTTAGAAGAGGCCGGAGAAGTAGCGACGAGGGAC"
-                    "GCCCTAGCTAGCTTAGGGGAACGGCTTGTTGCAGCGCTGCTGGCGGCGGGTCTCCCTGCT"
-                    "GTAGGACTCAGCGCCGCTGCGTTAGATGCGACGGAGGCGGGCCGGGATGAAGGCAGCGAC"
-                    "GGGAACGTCGAGTCCGTGGACGCAGAAGCAATTGAGGAGTTGCTTGAGGCCGGGGTGGTC"
-                    "CCCGTCCTAACAGGATTTATCGGCTTAGACGAAGAAGGGGAACTGGGAAGGGGATCTTCT"
-                    "GACACCATCGCTGCGTTACTCGCTGAAGCTTTAGGCGCGGACAAACTCATAATACTGACC"
-                    "GACGTAGACGGCGTTTACGATGCCGACCCTAAAAAGGTCCCAGACGCGAGGCTCTTGCCA"
-                    "GAGATAAGTGTGGACGAGGCCGAGGAAAGCGCCTCCGAATTAGCGACCGGTGGGATGAAG"
-                    "GTCAAACATCCAGCGGCTCTTGCTGCAGCTAGACGGGGGGGTATTCCGGTCGTGATAACG"
-                    "AAT",
-                ),
-                SeqPost(
-                    name="23ISL-consensus",
-                    data="CAGGGTCTGGATAACGCTAATCGTTCGCTAGTTCGCGCTACAAAAGCAGAAAGTTCAGAT"
-                    "ATACGGAAAGAGGTGACTAACGGCATCGCTAAAGGGCTGAAGCTAGACAGTCTGGAAACA"
-                    "GCTGCAGAGTCGAAGAACTGCTCAAGCGCACAGAAAGGCGGATCGCTAGCTTGGGCAACC"
-                    "AACTCCCAACCACAGCCTCTCCGTGAAAGTAAGCTTGAGCCATTGGAAGACTCCCCACGT"
-                    "AAGGCTTTAAAAACACCTGTGTTGCAAAAGACATCCAGTACCATAACTTTACAAGCAGTC"
-                    "AAGGTTCAACCTGAACCCCGCGCTCCCGTCTCCGGGGCGCTGTCCCCGAGCGGGGAGGAA"
-                    "CGCAAGCGCCCAGCTGCGTCTGCTCCCGCTACCTTACCGACACGACAGAGTGGTCTAGGT"
-                    "TCTCAGGAAGTCGTTTCGAAGGTGGCGACTCGCAAAATTCCAATGGAGTCACAACGCGAG"
-                    "TCGACT",
-                ),
-            ],
-        )

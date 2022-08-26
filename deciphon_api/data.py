@@ -29,6 +29,7 @@ GOODBOY = pooch.create(
         "minifam.dcp.bz2": "md5:e460d18f3802c1f2a3b2c05246ab4199",
         "pfam1.hmm.bz2": "md5:e6e335b8798c7e0aec8c6c99e1709bf7",
         "pfam1.dcp.bz2": "md5:e6e335b8798c7e0aec8c6c99e1709bf7",
+        "consensus.faa.bz2": "md5:c592ad21870aced44e0d04c063622828",
     },
 )
 
@@ -38,6 +39,7 @@ class FileName(Enum):
     minifam_db = "minifam.dcp"
     pfam1_hmm = "pfam1.hmm"
     pfam1_db = "pfam1.dcp"
+    consensus_faa = "consensus.faa"
 
 
 def filepath(file_name: FileName) -> Path:

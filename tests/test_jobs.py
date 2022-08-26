@@ -2,8 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 from upload import upload_minifam, upload_pfam1
 
+import deciphon_api.data as data
 from deciphon_api.main import app, settings
-from deciphon_api.models.scan import ScanPost
+from deciphon_api.models.scan import ScanConfigPost
 
 api_prefix = settings.api_prefix
 api_key = settings.api_key
@@ -29,7 +30,19 @@ def test_get_next_pend_job():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
+
         assert response.status_code == 201
 
         response = client.get(f"{api_prefix}/jobs/next_pend")
@@ -55,7 +68,18 @@ def test_set_job_state_run():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
         job_id = response.json()["id"]
 
@@ -77,7 +101,19 @@ def test_set_job_state_run_and_fail():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
+
         assert response.status_code == 201
         job_id = response.json()["id"]
 
@@ -106,7 +142,19 @@ def test_set_job_state_run_and_done():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
+
         assert response.status_code == 201
         job_id = response.json()["id"]
 
@@ -135,7 +183,19 @@ def test_set_job_state_wrongly():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{api_prefix}/scans/", json=ScanPost.example().dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
+
         assert response.status_code == 201
         job_id = response.json()["id"]
 
@@ -154,20 +214,31 @@ def test_set_job_state_wrongly():
 
 @pytest.mark.usefixtures("cleandir")
 def test_get_job_list():
-    prefix = api_prefix
     with TestClient(app) as client:
         upload_minifam(client)
         upload_pfam1(client)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
+
         assert response.status_code == 201
 
         response = client.get(f"{api_prefix}/jobs")
         assert response.status_code == 200
-        data = response.json().copy()
-        for v in data:
+        jdata = response.json().copy()
+        for v in jdata:
             v["submission"] = 0
-        assert data == [
+        assert jdata == [
             {
                 "id": 1,
                 "type": 1,
@@ -218,10 +289,21 @@ def test_get_hmm_from_job():
 
 @pytest.mark.usefixtures("cleandir")
 def test_get_scan_from_job():
-    prefix = api_prefix
     with TestClient(app) as client:
         upload_minifam(client)
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+
+        consensus_faa = data.filepath(data.FileName.consensus_faa)
+        response = client.post(
+            f"{api_prefix}/scans/",
+            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
+            files={
+                "fasta_file": (
+                    consensus_faa.name,
+                    open(consensus_faa, "rb"),
+                    "text/plain",
+                )
+            },
+        )
         assert response.status_code == 201
 
         response = client.get(f"{api_prefix}/jobs/2/scan")

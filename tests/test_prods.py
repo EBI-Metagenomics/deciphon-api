@@ -4,7 +4,7 @@ from upload import upload_minifam
 
 import deciphon_api.data as data
 from deciphon_api.main import app, settings
-from deciphon_api.models.scan import ScanPost
+from deciphon_api.models.scan import ScanConfigPost
 
 api_prefix = settings.api_prefix
 api_key = settings.api_key
@@ -17,7 +17,7 @@ def test_upload_products():
 
         response = client.post(
             f"{api_prefix}/scans/",
-            json=ScanPost.example().dict(),
+            json=ScanConfigPost.example().dict(),
             headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201

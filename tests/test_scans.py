@@ -4,7 +4,7 @@ from upload import upload_minifam
 
 import deciphon_api.data as data
 from deciphon_api.main import app, settings
-from deciphon_api.models.scan import ScanPost
+from deciphon_api.models.scan import ScanConfigPost
 
 api_prefix = settings.api_prefix
 api_key = settings.api_key
@@ -14,7 +14,7 @@ api_key = settings.api_key
 def test_submit_scan_with_non_existent_database():
     prefix = api_prefix
     with TestClient(app) as client:
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(f"{prefix}/scans/", json=ScanConfigPost.example().dict())
         assert response.status_code == 404
         assert response.json() == {"rc": 4, "msg": "database not found"}
 
@@ -25,7 +25,7 @@ def test_submit_scan():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(f"{prefix}/scans/", json=ScanConfigPost.example().dict())
         assert response.status_code == 201
 
         json = response.json()
@@ -49,7 +49,7 @@ def test_get_scan():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(f"{prefix}/scans/", json=ScanConfigPost.example().dict())
         assert response.status_code == 201
 
         response = client.get(f"{prefix}/scans/1")
@@ -73,7 +73,7 @@ def test_get_scan_list():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        response = client.post(f"{prefix}/scans/", json=ScanPost.example().dict())
+        response = client.post(f"{prefix}/scans/", json=ScanConfigPost.example().dict())
         assert response.status_code == 201
 
         response = client.get(f"{prefix}/scans")
@@ -95,7 +95,7 @@ def test_get_next_scan_seq():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanPost.example()
+        scan_post = ScanConfigPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
         assert response.status_code == 201
 
@@ -138,7 +138,7 @@ def test_get_scan_seqs():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanPost.example()
+        scan_post = ScanConfigPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
         assert response.status_code == 201
 
@@ -173,7 +173,7 @@ def test_get_scan_prods():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanPost.example()
+        scan_post = ScanConfigPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
         assert response.status_code == 201
 
@@ -231,7 +231,7 @@ def test_get_scan_prods_as_gff():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanPost.example()
+        scan_post = ScanConfigPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
         assert response.status_code == 201
 
@@ -263,7 +263,7 @@ def test_get_scan_prods_as_amino():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanPost.example()
+        scan_post = ScanConfigPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
         assert response.status_code == 201
 
@@ -295,7 +295,7 @@ def test_get_scan_prods_as_path():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanPost.example()
+        scan_post = ScanConfigPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
         assert response.status_code == 201
 
@@ -327,7 +327,7 @@ def test_get_scan_prods_as_fragment():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanPost.example()
+        scan_post = ScanConfigPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
         assert response.status_code == 201
 
@@ -359,7 +359,7 @@ def test_get_scan_prods_as_codon():
     with TestClient(app) as client:
         upload_minifam(client)
 
-        scan_post = ScanPost.example()
+        scan_post = ScanConfigPost.example()
         response = client.post(f"{prefix}/scans/", json=scan_post.dict())
         assert response.status_code == 201
 

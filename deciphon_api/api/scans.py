@@ -22,11 +22,36 @@ router = APIRouter()
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-scan",
+    deprecated=True,
 )
 async def get_scan(
     id: int = Path(...), id_type: ScanIDType = Query(ScanIDType.SCAN_ID.value)
 ):
     return Scan.get(id, id_type)
+
+
+@router.get(
+    "/scans/{id}",
+    summary="get scan by id",
+    response_model=Scan,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="scans:get-scan-by-id",
+)
+async def get_scan_by_id(id: int = Path(..., gt=0)):
+    return Scan.get(id, ScanIDType.SCAN_ID)
+
+
+@router.get(
+    "/scans/job-id/{job_id}",
+    summary="get scan by job_id",
+    response_model=Scan,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="scans:get-scan-by-job-id",
+)
+async def get_scan_by_job_id(job_id: int = Path(..., gt=0)):
+    return Scan.get(job_id, ScanIDType.JOB_ID)
 
 
 @router.post(
@@ -58,15 +83,15 @@ async def submit_scan(
 
 
 @router.get(
-    "/scans/{scan_id}/seqs",
+    "/scans/{id}/seqs",
     summary="get sequences of scan",
     response_model=List[Seq],
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-sequences-of-scan",
 )
-async def get_sequences_of_scan(scan_id: int = Path(..., gt=0)):
-    return Scan.get(scan_id, ScanIDType.SCAN_ID).seqs()
+async def get_sequences_of_scan(id: int = Path(..., gt=0)):
+    return Scan.get(id, ScanIDType.SCAN_ID).seqs()
 
 
 @router.get(
@@ -82,7 +107,7 @@ async def get_scan_list():
 
 
 @router.get(
-    "/scans/{scan_id}/seqs/next/{seq_id}",
+    "/scans/{id}/seqs/next/{seq_id}",
     summary="get next sequence",
     response_model=Seq,
     status_code=HTTP_200_OK,
@@ -90,96 +115,96 @@ async def get_scan_list():
     name="scans:get-next-sequence-of-scan",
 )
 async def get_next_sequence_of_scan(
-    scan_id: int = Path(..., gt=0), seq_id: int = Path(..., ge=0)
+    id: int = Path(..., gt=0), seq_id: int = Path(..., ge=0)
 ):
-    return Seq.next(seq_id, scan_id)
+    return Seq.next(seq_id, id)
 
 
 @router.get(
-    "/scans/{scan_id}/prods",
+    "/scans/{id}/prods",
     summary="get products of scan",
     response_model=List[Prod],
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-products-of-scan",
 )
-async def get_products_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
+async def get_products_of_scan(id: int = Path(..., gt=0)):
+    scan = Scan.get(id, ScanIDType.SCAN_ID)
     job = scan.job()
     job.assert_state(JobState.SCHED_DONE)
     return scan.prods()
 
 
 @router.get(
-    "/scans/{scan_id}/prods/gff",
+    "/scans/{id}/prods/gff",
     summary="get products of scan as gff",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-products-of-scan-as-gff",
 )
-async def get_products_of_scan_as_gff(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
+async def get_products_of_scan_as_gff(id: int = Path(..., gt=0)):
+    scan = Scan.get(id, ScanIDType.SCAN_ID)
     job = scan.job()
     job.assert_state(JobState.SCHED_DONE)
     return scan.result().gff()
 
 
 @router.get(
-    "/scans/{scan_id}/prods/path",
+    "/scans/{id}/prods/path",
     summary="get hmm paths of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-path-of-scan",
 )
-async def get_path_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
+async def get_path_of_scan(id: int = Path(..., gt=0)):
+    scan = Scan.get(id, ScanIDType.SCAN_ID)
     job = scan.job()
     job.assert_state(JobState.SCHED_DONE)
     return scan.result().fasta("state")
 
 
 @router.get(
-    "/scans/{scan_id}/prods/fragment",
+    "/scans/{id}/prods/fragment",
     summary="get fragments of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-fragments-of-scan",
 )
-async def get_fragment_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
+async def get_fragment_of_scan(id: int = Path(..., gt=0)):
+    scan = Scan.get(id, ScanIDType.SCAN_ID)
     job = scan.job()
     job.assert_state(JobState.SCHED_DONE)
     return scan.result().fasta("frag")
 
 
 @router.get(
-    "/scans/{scan_id}/prods/codon",
+    "/scans/{id}/prods/codon",
     summary="get codons of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-codons-of-scan",
 )
-async def get_codons_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
+async def get_codons_of_scan(id: int = Path(..., gt=0)):
+    scan = Scan.get(id, ScanIDType.SCAN_ID)
     job = scan.job()
     job.assert_state(JobState.SCHED_DONE)
     return scan.result().fasta("codon")
 
 
 @router.get(
-    "/scans/{scan_id}/prods/amino",
+    "/scans/{id}/prods/amino",
     summary="get aminos of scan",
     response_class=PlainTextResponse,
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-aminos-of-scan",
 )
-async def get_aminos_of_scan(scan_id: int = Path(..., gt=0)):
-    scan = Scan.get(scan_id, ScanIDType.SCAN_ID)
+async def get_aminos_of_scan(id: int = Path(..., gt=0)):
+    scan = Scan.get(id, ScanIDType.SCAN_ID)
     job = scan.job()
     job.assert_state(JobState.SCHED_DONE)
     return scan.result().fasta("amino")

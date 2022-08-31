@@ -17,7 +17,7 @@ router = APIRouter()
     responses=responses,
     name="seqs:get-sequence",
 )
-def get_sequence(seq_id: int = Path(..., gt=0)):
+async def get_sequence(seq_id: int = Path(..., gt=0)):
     return Seq.get(seq_id)
 
 
@@ -29,5 +29,5 @@ def get_sequence(seq_id: int = Path(..., gt=0)):
     responses=responses,
     name="seqs:get-seq-list",
 )
-def get_seq_list():
+async def get_seq_list():
     return Seq.get_list()

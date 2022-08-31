@@ -22,11 +22,60 @@ mime = "application/octet-stream"
     status_code=HTTP_200_OK,
     responses=responses,
     name="hmms:get-hmm",
+    deprecated=True,
 )
-def get_hmm(
+async def get_hmm(
     id: Union[int, str] = Path(...), id_type: HMMIDType = Query(HMMIDType.HMM_ID.value)
 ):
     return HMM.get(id, id_type)
+
+
+@router.get(
+    "/hmms/{id}",
+    summary="get hmm by id",
+    response_model=HMM,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="hmms:get-hmm-by-id",
+)
+async def get_hmm_by_id(id: int = Path(..., gt=0)):
+    return HMM.get(id, HMMIDType.HMM_ID)
+
+
+@router.get(
+    "/hmms/xxh3/{xxh3}",
+    summary="get hmm by xxh3",
+    response_model=HMM,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="hmms:get-hmm-by-xxh3",
+)
+async def get_hmm_by_xxh3(xxh3: int):
+    return HMM.get(xxh3, HMMIDType.XXH3)
+
+
+@router.get(
+    "/hmms/job-id/{job_id}",
+    summary="get hmm by job_id",
+    response_model=HMM,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="hmms:get-hmm-by-job-id",
+)
+async def get_hmm_by_job_id(job_id: int = Path(..., gt=0)):
+    return HMM.get(job_id, HMMIDType.JOB_ID)
+
+
+@router.get(
+    "/hmms/filename/{filename}",
+    summary="get hmm by filename",
+    response_model=HMM,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="hmms:get-hmm-by-filename",
+)
+async def get_hmm_by_filename(filename: str):
+    return HMM.get(filename, HMMIDType.FILENAME)
 
 
 @router.get(
@@ -37,7 +86,7 @@ def get_hmm(
     responses=responses,
     name="dbs:get-hmm-list",
 )
-def get_hmm_list():
+async def get_hmm_list():
     return HMM.get_list()
 
 
@@ -81,7 +130,7 @@ async def upload_hmm(
     name="hmms:remove-hmm",
     dependencies=[Depends(auth_request)],
 )
-def remove_hmm(
+async def remove_hmm(
     hmm_id: int = Path(..., gt=0),
 ):
     HMM.remove(hmm_id)

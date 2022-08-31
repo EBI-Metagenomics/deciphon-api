@@ -38,7 +38,7 @@ xxhash = "*"
 deciphon-api = "deciphon_api.console:run"
 
 [build-system]
-requires = ["poetry_core>=1.0.8"]
+requires = ["poetry-core>=1.0.8"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.cibuildwheel]

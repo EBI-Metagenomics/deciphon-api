@@ -23,7 +23,7 @@ mime = "application/octet-stream"
     responses=responses,
     name="dbs:get-database",
 )
-def get_database(
+async def get_database(
     id: Union[int, str] = Path(...), id_type: DBIDType = Query(DBIDType.DB_ID.value)
 ):
     return DB.get(id, id_type)
@@ -37,7 +37,7 @@ def get_database(
     responses=responses,
     name="dbs:get-database-list",
 )
-def get_database_list():
+async def get_database_list():
     return DB.get_list()
 
 
@@ -81,6 +81,6 @@ async def upload_database(
     name="dbs:remove-db",
     dependencies=[Depends(auth_request)],
 )
-def remove_db(db_id: int = Path(..., gt=0)):
+async def remove_db(db_id: int = Path(..., gt=0)):
     DB.remove(db_id)
     return JSONResponse({})

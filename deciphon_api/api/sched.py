@@ -19,7 +19,7 @@ router = APIRouter()
     name="sched:wipe",
     dependencies=[Depends(auth_request)],
 )
-def wipe():
+async def wipe():
     sched_wipe()
     return JSONResponse([])
 
@@ -33,7 +33,7 @@ def wipe():
     name="sched:check-health",
     dependencies=[Depends(auth_request)],
 )
-def check_health():
+async def check_health():
     health = SchedHealth()
     health.check()
     return health

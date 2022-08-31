@@ -19,7 +19,7 @@ router = APIRouter()
     responses=responses,
     name="prods:get-product",
 )
-def get_product(prod_id: int = Path(..., gt=0)):
+async def get_product(prod_id: int = Path(..., gt=0)):
     return Prod.get(prod_id)
 
 
@@ -31,7 +31,7 @@ def get_product(prod_id: int = Path(..., gt=0)):
     responses=responses,
     name="prods:get-prod-list",
 )
-def get_prod_list():
+async def get_prod_list():
     return Prod.get_list()
 
 
@@ -44,7 +44,7 @@ def get_prod_list():
     name="prods:upload-products",
     dependencies=[Depends(auth_request)],
 )
-def upload_products(
+async def upload_products(
     prods_file: UploadFile = File(
         ..., content_type="text/tab-separated-values", description="file of products"
     ),

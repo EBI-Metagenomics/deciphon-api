@@ -12,7 +12,7 @@ from deciphon_api.models.hmm import HMM, HMMIDType
 router = APIRouter()
 
 
-mime = "application/octet-stream"
+mime = "text/plain"
 
 
 @router.get(

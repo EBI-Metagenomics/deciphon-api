@@ -79,7 +79,7 @@ class Scan(BaseModel):
 
 
 class ScanConfig(BaseModel):
-    db_id: int = 0
+    db_id: int = Field(..., gt=0)
     multi_hits: bool = False
     hmmer3_compat: bool = False
 

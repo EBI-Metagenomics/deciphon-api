@@ -7,6 +7,7 @@ from fastapi.responses import PlainTextResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.responses import responses
+from deciphon_api.models.count import Count
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan import Scan, ScanConfig, ScanIDType, ScanPost
@@ -94,6 +95,18 @@ async def submit_scan(
 )
 async def get_sequences_of_scan(id: int = Path(..., gt=0)):
     return Scan.get(id, ScanIDType.SCAN_ID).seqs()
+
+
+@router.get(
+    "/scans/{id}/seqs/count",
+    summary="get sequence count of scan",
+    response_model=Count,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="scans:get-sequence-count-of-scan",
+)
+async def get_sequence_count_of_scan(id: int = Path(..., gt=0)):
+    return Count(count=len(Scan.get(id, ScanIDType.SCAN_ID).seqs()))
 
 
 @router.get(

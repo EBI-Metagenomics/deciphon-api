@@ -1,6 +1,6 @@
-import shutil
 from typing import List, Union
 
+import aiofiles
 from fastapi import APIRouter, Depends, File, Path, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
@@ -115,8 +115,9 @@ async def download_hmm(hmm_id: int = Path(..., gt=0)):
 async def upload_hmm(
     hmm_file: UploadFile = File(..., content_type=mime, description="hmmer3 file"),
 ):
-    with open(hmm_file.filename, "wb") as dst:
-        shutil.copyfileobj(hmm_file.file, dst)
+    async with aiofiles.open(hmm_file.filename, "wb") as file:
+        while content := await hmm_file.read(4 * 1024 * 1024):
+            await file.write(content)
 
     return HMM.submit(hmm_file.filename)
 

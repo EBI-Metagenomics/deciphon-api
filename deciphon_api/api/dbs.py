@@ -1,6 +1,6 @@
-import shutil
 from typing import List, Union
 
+import aiofiles
 from fastapi import APIRouter, Depends, File, Path, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
@@ -66,8 +66,9 @@ async def download_database(db_id: int = Path(..., gt=0)):
 async def upload_database(
     db_file: UploadFile = File(..., content_type=mime, description="deciphon database"),
 ):
-    with open(db_file.filename, "wb") as dst:
-        shutil.copyfileobj(db_file.file, dst)
+    async with aiofiles.open(db_file.filename, "wb") as file:
+        while content := await db_file.read(4 * 1024 * 1024):
+            await file.write(content)
 
     return DB.add(db_file.filename)
 

@@ -1,6 +1,6 @@
-from tempfile import NamedTemporaryFile
 from typing import List
 
+import aiofiles
 from fasta_reader import read_fasta
 from fastapi import APIRouter, File, Form, Path, Query, UploadFile
 from fastapi.responses import PlainTextResponse
@@ -9,7 +9,7 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 from deciphon_api.api.responses import responses
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
-from deciphon_api.models.scan import Scan, ScanConfigPost, ScanIDType, ScanPost
+from deciphon_api.models.scan import Scan, ScanConfig, ScanIDType, ScanPost
 from deciphon_api.models.seq import Seq, SeqPost
 
 router = APIRouter()
@@ -70,15 +70,17 @@ async def submit_scan(
         ..., content_type="text/plain", description="fasta file"
     ),
 ):
-    cfg = ScanConfigPost(
-        db_id=db_id, multi_hits=multi_hits, hmmer3_compat=hmmer3_compat
-    )
+    cfg = ScanConfig(db_id=db_id, multi_hits=multi_hits, hmmer3_compat=hmmer3_compat)
     scan = ScanPost(config=cfg)
-    with NamedTemporaryFile() as file:
-        file.write(await fasta_file.read())
-        file.seek(0)
+
+    async with aiofiles.tempfile.NamedTemporaryFile("wb") as file:
+        while content := await fasta_file.read(4 * 1024 * 1024):
+            await file.write(content)
+        assert not isinstance(file.name, int)
+        await file.flush()
         for item in read_fasta(file.name):
             scan.seqs.append(SeqPost(name=item.id, data=item.sequence))
+
     return scan.submit()
 
 

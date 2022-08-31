@@ -14,7 +14,7 @@ classifiers = ["License :: OSI Approved :: MIT License"]
 bcbio-gff = "*"
 biopython = "*"
 deciphon-sched = ">=0.0.4"
-fasta-reader = ">=1.0.2"
+fasta-reader = ">=1.0.3"
 fastapi = "*"
 loguru = "*"
 pooch = "*"
@@ -22,7 +22,8 @@ pydantic = { extras = ["dotenv"], version = "*" }
 python = "^3.8"
 python-multipart = "*"
 typer = "*"
-uvicorn = { extras = ["uvloop", "httptools"], version = "*" }
+uvicorn = { extras = ["standard"], version = "*" }
+aiofiles = "*"
 
 [tool.poetry.dev-dependencies]
 black = "*"

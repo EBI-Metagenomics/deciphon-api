@@ -21,7 +21,7 @@ from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
 from deciphon_api.models.seq import Seq, SeqPost
 
-__all__ = ["Scan", "ScanConfigPost", "ScanPost"]
+__all__ = ["Scan", "ScanConfig", "ScanPost"]
 
 
 class ScanIDType(str, Enum):
@@ -78,14 +78,14 @@ class Scan(BaseModel):
         return [Scan.from_sched_scan(scan) for scan in sched_scan_get_all()]
 
 
-class ScanConfigPost(BaseModel):
+class ScanConfig(BaseModel):
     db_id: int = 0
     multi_hits: bool = False
     hmmer3_compat: bool = False
 
 
 class ScanPost(BaseModel):
-    config: ScanConfigPost
+    config: ScanConfig
 
     seqs: List[SeqPost] = []
 

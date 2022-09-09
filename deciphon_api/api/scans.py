@@ -3,8 +3,8 @@ from typing import List
 import aiofiles
 from fasta_reader import read_fasta
 from fastapi import APIRouter, File, Form, Path, Query, UploadFile
-from fastapi.responses import PlainTextResponse
-from starlette.status import HTTP_200_OK, HTTP_201_CREATED
+from fastapi.responses import JSONResponse, PlainTextResponse
+from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.responses import responses
 from deciphon_api.models.count import Count
@@ -132,7 +132,10 @@ async def get_scan_list():
 async def get_next_sequence_of_scan(
     id: int = Path(..., gt=0), seq_id: int = Path(..., ge=0)
 ):
-    return Seq.next(seq_id, id)
+    seq = Seq.next(seq_id, id)
+    if seq is None:
+        return JSONResponse({}, status_code=HTTP_204_NO_CONTENT)
+    return seq
 
 
 @router.get(

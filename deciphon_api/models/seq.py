@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 from deciphon_sched.seq import (
     sched_seq,
@@ -34,10 +34,12 @@ class Seq(BaseModel):
         return Seq.from_sched_seq(sched_seq_get_by_id(seq_id))
 
     @classmethod
-    def next(cls, seq_id: int, scan_id: int) -> Seq:
-        seq = sched_seq_new(seq_id, scan_id)
-        sched_seq_scan_next(seq)
-        return Seq.from_sched_seq(seq)
+    def next(cls, seq_id: int, scan_id: int) -> Optional[Seq]:
+        sched_seq = sched_seq_new(seq_id, scan_id)
+        sched_seq = sched_seq_scan_next(sched_seq)
+        if sched_seq is None:
+            return None
+        return Seq.from_sched_seq(sched_seq)
 
     @staticmethod
     def get_list() -> List[Seq]:

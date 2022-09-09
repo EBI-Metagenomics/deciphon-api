@@ -1,7 +1,7 @@
-import os
 from typing import List
 
 from fastapi import APIRouter, Depends, File, Path, UploadFile
+from fastapi.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
@@ -38,7 +38,7 @@ async def get_prod_list():
 @router.post(
     "/prods/",
     summary="upload file of products",
-    response_model=List,
+    response_model=JSONResponse,
     status_code=HTTP_201_CREATED,
     responses=responses,
     name="prods:upload-products",
@@ -51,4 +51,4 @@ async def upload_products(
 ):
     prods_file.file.flush()
     Prod.add_file(prods_file.file)
-    return []
+    return JSONResponse({})

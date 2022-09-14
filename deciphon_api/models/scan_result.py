@@ -11,7 +11,7 @@ from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio.SeqRecord import SeqRecord
 
 from deciphon_api.models.prod import Prod
-from deciphon_api.models.seq import Seq
+from deciphon_api.models.seq import Seq, Seqs
 
 if TYPE_CHECKING:
     from deciphon_api.models.scan import Scan
@@ -53,7 +53,7 @@ class ScanResult:
     seqs: Dict[int, Seq]
     hits: List[Hit]
 
-    def __init__(self, scan: Scan, prods: List[Prod], seqs: List[Seq]):
+    def __init__(self, scan: Scan, prods: List[Prod], seqs: Seqs):
         self.scan = scan
         self.prods = list(sorted(prods, key=lambda prod: prod.seq_id))
         self.seqs = dict((seq.id, seq) for seq in seqs)

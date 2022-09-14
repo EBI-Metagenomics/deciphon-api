@@ -38,7 +38,7 @@ async def get_prod_list():
 @router.post(
     "/prods/",
     summary="upload file of products",
-    response_model=JSONResponse,
+    response_class=JSONResponse,
     status_code=HTTP_201_CREATED,
     responses=responses,
     name="prods:upload-products",
@@ -51,4 +51,4 @@ async def upload_products(
 ):
     prods_file.file.flush()
     Prod.add_file(prods_file.file)
-    return JSONResponse({})
+    return JSONResponse({}, HTTP_201_CREATED)

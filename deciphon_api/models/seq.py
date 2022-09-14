@@ -11,7 +11,7 @@ from deciphon_sched.seq import (
 )
 from pydantic import BaseModel, Field
 
-__all__ = ["Seq", "SeqPost"]
+__all__ = ["Seq", "Seqs", "SeqPost"]
 
 
 class Seq(BaseModel):
@@ -42,8 +42,21 @@ class Seq(BaseModel):
         return Seq.from_sched_seq(sched_seq)
 
     @staticmethod
-    def get_list() -> List[Seq]:
-        return [Seq.from_sched_seq(seq) for seq in sched_seq_get_all()]
+    def get_list() -> Seqs:
+        return Seqs(__root__=[Seq.from_sched_seq(seq) for seq in sched_seq_get_all()])
+
+
+class Seqs(BaseModel):
+    __root__: List[Seq]
+
+    def __iter__(self):
+        return iter(self.__root__)
+
+    def __getitem__(self, item):
+        return self.__root__[item]
+
+    def __len__(self) -> int:
+        return len(list(self.__root__))
 
 
 class SeqPost(BaseModel):

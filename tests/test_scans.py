@@ -184,8 +184,8 @@ def test_get_next_scan_seq():
         }
 
         response = client.get(f"{prefix}/scans/1/seqs/next/3")
-        assert response.status_code == 404
-        assert response.json() == {"rc": 7, "msg": "sequence not found"}
+        assert response.status_code == 204
+        assert response.json() == {}
 
 
 @pytest.mark.usefixtures("cleandir")
@@ -269,7 +269,7 @@ def test_get_scan_prods():
             headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
-        assert response.json() == []
+        assert response.json() == {}
 
         response = client.get(f"{prefix}/scans/1/prods")
         assert response.status_code == 200
@@ -337,7 +337,7 @@ def test_get_scan_prods_as_gff():
             headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
-        assert response.json() == []
+        assert response.json() == {}
 
         response = client.get(f"{prefix}/scans/1/prods/gff")
         assert response.status_code == 200
@@ -379,7 +379,7 @@ def test_get_scan_prods_as_amino():
             headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
-        assert response.json() == []
+        assert response.json() == {}
 
         response = client.get(f"{prefix}/scans/1/prods/amino")
         assert response.status_code == 200
@@ -421,7 +421,7 @@ def test_get_scan_prods_as_path():
             headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
-        assert response.json() == []
+        assert response.json() == {}
 
         response = client.get(f"{prefix}/scans/1/prods/path")
         assert response.status_code == 200
@@ -463,7 +463,7 @@ def test_get_scan_prods_as_fragment():
             headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
-        assert response.json() == []
+        assert response.json() == {}
 
         response = client.get(f"{prefix}/scans/1/prods/fragment")
         assert response.status_code == 200
@@ -505,7 +505,7 @@ def test_get_scan_prods_as_codon():
             headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
-        assert response.json() == []
+        assert response.json() == {}
 
         response = client.get(f"{prefix}/scans/1/prods/codon")
         assert response.status_code == 200

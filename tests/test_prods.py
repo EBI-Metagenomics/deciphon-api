@@ -46,4 +46,4 @@ def test_upload_products():
             headers={"X-API-Key": f"{api_key}"},
         )
         assert response.status_code == 201
-        assert response.json() == []
+        assert response.json() == {}

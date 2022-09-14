@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan_result import ScanResult
-from deciphon_api.models.seq import Seq, SeqPost
+from deciphon_api.models.seq import Seq, SeqPost, Seqs
 
 __all__ = ["Scan", "ScanConfig", "ScanPost"]
 
@@ -59,15 +59,17 @@ class Scan(BaseModel):
     def prods(self) -> List[Prod]:
         return [Prod.from_sched_prod(prod) for prod in sched_scan_get_prods(self.id)]
 
-    def seqs(self) -> List[Seq]:
-        return [Seq.from_sched_seq(seq) for seq in sched_scan_get_seqs(self.id)]
+    def seqs(self) -> Seqs:
+        return Seqs(
+            __root__=[Seq.from_sched_seq(seq) for seq in sched_scan_get_seqs(self.id)]
+        )
 
     def result(self) -> ScanResult:
         job = self.job()
         job.assert_state(JobState.SCHED_DONE)
 
         prods: List[Prod] = self.prods()
-        seqs: List[Seq] = self.seqs()
+        seqs: Seqs = self.seqs()
         return ScanResult(self, prods, seqs)
 
     def job(self) -> Job:

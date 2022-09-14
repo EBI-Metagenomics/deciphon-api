@@ -1,9 +1,11 @@
+import tempfile
 from typing import List
 
 import aiofiles
 from fasta_reader import read_fasta
 from fastapi import APIRouter, File, Form, Path, Query, UploadFile
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from starlette.background import BackgroundTask
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.responses import responses
@@ -11,7 +13,7 @@ from deciphon_api.models.count import Count
 from deciphon_api.models.job import Job, JobState
 from deciphon_api.models.prod import Prod
 from deciphon_api.models.scan import Scan, ScanConfig, ScanIDType, ScanPost
-from deciphon_api.models.seq import Seq, SeqPost
+from deciphon_api.models.seq import Seq, SeqPost, Seqs
 
 router = APIRouter()
 
@@ -88,13 +90,35 @@ async def submit_scan(
 @router.get(
     "/scans/{id}/seqs",
     summary="get sequences of scan",
-    response_model=List[Seq],
+    response_model=Seqs,
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-sequences-of-scan",
 )
 async def get_sequences_of_scan(id: int = Path(..., gt=0)):
     return Scan.get(id, ScanIDType.SCAN_ID).seqs()
+
+
+@router.get(
+    "/scans/{id}/seqs/download",
+    summary="download sequences of scan",
+    response_class=FileResponse,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="scans:download-sequences-of-scan",
+)
+async def download_sequences_of_scan(id: int = Path(..., gt=0)):
+    seqs = Scan.get(id, ScanIDType.SCAN_ID).seqs()
+    file = tempfile.NamedTemporaryFile("wb")
+    file.write(seqs.json().encode())
+    file.flush()
+    assert isinstance(file.name, str)
+    return FileResponse(
+        file.name,
+        media_type="application/json",
+        filename=f"scan_id_{id}_seqs.json",
+        background=BackgroundTask(lambda f: f.close(), file),
+    )
 
 
 @router.get(

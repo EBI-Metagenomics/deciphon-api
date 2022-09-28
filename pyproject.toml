@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deciphon-api"
-version = "0.4.6"
+version = "0.4.7"
 description = "RESTful API for Deciphon scheduler"
 license = "MIT"
 authors = ["Danilo Horta <danilo.horta@pm.me>"]

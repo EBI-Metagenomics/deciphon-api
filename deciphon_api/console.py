@@ -1,5 +1,6 @@
-import os
 import subprocess
+import sys
+from pathlib import Path
 from typing import Optional
 
 import typer
@@ -41,7 +42,7 @@ def start(
     host = settings.host
     port = settings.port
     cmds = [
-        "gunicorn",
+        str(Path(sys.executable).parent / "gunicorn"),
         "deciphon_api.main:app",
         "--workers",
         "1",

@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Body, Depends, Path
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from starlette.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.authentication import auth_request
@@ -26,7 +26,7 @@ router = APIRouter()
 async def get_next_pend_job():
     job = Job.next_pend()
     if job is None:
-        return JSONResponse({}, status_code=HTTP_204_NO_CONTENT)
+        return Response(status_code=HTTP_204_NO_CONTENT)
     return job
 
 

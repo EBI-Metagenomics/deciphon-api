@@ -4,7 +4,7 @@ from typing import List
 import aiofiles
 from fasta_reader import read_fasta
 from fastapi import APIRouter, File, Form, Path, Query, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from starlette.background import BackgroundTask
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
@@ -158,7 +158,7 @@ async def get_next_sequence_of_scan(
 ):
     seq = Seq.next(seq_id, id)
     if seq is None:
-        return JSONResponse({}, status_code=HTTP_204_NO_CONTENT)
+        return Response(status_code=HTTP_204_NO_CONTENT)
     return seq
 
 

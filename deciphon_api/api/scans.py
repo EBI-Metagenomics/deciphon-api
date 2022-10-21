@@ -110,7 +110,7 @@ async def get_sequences_of_scan(id: int = Path(..., gt=0)):
 async def download_sequences_of_scan(id: int = Path(..., gt=0)):
     seqs = Scan.get(id, ScanIDType.SCAN_ID).seqs()
     file = tempfile.NamedTemporaryFile("wb")
-    file.write(seqs.json().encode())
+    file.write(seqs.json(separators=(",", ":")).encode())
     file.flush()
     assert isinstance(file.name, str)
     return FileResponse(

@@ -1,5 +1,6 @@
 from typing import List
 
+import aiofiles
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
@@ -49,6 +50,9 @@ async def upload_products(
         ..., content_type="text/tab-separated-values", description="file of products"
     ),
 ):
-    prods_file.file.flush()
-    Prod.add_file(prods_file.file)
+    async with aiofiles.open(prods_file.filename, "wb") as file:
+        while content := await prods_file.read(4 * 1024 * 1024):
+            await file.write(content)
+
+    Prod.add_file(prods_file.filename)
     return JSONResponse({}, HTTP_201_CREATED)

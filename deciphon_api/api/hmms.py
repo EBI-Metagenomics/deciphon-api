@@ -6,7 +6,9 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
+from deciphon_api.api.dbs import get_db_by_hmm_id
 from deciphon_api.api.responses import responses
+from deciphon_api.models.db import DB
 from deciphon_api.models.hmm import HMM, HMMIDType
 
 router = APIRouter()
@@ -76,6 +78,16 @@ async def get_hmm_by_job_id(job_id: int = Path(..., gt=0)):
 )
 async def get_hmm_by_filename(filename: str):
     return HMM.get(filename, HMMIDType.FILENAME)
+
+
+get_db_by_hmm_id = router.get(
+    "/hmms/{hmm_id}/db",
+    summary="get db by hmm_id",
+    response_model=DB,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="hmms:get-db-by-hmm-id",
+)(get_db_by_hmm_id)
 
 
 @router.get(

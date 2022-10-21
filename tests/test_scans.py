@@ -185,7 +185,6 @@ def test_get_next_scan_seq():
 
         response = client.get(f"{prefix}/scans/1/seqs/next/3")
         assert response.status_code == 204
-        assert response.json() == {}
 
 
 @pytest.mark.usefixtures("cleandir")

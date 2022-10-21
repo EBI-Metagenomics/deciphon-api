@@ -28,7 +28,7 @@ def test_upload_products():
         )
         assert response.status_code == 201
 
-        response = client.get(f"{api_prefix}/jobs/next_pend")
+        response = client.get(f"{api_prefix}/jobs/next-pend")
         assert response.status_code == 200
 
         with open("prods_file.tsv", "wb") as f:

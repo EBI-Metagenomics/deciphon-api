@@ -67,7 +67,7 @@ async def get_db_by_filename(filename: str):
 
 
 @router.get(
-    "/dbs/hmm_id/{hmm_id}",
+    "/dbs/hmm-id/{hmm_id}",
     summary="get db by hmm_id",
     response_model=DB,
     status_code=HTTP_200_OK,

@@ -4,7 +4,7 @@ from typing import List
 import aiofiles
 from fasta_reader import read_fasta
 from fastapi import APIRouter, File, Form, Path, Query, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, PlainTextResponse, Response
 from starlette.background import BackgroundTask
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 

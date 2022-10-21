@@ -20,7 +20,7 @@ def test_get_not_found_job():
 @pytest.mark.usefixtures("cleandir")
 def test_get_next_pend_job_empty():
     with TestClient(app) as client:
-        response = client.get(f"{api_prefix}/jobs/next_pend")
+        response = client.get(f"{api_prefix}/jobs/next-pend")
         assert response.status_code == 204
 
 
@@ -44,7 +44,7 @@ def test_get_next_pend_job():
 
         assert response.status_code == 201
 
-        response = client.get(f"{api_prefix}/jobs/next_pend")
+        response = client.get(f"{api_prefix}/jobs/next-pend")
         assert response.status_code == 200
 
         json = response.json()

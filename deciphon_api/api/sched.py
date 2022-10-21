@@ -25,7 +25,7 @@ async def wipe():
 
 
 @router.get(
-    "/sched/check_health",
+    "/sched/check-health",
     summary="check health",
     response_model=SchedHealth,
     status_code=HTTP_200_OK,

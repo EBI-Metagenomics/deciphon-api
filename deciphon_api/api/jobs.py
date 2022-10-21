@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.get(
-    "/jobs/next_pend",
+    "/jobs/next-pend",
     summary="get next pending job",
     response_model=Job,
     status_code=HTTP_200_OK,

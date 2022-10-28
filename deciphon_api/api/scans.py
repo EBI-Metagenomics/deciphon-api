@@ -11,7 +11,7 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from deciphon_api.api.responses import responses
 from deciphon_api.models.count import Count
 from deciphon_api.models.job import Job, JobState
-from deciphon_api.models.prod import Prod
+from deciphon_api.models.prod import Prods
 from deciphon_api.models.scan import Scan, ScanConfig, ScanIDType, ScanPost
 from deciphon_api.models.seq import Seq, SeqPost, Seqs
 
@@ -116,7 +116,7 @@ async def download_sequences_of_scan(id: int = Path(..., gt=0)):
     return FileResponse(
         file.name,
         media_type="application/json",
-        filename=f"scan_id_{id}_seqs.json",
+        filename=f"{id}_seqs.json",
         background=BackgroundTask(lambda f: f.close(), file),
     )
 
@@ -165,7 +165,7 @@ async def get_next_sequence_of_scan(
 @router.get(
     "/scans/{id}/prods",
     summary="get products of scan",
-    response_model=List[Prod],
+    response_model=Prods,
     status_code=HTTP_200_OK,
     responses=responses,
     name="scans:get-products-of-scan",
@@ -175,6 +175,30 @@ async def get_products_of_scan(id: int = Path(..., gt=0)):
     job = scan.job()
     job.assert_state(JobState.SCHED_DONE)
     return scan.prods()
+
+
+@router.get(
+    "/scans/{id}/prods/download",
+    summary="download products of scan",
+    response_class=FileResponse,
+    status_code=HTTP_200_OK,
+    responses=responses,
+    name="scans:download-products-of-scan",
+)
+async def download_products_of_scan(id: int = Path(..., gt=0)):
+    scan = Scan.get(id, ScanIDType.SCAN_ID)
+    job = scan.job()
+    job.assert_state(JobState.SCHED_DONE)
+    file = tempfile.NamedTemporaryFile("wb")
+    file.write(scan.prods().json(separators=(",", ":")).encode())
+    file.flush()
+    assert isinstance(file.name, str)
+    return FileResponse(
+        file.name,
+        media_type="application/json",
+        filename=f"{id}_prods.json",
+        background=BackgroundTask(lambda f: f.close(), file),
+    )
 
 
 @router.get(

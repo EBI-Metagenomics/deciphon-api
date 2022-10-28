@@ -17,7 +17,7 @@ from deciphon_sched.scan import (
 from pydantic import BaseModel, Field
 
 from deciphon_api.models.job import Job, JobState
-from deciphon_api.models.prod import Prod
+from deciphon_api.models.prod import Prod, Prods
 from deciphon_api.models.scan_result import ScanResult
 from deciphon_api.models.seq import Seq, SeqPost, Seqs
 
@@ -56,8 +56,12 @@ class Scan(BaseModel):
         if id_type == ScanIDType.JOB_ID:
             return Scan.from_sched_scan(sched_scan_get_by_job_id(id))
 
-    def prods(self) -> List[Prod]:
-        return [Prod.from_sched_prod(prod) for prod in sched_scan_get_prods(self.id)]
+    def prods(self) -> Prods:
+        return Prods(
+            __root__=[
+                Prod.from_sched_prod(prod) for prod in sched_scan_get_prods(self.id)
+            ]
+        )
 
     def seqs(self) -> Seqs:
         return Seqs(

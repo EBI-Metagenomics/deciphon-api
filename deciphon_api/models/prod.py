@@ -10,7 +10,7 @@ from deciphon_sched.prod import (
 )
 from pydantic import BaseModel, Field
 
-__all__ = ["Prod"]
+__all__ = ["Prod", "Prods"]
 
 
 class Prod(BaseModel):
@@ -56,3 +56,16 @@ class Prod(BaseModel):
     @staticmethod
     def add_file(file):
         sched_prod_add_file(file)
+
+
+class Prods(BaseModel):
+    __root__: List[Prod]
+
+    def __iter__(self):
+        return iter(self.__root__)
+
+    def __getitem__(self, item):
+        return self.__root__[item]
+
+    def __len__(self) -> int:
+        return len(list(self.__root__))

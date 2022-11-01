@@ -9,7 +9,7 @@ from deciphon_api.api.hmms import download_hmm, get_hmm_by_job_id
 from deciphon_api.api.responses import responses
 from deciphon_api.api.scans import get_scan_by_job_id
 from deciphon_api.models.hmm import HMM, HMMIDType
-from deciphon_api.models.job import Job, JobProgressPatch, JobStatePatch
+from deciphon_api.models.job import Job, JobProgressPatch, JobStatePatch, PendJob
 from deciphon_api.models.scan import Scan, ScanIDType
 
 router = APIRouter()
@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get(
     "/jobs/next-pend",
     summary="get next pending job",
-    response_model=Job,
+    response_model=PendJob,
     status_code=HTTP_200_OK,
     responses=responses,
     name="jobs:get-next-pend-job",

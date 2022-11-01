@@ -1,10 +1,8 @@
-from typing import List
-
 from fastapi import APIRouter, Path
 from starlette.status import HTTP_200_OK
 
 from deciphon_api.api.responses import responses
-from deciphon_api.models.seq import Seq
+from deciphon_api.models.seq import Seq, Seqs
 
 router = APIRouter()
 
@@ -12,7 +10,7 @@ router = APIRouter()
 @router.get(
     "/seqs",
     summary="get sequence list",
-    response_model=List[Seq],
+    response_model=Seqs,
     status_code=HTTP_200_OK,
     responses=responses,
     name="seqs:get-sequence-list",

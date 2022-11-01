@@ -1,5 +1,3 @@
-from typing import List
-
 import aiofiles
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 from fastapi.responses import JSONResponse
@@ -7,7 +5,7 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.authentication import auth_request
 from deciphon_api.api.responses import responses
-from deciphon_api.models.prod import Prod
+from deciphon_api.models.prod import Prod, Prods
 
 router = APIRouter()
 
@@ -27,7 +25,7 @@ async def get_product(prod_id: int = Path(..., gt=0)):
 @router.get(
     "/prods",
     summary="get prod list",
-    response_model=List[Prod],
+    response_model=Prods,
     status_code=HTTP_200_OK,
     responses=responses,
     name="prods:get-prod-list",

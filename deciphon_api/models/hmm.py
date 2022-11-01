@@ -53,11 +53,6 @@ class HMM(BaseModel):
 
     @staticmethod
     def get(id: Union[int, str], id_type: HMMIDType) -> HMM:
-        # if id_type == HMMIDType.FILENAME and not isinstance(id, str):
-        #     raise InvalidTypeError("Expected string")
-        # elif id_type != HMMIDType.FILENAME and not isinstance(id, int):
-        #     raise InvalidTypeError("Expected integer")
-
         if id_type == HMMIDType.HMM_ID:
             if not isinstance(id, int):
                 raise InvalidTypeError("integer")

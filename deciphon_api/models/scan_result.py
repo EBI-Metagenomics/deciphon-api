@@ -10,7 +10,7 @@ from Bio.Seq import Seq as BioSeq
 from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio.SeqRecord import SeqRecord
 
-from deciphon_api.models.prod import Prod
+from deciphon_api.models.prod import Prod, Prods
 from deciphon_api.models.seq import Seq, Seqs
 
 if TYPE_CHECKING:
@@ -49,13 +49,13 @@ def is_core_state(state: str):
 
 class ScanResult:
     scan: Scan
-    prods: List[Prod]
+    prods: Prods
     seqs: Dict[int, Seq]
     hits: List[Hit]
 
-    def __init__(self, scan: Scan, prods: List[Prod], seqs: Seqs):
+    def __init__(self, scan: Scan, prods: Prods, seqs: Seqs):
         self.scan = scan
-        self.prods = list(sorted(prods, key=lambda prod: prod.seq_id))
+        self.prods = prods
         self.seqs = dict((seq.id, seq) for seq in seqs)
         self.hits: List[Hit] = []
 

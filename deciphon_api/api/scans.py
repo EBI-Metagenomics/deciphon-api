@@ -10,9 +10,9 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.responses import responses
 from deciphon_api.models.count import Count
-from deciphon_api.models.job import Job, JobState
+from deciphon_api.models.job import Job
 from deciphon_api.models.prod import Prods
-from deciphon_api.models.scan import Scan, ScanConfig, ScanIDType, ScanPost
+from deciphon_api.models.scan import DoneScan, Scan, ScanConfig, ScanIDType, ScanPost
 from deciphon_api.models.seq import Seq, SeqPost, Seqs
 
 router = APIRouter()
@@ -171,10 +171,7 @@ async def get_next_sequence_of_scan(
     name="scans:get-products-of-scan",
 )
 async def get_products_of_scan(id: int = Path(..., gt=0)):
-    scan = Scan.get(id, ScanIDType.SCAN_ID)
-    job = scan.job()
-    job.assert_state(JobState.SCHED_DONE)
-    return scan.prods()
+    return DoneScan.get(id, ScanIDType.SCAN_ID).prods()
 
 
 @router.get(
@@ -186,9 +183,7 @@ async def get_products_of_scan(id: int = Path(..., gt=0)):
     name="scans:download-products-of-scan",
 )
 async def download_products_of_scan(id: int = Path(..., gt=0)):
-    scan = Scan.get(id, ScanIDType.SCAN_ID)
-    job = scan.job()
-    job.assert_state(JobState.SCHED_DONE)
+    scan = DoneScan.get(id, ScanIDType.SCAN_ID)
     file = tempfile.NamedTemporaryFile("wb")
     file.write(scan.prods().json(separators=(",", ":")).encode())
     file.flush()
@@ -210,10 +205,7 @@ async def download_products_of_scan(id: int = Path(..., gt=0)):
     name="scans:get-products-of-scan-as-gff",
 )
 async def get_products_of_scan_as_gff(id: int = Path(..., gt=0)):
-    scan = Scan.get(id, ScanIDType.SCAN_ID)
-    job = scan.job()
-    job.assert_state(JobState.SCHED_DONE)
-    return scan.result().gff()
+    return DoneScan.get(id, ScanIDType.SCAN_ID).result().gff()
 
 
 @router.get(
@@ -225,10 +217,7 @@ async def get_products_of_scan_as_gff(id: int = Path(..., gt=0)):
     name="scans:get-path-of-scan",
 )
 async def get_path_of_scan(id: int = Path(..., gt=0)):
-    scan = Scan.get(id, ScanIDType.SCAN_ID)
-    job = scan.job()
-    job.assert_state(JobState.SCHED_DONE)
-    return scan.result().fasta("state")
+    return DoneScan.get(id, ScanIDType.SCAN_ID).result().fasta("state")
 
 
 @router.get(
@@ -240,10 +229,7 @@ async def get_path_of_scan(id: int = Path(..., gt=0)):
     name="scans:get-fragments-of-scan",
 )
 async def get_fragment_of_scan(id: int = Path(..., gt=0)):
-    scan = Scan.get(id, ScanIDType.SCAN_ID)
-    job = scan.job()
-    job.assert_state(JobState.SCHED_DONE)
-    return scan.result().fasta("frag")
+    return DoneScan.get(id, ScanIDType.SCAN_ID).result().fasta("frag")
 
 
 @router.get(
@@ -255,10 +241,7 @@ async def get_fragment_of_scan(id: int = Path(..., gt=0)):
     name="scans:get-codons-of-scan",
 )
 async def get_codons_of_scan(id: int = Path(..., gt=0)):
-    scan = Scan.get(id, ScanIDType.SCAN_ID)
-    job = scan.job()
-    job.assert_state(JobState.SCHED_DONE)
-    return scan.result().fasta("codon")
+    return DoneScan.get(id, ScanIDType.SCAN_ID).result().fasta("codon")
 
 
 @router.get(
@@ -270,7 +253,4 @@ async def get_codons_of_scan(id: int = Path(..., gt=0)):
     name="scans:get-aminos-of-scan",
 )
 async def get_aminos_of_scan(id: int = Path(..., gt=0)):
-    scan = Scan.get(id, ScanIDType.SCAN_ID)
-    job = scan.job()
-    job.assert_state(JobState.SCHED_DONE)
-    return scan.result().fasta("amino")
+    return DoneScan.get(id, ScanIDType.SCAN_ID).result().fasta("amino")

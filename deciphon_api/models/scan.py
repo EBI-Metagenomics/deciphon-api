@@ -14,14 +14,14 @@ from deciphon_sched.scan import (
     sched_scan_get_seqs,
     sched_scan_new,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
-from deciphon_api.models.job import Job, JobState
-from deciphon_api.models.prod import Prod, Prods
+from deciphon_api.models.job import DoneJob, Job
+from deciphon_api.models.prod import Prods
 from deciphon_api.models.scan_result import ScanResult
 from deciphon_api.models.seq import Seq, SeqPost, Seqs
 
-__all__ = ["Scan", "ScanConfig", "ScanPost"]
+__all__ = ["Scan", "ScanConfig", "ScanPost", "DoneScan"]
 
 
 class ScanIDType(str, Enum):
@@ -57,11 +57,7 @@ class Scan(BaseModel):
             return Scan.from_sched_scan(sched_scan_get_by_job_id(id))
 
     def prods(self) -> Prods:
-        return Prods(
-            __root__=[
-                Prod.from_sched_prod(prod) for prod in sched_scan_get_prods(self.id)
-            ]
-        )
+        return Prods.create(sched_scan_get_prods(self.id))
 
     def seqs(self) -> Seqs:
         return Seqs(
@@ -69,10 +65,7 @@ class Scan(BaseModel):
         )
 
     def result(self) -> ScanResult:
-        job = self.job()
-        job.assert_state(JobState.SCHED_DONE)
-
-        prods: List[Prod] = self.prods()
+        prods: Prods = self.prods()
         seqs: Seqs = self.seqs()
         return ScanResult(self, prods, seqs)
 
@@ -82,6 +75,14 @@ class Scan(BaseModel):
     @staticmethod
     def get_list() -> List[Scan]:
         return [Scan.from_sched_scan(scan) for scan in sched_scan_get_all()]
+
+
+class DoneScan(Scan):
+    @validator("job_id")
+    @classmethod
+    def check_job_id(cls, value):
+        DoneJob.get(value)
+        return value
 
 
 class ScanConfig(BaseModel):

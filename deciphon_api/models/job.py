@@ -15,9 +15,9 @@ from deciphon_sched.job import (
     sched_job_set_run,
     sched_job_state,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
-__all__ = ["Job", "JobStatePatch", "JobProgressPatch"]
+__all__ = ["Job", "JobStatePatch", "JobProgressPatch", "DoneJob", "PendJob"]
 
 
 class JobState(str, Enum):
@@ -78,12 +78,7 @@ class Job(BaseModel):
         sched_job = sched_job_next_pend()
         if sched_job is None:
             return None
-        return Job.from_sched_job(sched_job)
-
-    def assert_state(self, state: JobState):
-        pass
-        # if self.state != state:
-        #     raise ConditionError(f"job not in {str(state.done)} state")
+        return PendJob.from_sched_job(sched_job)
 
     @staticmethod
     def increment_progress(job_id: int, progress: int):
@@ -96,6 +91,24 @@ class Job(BaseModel):
     @staticmethod
     def get_list() -> List[Job]:
         return [Job.from_sched_job(job) for job in sched_job_get_all()]
+
+
+class DoneJob(Job):
+    @validator("state")
+    @classmethod
+    def check_state(cls, value):
+        if value != JobState.SCHED_DONE:
+            raise ValueError("job not in DONE state.")
+        return value
+
+
+class PendJob(Job):
+    @validator("state")
+    @classmethod
+    def check_state(cls, value):
+        if value != JobState.SCHED_PEND:
+            raise ValueError("job not in PEND state.")
+        return value
 
 
 class JobStatePatch(BaseModel):

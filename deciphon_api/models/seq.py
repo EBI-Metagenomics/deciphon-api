@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from deciphon_sched.seq import (
     sched_seq,
@@ -43,11 +43,11 @@ class Seq(BaseModel):
 
     @staticmethod
     def get_list() -> Seqs:
-        return Seqs(__root__=[Seq.from_sched_seq(seq) for seq in sched_seq_get_all()])
+        return Seqs.create(sched_seq_get_all())
 
 
 class Seqs(BaseModel):
-    __root__: List[Seq]
+    __root__: list[Seq]
 
     def __iter__(self):
         return iter(self.__root__)
@@ -57,6 +57,14 @@ class Seqs(BaseModel):
 
     def __len__(self) -> int:
         return len(list(self.__root__))
+
+    @classmethod
+    def create(cls, seqs: list[sched_seq]):
+        return Seqs(
+            __root__=[
+                Seq.from_sched_seq(seq) for seq in sorted(seqs, key=lambda seq: seq.id)
+            ]
+        )
 
 
 class SeqPost(BaseModel):

@@ -21,7 +21,7 @@ gunicorn = "*"
 loguru = "*"
 pooch = "*"
 pydantic = { extras = ["dotenv"], version = "*" }
-python = "^3.8"
+python = "^3.10"
 python-multipart = "*"
 typer = "*"
 uvicorn = { extras = ["standard"], version = "*" }

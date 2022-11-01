@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 from deciphon_sched.prod import (
     sched_prod,
     sched_prod_add_file,
@@ -50,8 +48,8 @@ class Prod(BaseModel):
         return Prod.from_sched_prod(sched_prod_get_by_id(prod_id))
 
     @staticmethod
-    def get_list() -> List[Prod]:
-        return [Prod.from_sched_prod(prod) for prod in sched_prod_get_all()]
+    def get_list() -> Prods:
+        return Prods.create(sched_prod_get_all())
 
     @staticmethod
     def add_file(file):
@@ -59,7 +57,7 @@ class Prod(BaseModel):
 
 
 class Prods(BaseModel):
-    __root__: List[Prod]
+    __root__: list[Prod]
 
     def __iter__(self):
         return iter(self.__root__)
@@ -69,3 +67,12 @@ class Prods(BaseModel):
 
     def __len__(self) -> int:
         return len(list(self.__root__))
+
+    @classmethod
+    def create(cls, prods: list[sched_prod]):
+        return Prods(
+            __root__=[
+                Prod.from_sched_prod(prod)
+                for prod in sorted(prods, key=lambda prod: prod.seq_id)
+            ]
+        )

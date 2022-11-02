@@ -1,4 +1,4 @@
-import subprocess
+import os
 import sys
 from pathlib import Path
 from typing import Optional
@@ -41,8 +41,9 @@ def start(
 ):
     host = settings.host
     port = settings.port
+    exe = Path(sys.executable).parent / "gunicorn"
     cmds = [
-        str(Path(sys.executable).parent / "gunicorn"),
+        exe.name,
         "deciphon_api.main:app",
         "--workers",
         "1",
@@ -53,4 +54,4 @@ def start(
     ]
     if daemon:
         cmds.append("--daemon")
-    subprocess.run(cmds)
+    os.execv(exe, cmds)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
@@ -15,9 +16,31 @@ from deciphon_sched.job import (
     sched_job_set_run,
     sched_job_state,
 )
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, validator
+from sqlmodel import Field, SQLModel
 
-__all__ = ["Job", "JobStatePatch", "JobProgressPatch", "DoneJob", "PendJob"]
+__all__ = [
+    "Job",
+    "JobStatePatch",
+    "JobProgressPatch",
+    "DoneJob",
+    "PendJob",
+    "JobRead",
+    "JobCreate",
+    "JobType",
+]
+
+
+class JobType(Enum):
+    hmm = "hmm"
+    press = "press"
+
+
+class State(Enum):
+    pend = "pend"
+    run = "run"
+    done = "done"
+    fail = "fail"
 
 
 class JobState(str, Enum):
@@ -31,17 +54,20 @@ class JobState(str, Enum):
         return cls[job_state.name]
 
 
-class Job(BaseModel):
-    id: int = Field(..., gt=0)
-    type: int = Field(..., ge=0, le=1)
+class JobBase(SQLModel):
+    type: JobType
 
-    state: JobState = JobState.SCHED_PEND
-    progress: int = Field(..., ge=0, le=100)
+    state: State = State.pend
+    progress: int = Field(default=0, ge=0, le=100)
     error: str = ""
 
-    submission: int = Field(..., gt=0)
-    exec_started: int = Field(..., ge=0)
-    exec_ended: int = Field(..., ge=0)
+    submission: datetime = Field(default_factory=datetime.now)
+    exec_started: datetime = Field(default_factory=lambda: datetime.fromtimestamp(0))
+    exec_ended: datetime = Field(default_factory=lambda: datetime.fromtimestamp(0))
+
+
+class Job(JobBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True, unique=True, gt=0)
 
     @classmethod
     def from_sched_job(cls, job: sched_job):
@@ -51,9 +77,9 @@ class Job(BaseModel):
             state=JobState.from_sched_job_state(job.state),
             progress=job.progress,
             error=job.error,
-            submission=job.submission,
-            exec_started=job.exec_started,
-            exec_ended=job.exec_ended,
+            submission=datetime.fromtimestamp(job.submission),
+            exec_started=datetime.fromtimestamp(job.exec_started),
+            exec_ended=datetime.fromtimestamp(job.exec_ended),
         )
 
     @staticmethod
@@ -91,6 +117,14 @@ class Job(BaseModel):
     @staticmethod
     def get_list() -> List[Job]:
         return [Job.from_sched_job(job) for job in sched_job_get_all()]
+
+
+class JobCreate(JobBase):
+    pass
+
+
+class JobRead(JobBase):
+    id: int
 
 
 class DoneJob(Job):

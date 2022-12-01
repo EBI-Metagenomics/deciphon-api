@@ -25,6 +25,7 @@ python-multipart = "*"
 typer = "*"
 uvicorn = { extras = ["standard"], version = "*" }
 fastapi = { extras = ["all"], version = "^0.88.0" }
+sqlmodel = "^0.0.8"
 
 [tool.poetry.dev-dependencies]
 black = "*"

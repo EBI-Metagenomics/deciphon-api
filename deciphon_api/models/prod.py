@@ -6,27 +6,34 @@ from deciphon_sched.prod import (
     sched_prod_get_all,
     sched_prod_get_by_id,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, SQLModel
 
-__all__ = ["Prod", "Prods"]
+__all__ = ["Prod", "Prods", "ProdRead", "ProdCreate"]
 
 
-class Prod(BaseModel):
+class ProdBase(SQLModel):
+    scan_id: int = Field(..., foreign_key="scan.id", gt=0)
+    seq_id: int = Field(..., foreign_key="seq.id", gt=0)
+
+    profile: str
+    abc: str
+
+    alt_loglik: float
+    null_loglik: float
+    evalue_log: float
+
+    proftype: ProfileType
+    version: str
+
+    match: str
+
+    __table_args__ = (UniqueConstraint("scan_id", "seq_id", "profile"),)
+
+
+class Prod(ProdBase, table=True):
     id: int = Field(..., gt=0)
-
-    scan_id: int = Field(..., gt=0)
-    seq_id: int = Field(..., gt=0)
-
-    profile_name: str = ""
-    abc_name: str = ""
-
-    alt_loglik: float = 0.0
-    null_loglik: float = 0.0
-
-    profile_typeid: str = ""
-    version: str = ""
-
-    match: str = ""
 
     @classmethod
     def from_sched_prod(cls, prod: sched_prod):
@@ -34,11 +41,12 @@ class Prod(BaseModel):
             id=prod.id,
             scan_id=prod.scan_id,
             seq_id=prod.seq_id,
-            profile_name=prod.profile_name,
-            abc_name=prod.abc_name,
+            profile=prod.profile_name,
+            abc=prod.abc_name,
             alt_loglik=prod.alt_loglik,
             null_loglik=prod.null_loglik,
-            profile_typeid=prod.profile_typeid,
+            evalue_log=0.0,
+            proftype=prod.profile_typeid,
             version=prod.version,
             match=prod.match,
         )
@@ -76,3 +84,11 @@ class Prods(BaseModel):
                 for prod in sorted(prods, key=lambda prod: prod.seq_id)
             ]
         )
+
+
+class ProdCreate(ProdBase):
+    pass
+
+
+class ProdRead(ProdBase):
+    id: int

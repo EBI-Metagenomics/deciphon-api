@@ -13,9 +13,10 @@ from deciphon_api.core.errors import (
     sched_error_handler,
 )
 from deciphon_api.core.events import create_start_handler, create_stop_handler
+from deciphon_api.core.scheduler import scheduler
 from deciphon_api.core.settings import settings
 
-__all__ = ["app", "settings"]
+__all__ = ["app", "settings", "scheduler"]
 
 
 @lru_cache

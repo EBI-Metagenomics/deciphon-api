@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Union
+from typing import List, Optional, Union
 
 from deciphon_sched.db import (
     sched_db,
@@ -13,9 +13,9 @@ from deciphon_sched.db import (
     sched_db_get_by_xxh3,
     sched_db_remove,
 )
-from pydantic import BaseModel, Field
+from sqlmodel import Field, SQLModel
 
-__all__ = ["DB", "DBIDType"]
+__all__ = ["DB", "DBIDType", "DBCreate", "DBRead"]
 
 
 class DBIDType(str, Enum):
@@ -25,11 +25,14 @@ class DBIDType(str, Enum):
     HMM_ID = "hmm_id"
 
 
-class DB(BaseModel):
-    id: int = Field(..., gt=0)
+class DBBase(SQLModel):
     xxh3: int = Field(..., title="XXH3 file hash")
-    filename: str = ""
-    hmm_id: int = Field(..., gt=0)
+    filename: str = Field(..., unique=True, title="File name")
+    hmm_id: int = Field(..., gt=0, foreign_key="hmm.id")
+
+
+class DB(DBBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True, unique=True, gt=0)
 
     @classmethod
     def from_sched_db(cls, db: sched_db):
@@ -69,3 +72,11 @@ class DB(BaseModel):
     @staticmethod
     def remove(db_id: int):
         sched_db_remove(db_id)
+
+
+class DBCreate(DBBase):
+    pass
+
+
+class DBRead(DBBase):
+    id: int

@@ -9,16 +9,21 @@ from deciphon_sched.seq import (
     sched_seq_new,
     sched_seq_scan_next,
 )
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from sqlmodel import Field, SQLModel
 
-__all__ = ["Seq", "Seqs", "SeqPost"]
+__all__ = ["Seq", "Seqs", "SeqPost", "SeqRead", "SeqCreate"]
 
 
-class Seq(BaseModel):
-    id: int = Field(..., gt=0)
-    scan_id: int = Field(..., gt=0)
-    name: str = ""
-    data: str = ""
+class SeqBase(SQLModel):
+    scan_id: int = Field(..., foreign_key="scan.id", gt=0)
+
+    name: str
+    data: str
+
+
+class Seq(SeqBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True, unique=True, gt=0)
 
     @classmethod
     def from_sched_seq(cls, seq: sched_seq):
@@ -70,3 +75,11 @@ class Seqs(BaseModel):
 class SeqPost(BaseModel):
     name: str = ""
     data: str = ""
+
+
+class SeqCreate(SeqBase):
+    pass
+
+
+class SeqRead(SeqBase):
+    id: int

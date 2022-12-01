@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Union
+from typing import List, Optional, Union
 
 from deciphon_sched.error import SchedError
 from deciphon_sched.hmm import (
@@ -16,11 +16,11 @@ from deciphon_sched.hmm import (
 )
 from deciphon_sched.job import sched_job_submit
 from deciphon_sched.rc import RC
-from pydantic import BaseModel, Field
+from sqlmodel import Field, SQLModel
 
 from deciphon_api.core.errors import InvalidTypeError
 
-__all__ = ["HMM", "HMMIDType"]
+__all__ = ["HMM", "HMMIDType", "HMMCreate", "HMMRead"]
 
 
 class HMMIDType(str, Enum):
@@ -30,11 +30,14 @@ class HMMIDType(str, Enum):
     JOB_ID = "job_id"
 
 
-class HMM(BaseModel):
-    id: int = Field(..., gt=0)
-    xxh3: int = Field(..., title="XXH3 file hash")
-    filename: str = ""
-    job_id: int = Field(..., gt=0)
+class HMMBase(SQLModel):
+    xxh3: int
+    filename: str = Field(..., unique=True, title="File name")
+    job_id: int = Field(..., gt=0, foreign_key="job.id")
+
+
+class HMM(HMMBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True, unique=True, gt=0)
 
     @classmethod
     def from_sched_hmm(cls, hmm: sched_hmm):
@@ -100,3 +103,11 @@ class HMM(BaseModel):
     @staticmethod
     def remove(hmm_id: int):
         sched_hmm_remove(hmm_id)
+
+
+class HMMCreate(HMMBase):
+    pass
+
+
+class HMMRead(HMMBase):
+    id: int

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from deciphon_sched.job import sched_job_submit
 from deciphon_sched.scan import (
@@ -14,14 +14,15 @@ from deciphon_sched.scan import (
     sched_scan_get_seqs,
     sched_scan_new,
 )
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, validator
+from sqlmodel import Field, SQLModel
 
 from deciphon_api.models.job import DoneJob, Job
 from deciphon_api.models.prod import Prods
 from deciphon_api.models.scan_result import ScanResult
 from deciphon_api.models.seq import Seq, SeqPost, Seqs
 
-__all__ = ["Scan", "ScanConfig", "ScanPost", "DoneScan"]
+__all__ = ["Scan", "ScanConfig", "ScanPost", "DoneScan", "ScanRead", "ScanCreate"]
 
 
 class ScanIDType(str, Enum):
@@ -29,14 +30,17 @@ class ScanIDType(str, Enum):
     JOB_ID = "job_id"
 
 
-class Scan(BaseModel):
-    id: int = Field(..., gt=0)
-    db_id: int = Field(..., gt=0)
+class ScanBase(SQLModel):
+    db_id: int = Field(..., foreign_key="db.id", gt=0)
 
     multi_hits: bool = Field(True)
     hmmer3_compat: bool = Field(False)
 
-    job_id: int = Field(..., gt=0)
+    job_id: int = Field(..., foreign_key="job.id", gt=0)
+
+
+class Scan(ScanBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True, unique=True, gt=0)
 
     @classmethod
     def from_sched_scan(cls, scan: sched_scan):
@@ -102,3 +106,11 @@ class ScanPost(BaseModel):
         for seq in self.seqs:
             sched_scan_add_seq(seq.name, seq.data)
         return Job.from_sched_job(sched_job_submit(scan))
+
+
+class ScanCreate(ScanBase):
+    pass
+
+
+class ScanRead(ScanBase):
+    id: int

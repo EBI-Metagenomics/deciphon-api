@@ -16,7 +16,6 @@ bcbio-gff = "*"
 biopython = "*"
 deciphon-sched = ">=0.0.6"
 fasta-reader = ">=1.0.3"
-fastapi = "*"
 gunicorn = "*"
 loguru = "*"
 pooch = "*"
@@ -25,6 +24,7 @@ python = "^3.10"
 python-multipart = "*"
 typer = "*"
 uvicorn = { extras = ["standard"], version = "*" }
+fastapi = { extras = ["all"], version = "^0.88.0" }
 
 [tool.poetry.dev-dependencies]
 black = "*"

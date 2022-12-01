@@ -98,9 +98,9 @@ def test_download_database():
 
         x = xxhash.xxh3_64()
         with open(filename, "wb") as f:
-            for chunk in response:
-                x.update(chunk)
-                f.write(chunk)
+            data = response.read()
+            x.update(data)
+            f.write(data)
 
         v = ctypes.c_int64(x.intdigest()).value
         assert v == -3907098992699871052

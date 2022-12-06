@@ -1,11 +1,11 @@
 from fastapi import Depends
 from fastapi.security import APIKeyHeader
 
-from deciphon_api.core.settings import settings
+from deciphon_api.config import get_config
 
 __all__ = ["auth_request"]
 
 
 def auth_request(token: str = Depends(APIKeyHeader(name="X-API-Key"))) -> bool:
-    authenticated = token == settings.api_key
+    authenticated = token == get_config().api_key
     return authenticated

@@ -1,158 +1,133 @@
+import cgi
+from pathlib import Path
+
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from upload import upload_minifam_hmm
 
-from deciphon_api.main import app, settings
+from deciphon_api.config import get_config
+from deciphon_api.filehash import FileHash
 
-api_prefix = settings.api_prefix
-api_key = settings.api_key
-
-
-@pytest.mark.usefixtures("cleandir")
-def test_get_not_found_hmm():
-    prefix = api_prefix
-    with TestClient(app) as client:
-        response = client.get(f"{prefix}/hmms/1")
-        assert response.status_code == 404
-        assert response.json() == {"rc": 2, "msg": "hmm not found"}
-
-        response = client.get(f"{prefix}/hmms/1", params={"id_type": "hmm_id"})
-        assert response.status_code == 404
-        assert response.json() == {"rc": 2, "msg": "hmm not found"}
-
-        response = client.get(f"{prefix}/hmms/name", params={"id_type": "filename"})
-        assert response.status_code == 404
-        assert response.json() == {"rc": 2, "msg": "hmm not found"}
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("cleandir")]
+HEADERS = {"X-API-Key": f"{get_config().api_key}"}
+EXPECT = {"id": 1, "xxh3": -1400478458576472411, "filename": "minifam.hmm", "job_id": 1}
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_upload_hmm_no_api_key():
-    with TestClient(app) as client:
-        response = upload_minifam_hmm(client, False)
+def url(path: str):
+    return f"{get_config().api_prefix}{path}"
+
+
+def files_form(field: str, filepath: Path, mime: str):
+    return {
+        field: (
+            filepath.name,
+            open(filepath, "rb"),
+            mime,
+        )
+    }
+
+
+def test_no_access(app: FastAPI, minifam_hmm):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files)
         assert response.status_code == 403
-        assert response.json() == {"msg": "Not authenticated", "rc": 129}
+        assert response.json() == {"detail": "Not authenticated"}
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_upload_hmm():
-    with TestClient(app) as client:
-        response = upload_minifam_hmm(client)
+def test_not_found(app: FastAPI):
+    with TestClient(app, backend="trio") as client:
+        response = client.get(url("/hmms/1"))
+        assert response.status_code == 404
+        assert response.json() == {"detail": "HMM not found"}
+
+        response = client.get(url("/hmms/xxh3/2982"))
+        assert response.status_code == 404
+        assert response.json() == {"detail": "HMM not found"}
+
+        response = client.get(url("/hmms/filename/name"))
+        assert response.status_code == 404
+        assert response.json() == {"detail": "HMM not found"}
+
+
+def test_upload(app: FastAPI, minifam_hmm):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
-        assert response.json() == {
-            "id": 1,
-            "xxh3": -1400478458576472411,
-            "filename": "minifam.hmm",
-            "job_id": 1,
-        }
-
-        response = upload_minifam_hmm(client)
-        assert response.status_code == 418
-        assert response.json() == {
-            "rc": 21,
-            "msg": "hmm already exists",
-        }
+        assert response.json() == EXPECT
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 409
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_get_hmm():
-    prefix = api_prefix
-    expect = {
-        "id": 1,
-        "xxh3": -1400478458576472411,
-        "filename": "minifam.hmm",
-        "job_id": 1,
-    }
-
-    with TestClient(app) as client:
-        response = upload_minifam_hmm(client)
+def test_get(app: FastAPI, minifam_hmm):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
-        assert response.json() == expect
+        assert response.json() == EXPECT
 
-        response = client.get(f"{prefix}/hmms/1")
+        response = client.get(url("/hmms/1"))
         assert response.status_code == 200
-        assert response.json() == expect
+        assert response.json() == EXPECT
 
-        response = client.get(f"{prefix}/hmms/1", params={"id_type": "hmm_id"})
+        xxh3 = "-1400478458576472411"
+        response = client.get(url(f"/hmms/xxh3/{xxh3}"))
         assert response.status_code == 200
-        assert response.json() == expect
+        assert response.json() == EXPECT
 
-        response = client.get(f"{prefix}/hmms/1", params={"id_type": "job_id"})
+        response = client.get(url("/hmms/filename/minifam.hmm"))
         assert response.status_code == 200
-        assert response.json() == expect
-
-        response = client.get(
-            f"{prefix}/hmms/-1400478458576472411", params={"id_type": "xxh3"}
-        )
-        assert response.status_code == 200
-        assert response.json() == expect
-
-        response = client.get(
-            f"{prefix}/hmms/minifam.hmm", params={"id_type": "filename"}
-        )
-        assert response.status_code == 200
-        assert response.json() == expect
+        assert response.json() == EXPECT
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_get_list():
-    prefix = api_prefix
-    expect = {
-        "id": 1,
-        "xxh3": -1400478458576472411,
-        "filename": "minifam.hmm",
-        "job_id": 1,
-    }
-
-    with TestClient(app) as client:
-        response = upload_minifam_hmm(client)
+def test_list(app: FastAPI, minifam_hmm):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
-        assert response.json() == expect
+        assert response.json() == EXPECT
 
-        response = client.get(f"{prefix}/hmms")
+        response = client.get(url("/hmms"))
         assert response.status_code == 200
-        assert response.json() == [expect]
+        assert response.json() == [EXPECT]
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_remove_hmm():
-    prefix = api_prefix
-    expect = {
-        "id": 1,
-        "xxh3": -1400478458576472411,
-        "filename": "minifam.hmm",
-        "job_id": 1,
-    }
-    with TestClient(app) as client:
-        response = upload_minifam_hmm(client)
+def test_remove(app: FastAPI, minifam_hmm):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
-        assert response.json() == expect
+        assert response.json() == EXPECT
 
-        response = client.delete(f"{prefix}/hmms/1")
+        response = client.delete(url("/hmms/1"))
         assert response.status_code == 403
 
-        hdrs = {"X-API-Key": f"{api_key}"}
-        response = client.delete(f"{prefix}/hmms/1", headers=hdrs)
-        assert response.status_code == 200
-        assert response.json() == {}
+        response = client.delete(url("/hmms/1"), headers=HEADERS)
+        assert response.status_code == 204
 
-        response = client.delete(f"{prefix}/hmms/1", headers=hdrs)
+        response = client.delete(url("/hmms/1"), headers=HEADERS)
         assert response.status_code == 404
-        assert response.json() == {"rc": 2, "msg": "hmm not found"}
+        assert response.json() == {"detail": "HMM not found"}
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_download_hmm():
-    prefix = api_prefix
-    expect = {
-        "id": 1,
-        "xxh3": -1400478458576472411,
-        "filename": "minifam.hmm",
-        "job_id": 1,
-    }
-    with TestClient(app) as client:
-        response = upload_minifam_hmm(client)
+def test_download(app: FastAPI, minifam_hmm):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
-        assert response.json() == expect
+        assert response.json() == EXPECT
 
-        response = client.get(f"{prefix}/hmms/1/download")
+        response = client.get(url("/hmms/1/download"))
         assert response.status_code == 200
+
+        content_disposition = cgi.parse_header(response.headers["content-disposition"])
+        filename = content_disposition[1]["filename"]
+        assert filename == EXPECT["filename"]
+
+        filehash = FileHash()
+        with open(filename, "wb") as file:
+            for chunk in response.iter_bytes():
+                filehash.update(chunk)
+                file.write(chunk)
+        assert filehash.intdigest() == EXPECT["xxh3"]

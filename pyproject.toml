@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "deciphon-api"
-version = "0.6.1"
-description = "RESTful API for Deciphon scheduler"
+version = "0.9.0"
+description = "RESTful API for deciphon scheduler"
 license = "MIT"
 authors = ["Danilo Horta <danilo.horta@pm.me>"]
 readme = "README.md"
@@ -11,44 +11,32 @@ keywords = ["deciphon", "api"]
 classifiers = ["License :: OSI Approved :: MIT License"]
 
 [tool.poetry.dependencies]
-aiofiles = "*"
-bcbio-gff = "*"
-biopython = "*"
-deciphon-sched = ">=0.0.6"
-fasta-reader = ">=1.0.3"
-gunicorn = "*"
-loguru = "*"
-pooch = "*"
-pydantic = { extras = ["dotenv"], version = "*" }
-python = "^3.10"
-python-multipart = "*"
-typer = "*"
-uvicorn = { extras = ["standard"], version = "*" }
+anyio = { extras = ["trio"], version = "^3.6.2" }
 fastapi = { extras = ["all"], version = "^0.88.0" }
+fsspec = { extras = ["libarchive"], version = "^2022.11.0" }
+gunicorn = "^20.1.0"
+loguru = "^0.6.0"
+pydantic = { extras = ["dotenv"], version = "^1.10.2" }
+python = "^3.10"
+python-multipart = "^0.0.5"
+sqlmodel = "^0.0.8"
+uvicorn = { extras = ["standard"], version = "^0.20.0" }
+xxhash = "^3.1.0"
+fasta-reader = "^1.0.3"
+anyblob = "^1.0.0"
 
-[tool.poetry.dev-dependencies]
-black = "*"
-coverage = "*"
-isort = "*"
-pyright = "*"
-pytest = "*"
-pytest-cov = "*"
-requests = "*"
-xxhash = "*"
-
-[tool.poetry.scripts]
-deciphon-api = "deciphon_api.console:run"
-
-[build-system]
-requires = ["poetry-core>=1.0.8"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.cibuildwheel]
-skip = "cp36-* cp37-* pp*"
+[tool.poetry.group.dev.dependencies]
+black = "^22.10.0"
+isort = "^5.10.1"
+pyright = "^1.1.282"
+pytest = "^7.2.0"
 
 [tool.pytest.ini_options]
-addopts = "--cov=deciphon_api --cov-report html"
 testpaths = ["tests"]
 
 [tool.isort]
 profile = "black"
+
+[build-system]
+requires = ["poetry-core>=1.4.0"]
+build-backend = "poetry.core.masonry.api"

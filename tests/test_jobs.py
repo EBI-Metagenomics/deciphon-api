@@ -1,50 +1,59 @@
+from pathlib import Path
+
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from upload import upload_minifam, upload_pfam1
 
-import deciphon_api.data as data
-from deciphon_api.main import app, settings
+from deciphon_api.config import get_config
 
-api_prefix = settings.api_prefix
-api_key = settings.api_key
-
-
-@pytest.mark.usefixtures("cleandir")
-def test_get_not_found_job():
-    with TestClient(app) as client:
-        response = client.get(f"{api_prefix}/jobs/1")
-        assert response.status_code == 404
-        assert response.json() == {"msg": "job not found", "rc": 5}
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("cleandir")]
+HEADERS = {"X-API-Key": f"{get_config().api_key}"}
+DATA = {"db_id": "1", "multi_hits": "True", "hmmer3_compat": "False"}
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_get_next_pend_job_empty():
-    with TestClient(app) as client:
-        response = client.get(f"{api_prefix}/jobs/next-pend")
-        assert response.status_code == 204
+def url(path: str):
+    return f"{get_config().api_prefix}{path}"
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_get_next_pend_job():
-    with TestClient(app) as client:
-        upload_minifam(client)
-
-        consensus_faa = data.filepath(data.FileName.consensus_faa)
-        response = client.post(
-            f"{api_prefix}/scans/",
-            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
-            files={
-                "fasta_file": (
-                    consensus_faa.name,
-                    open(consensus_faa, "rb"),
-                    "text/plain",
-                )
-            },
+def files_form(field: str, filepath: Path, mime: str):
+    return {
+        field: (
+            filepath.name,
+            open(filepath, "rb"),
+            mime,
         )
+    }
 
+
+def test_not_found(app: FastAPI):
+    with TestClient(app, backend="trio") as client:
+        response = client.get("/jobs/1")
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Job not found"}
+
+
+def test_empty_next_pend(app: FastAPI):
+    with TestClient(app, backend="trio") as client:
+        response = client.get("/jobs/next-pend")
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Job not found"}
+
+
+def test_next_pend(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        response = client.get(f"{api_prefix}/jobs/next-pend")
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("fasta_file", consensus_fna, "text/plain")
+        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        response = client.get("/jobs/next-pend")
         assert response.status_code == 200
 
         json = response.json()
@@ -53,230 +62,189 @@ def test_get_next_pend_job():
 
         assert json == {
             "id": 1,
-            "type": 1,
+            "type": "hmm",
             "state": "pend",
             "progress": 0,
-            "error": "",
-            "exec_ended": 0,
-            "exec_started": 0,
+            "error": None,
+            "exec_ended": None,
+            "exec_started": None,
         }
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_set_job_state_run():
-    with TestClient(app) as client:
-        upload_minifam(client)
+def test_set_run(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
 
-        consensus_faa = data.filepath(data.FileName.consensus_faa)
-        response = client.post(
-            f"{api_prefix}/scans/",
-            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
-            files={
-                "fasta_file": (
-                    consensus_faa.name,
-                    open(consensus_faa, "rb"),
-                    "text/plain",
-                )
-            },
-        )
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("fasta_file", consensus_fna, "text/plain")
+        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{api_prefix}/jobs/{job_id}/state",
-            json={"state": "run", "error": ""},
-            headers={"X-API-Key": f"{api_key}"},
+            url(f"/jobs/{job_id}/state"),
+            params={"state": "run", "error": None},
+            headers=HEADERS,
         )
         assert response.status_code == 200
 
-        response = client.get(f"{api_prefix}/jobs/{job_id}")
+        response = client.get(url(f"/jobs/{job_id}"))
         assert response.status_code == 200
         assert response.json()["state"] == "run"
         assert response.json()["error"] == ""
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_set_job_state_run_and_fail():
-    with TestClient(app) as client:
-        upload_minifam(client)
+def test_set_run_and_fail(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
 
-        consensus_faa = data.filepath(data.FileName.consensus_faa)
-        response = client.post(
-            f"{api_prefix}/scans/",
-            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
-            files={
-                "fasta_file": (
-                    consensus_faa.name,
-                    open(consensus_faa, "rb"),
-                    "text/plain",
-                )
-            },
-        )
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("fasta_file", consensus_fna, "text/plain")
+        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        assert response.status_code == 201
 
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{api_prefix}/jobs/{job_id}/state",
-            json={"state": "run", "error": ""},
-            headers={"X-API-Key": f"{api_key}"},
+            url(f"/jobs/{job_id}/state"),
+            params={"state": "run", "error": None},
+            headers=HEADERS,
         )
         assert response.status_code == 200
+        response = client.get(url(f"/jobs/{job_id}"))
+        assert response.status_code == 200
+        assert response.json()["state"] == "run"
+        assert response.json()["error"] == ""
 
         response = client.patch(
-            f"{api_prefix}/jobs/{job_id}/state",
-            json={"state": "fail", "error": "failed"},
-            headers={"X-API-Key": f"{api_key}"},
+            url(f"/jobs/{job_id}/state"),
+            params={"state": "fail", "error": "failed"},
+            headers=HEADERS,
         )
         assert response.status_code == 200
-
-        response = client.get(f"{api_prefix}/jobs/{job_id}")
+        response = client.get(url(f"/jobs/{job_id}"))
         assert response.status_code == 200
         assert response.json()["state"] == "fail"
         assert response.json()["error"] == "failed"
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_set_job_state_run_and_done():
-    with TestClient(app) as client:
-        upload_minifam(client)
+def test_set_run_and_done(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
 
-        consensus_faa = data.filepath(data.FileName.consensus_faa)
-        response = client.post(
-            f"{api_prefix}/scans/",
-            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
-            files={
-                "fasta_file": (
-                    consensus_faa.name,
-                    open(consensus_faa, "rb"),
-                    "text/plain",
-                )
-            },
-        )
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("fasta_file", consensus_fna, "text/plain")
+        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        assert response.status_code == 201
 
         assert response.status_code == 201
         job_id = response.json()["id"]
 
         response = client.patch(
-            f"{api_prefix}/jobs/{job_id}/state",
-            json={"state": "run", "error": ""},
-            headers={"X-API-Key": f"{api_key}"},
+            url(f"/jobs/{job_id}/state"),
+            params={"state": "run", "error": None},
+            headers=HEADERS,
         )
         assert response.status_code == 200
+        response = client.get(url(f"/jobs/{job_id}"))
+        assert response.status_code == 200
+        assert response.json()["state"] == "run"
+        assert response.json()["error"] == ""
 
         response = client.patch(
-            f"{api_prefix}/jobs/{job_id}/state",
-            json={"state": "done", "error": ""},
-            headers={"X-API-Key": f"{api_key}"},
+            url(f"/jobs/{job_id}/state"),
+            params={"state": "done", "error": None},
+            headers=HEADERS,
         )
         assert response.status_code == 200
-
-        response = client.get(f"{api_prefix}/jobs/{job_id}")
+        response = client.get(url(f"/jobs/{job_id}"))
         assert response.status_code == 200
         assert response.json()["state"] == "done"
         assert response.json()["error"] == ""
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_set_job_state_wrongly():
-    with TestClient(app) as client:
-        upload_minifam(client)
-
-        consensus_faa = data.filepath(data.FileName.consensus_faa)
-        response = client.post(
-            f"{api_prefix}/scans/",
-            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
-            files={
-                "fasta_file": (
-                    consensus_faa.name,
-                    open(consensus_faa, "rb"),
-                    "text/plain",
-                )
-            },
-        )
-
-        assert response.status_code == 201
-        job_id = response.json()["id"]
-
-        response = client.patch(
-            f"{api_prefix}/jobs/{job_id}/state",
-            json={"state": "invalid", "error": ""},
-            headers={"X-API-Key": f"{api_key}"},
-        )
-        assert response.status_code == 422
-
-        response = client.get(f"{api_prefix}/jobs/{job_id}")
-        assert response.status_code == 200
-        assert response.json()["state"] == "pend"
-        assert response.json()["error"] == ""
-
-
-@pytest.mark.usefixtures("cleandir")
-def test_get_job_list():
-    with TestClient(app) as client:
-        upload_minifam(client)
-        upload_pfam1(client)
-
-        consensus_faa = data.filepath(data.FileName.consensus_faa)
-        response = client.post(
-            f"{api_prefix}/scans/",
-            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
-            files={
-                "fasta_file": (
-                    consensus_faa.name,
-                    open(consensus_faa, "rb"),
-                    "text/plain",
-                )
-            },
-        )
-
+def test_get_list(
+    app: FastAPI, minifam_hmm, minifam_dcp, pfam1_hmm, pfam1_dcp, consensus_fna
+):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        response = client.get(f"{api_prefix}/jobs")
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("hmm_file", pfam1_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("db_file", pfam1_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("fasta_file", consensus_fna, "text/plain")
+        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        response = client.get("/jobs")
         assert response.status_code == 200
         jdata = response.json().copy()
         for v in jdata:
-            v["submission"] = 0
+            del v["submission"]
         assert jdata == [
             {
                 "id": 1,
-                "type": 1,
+                "type": "hmm",
                 "state": "pend",
                 "progress": 0,
-                "error": "",
-                "submission": 0,
-                "exec_started": 0,
-                "exec_ended": 0,
+                "error": None,
+                "exec_started": None,
+                "exec_ended": None,
             },
             {
                 "id": 2,
-                "type": 1,
+                "type": "hmm",
                 "state": "pend",
                 "progress": 0,
-                "error": "",
-                "submission": 0,
-                "exec_started": 0,
-                "exec_ended": 0,
+                "error": None,
+                "exec_started": None,
+                "exec_ended": None,
             },
             {
                 "id": 3,
-                "type": 0,
+                "type": "scan",
                 "state": "pend",
                 "progress": 0,
-                "error": "",
-                "submission": 0,
-                "exec_started": 0,
-                "exec_ended": 0,
+                "error": None,
+                "exec_started": None,
+                "exec_ended": None,
             },
         ]
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_get_hmm_from_job():
-    with TestClient(app) as client:
-        upload_minifam(client)
+def test_get_hmm_from_job(app: FastAPI, minifam_hmm):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
 
-        response = client.get(f"{api_prefix}/jobs/1/hmm")
+        response = client.get("/jobs/1/hmm")
         assert response.status_code == 200
         assert response.json() == {
             "id": 1,
@@ -286,26 +254,21 @@ def test_get_hmm_from_job():
         }
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_get_scan_from_job():
-    with TestClient(app) as client:
-        upload_minifam(client)
-
-        consensus_faa = data.filepath(data.FileName.consensus_faa)
-        response = client.post(
-            f"{api_prefix}/scans/",
-            data={"db_id": 1, "multi_hits": True, "hmmer3_compat": False},
-            files={
-                "fasta_file": (
-                    consensus_faa.name,
-                    open(consensus_faa, "rb"),
-                    "text/plain",
-                )
-            },
-        )
+def test_get_scan_from_job(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        response = client.get(f"{api_prefix}/jobs/2/scan")
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("fasta_file", consensus_fna, "text/plain")
+        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        response = client.get("/jobs/2/scan")
         assert response.status_code == 200
         assert response.json() == {
             "id": 1,
@@ -316,83 +279,75 @@ def test_get_scan_from_job():
         }
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_remove_job():
-    prefix = api_prefix
-    with TestClient(app) as client:
-        upload_minifam(client)
+def test_remove_job(app: FastAPI, minifam_hmm, minifam_dcp):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
 
-        response = client.delete(f"{prefix}/dbs/1")
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        response = client.delete(url("/dbs/1"))
         assert response.status_code == 403
 
-        hdrs = {"X-API-Key": f"{api_key}"}
-        response = client.delete(f"{prefix}/dbs/1", headers=hdrs)
-        assert response.status_code == 200
-        assert response.json() == {}
+        response = client.delete(url("/dbs/1"), headers=HEADERS)
+        assert response.status_code == 204
 
-        response = client.delete(f"{prefix}/dbs/1", headers=hdrs)
+        response = client.delete(url("/dbs/1"), headers=HEADERS)
         assert response.status_code == 404
-        assert response.json() == {"rc": 4, "msg": "database not found"}
+        assert response.json() == {"detail": "DB not found"}
 
-        response = client.delete(f"{prefix}/jobs/1")
+        response = client.delete(url("/jobs/1"))
         assert response.status_code == 403
 
-        hdrs = {"X-API-Key": f"{api_key}"}
-        response = client.delete(f"{prefix}/jobs/1", headers=hdrs)
-        assert response.status_code == 418
-        assert response.json() == {"rc": 25, "msg": "failed to evaluate sql statememt"}
+        response = client.delete(url("/jobs/1"), headers=HEADERS)
+        assert response.status_code == 409
 
-        response = client.delete(f"{prefix}/hmms/1", headers=hdrs)
-        assert response.status_code == 200
-        assert response.json() == {}
+        response = client.delete(url("/hmms/1"), headers=HEADERS)
+        assert response.status_code == 204
 
-        response = client.delete(f"{prefix}/jobs/1", headers=hdrs)
-        assert response.status_code == 200
-        assert response.json() == {}
+        response = client.delete(url("/jobs/1"), headers=HEADERS)
+        assert response.status_code == 204
 
-        response = client.delete(f"{prefix}/jobs/1", headers=hdrs)
+        response = client.delete(url("/jobs/1"), headers=HEADERS)
         assert response.status_code == 404
-        assert response.json() == {"rc": 5, "msg": "job not found"}
+        assert response.json() == {"detail": "Job not found"}
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_add_job_progress():
-    prefix = api_prefix
-    with TestClient(app) as client:
-        upload_minifam(client)
+def test_add_job_progress(app: FastAPI, minifam_hmm):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
 
-        response = client.delete(f"{prefix}/dbs/1")
+        response = client.delete(url("/dbs/1"))
         assert response.status_code == 403
 
-        hdrs = {"X-API-Key": f"{api_key}"}
-        response = client.patch(
-            f"{prefix}/jobs/1/progress", json={"increment": 10}, headers=hdrs
-        )
+        response = client.patch(url("/jobs/1/progress/increment/10"), headers=HEADERS)
         assert response.status_code == 200
         data = response.json()
         del data["submission"]
         assert data == {
             "id": 1,
-            "type": 1,
+            "type": "hmm",
             "state": "pend",
             "progress": 10,
-            "error": "",
-            "exec_started": 0,
-            "exec_ended": 0,
+            "error": None,
+            "exec_started": None,
+            "exec_ended": None,
         }
 
-        response = client.patch(
-            f"{prefix}/jobs/1/progress", json={"increment": 100}, headers=hdrs
-        )
+        response = client.patch(url("/jobs/1/progress/increment/100"), headers=HEADERS)
         assert response.status_code == 200
         data = response.json()
         del data["submission"]
         assert data == {
             "id": 1,
-            "type": 1,
+            "type": "hmm",
             "state": "pend",
             "progress": 100,
-            "error": "",
-            "exec_started": 0,
-            "exec_ended": 0,
+            "error": None,
+            "exec_started": None,
+            "exec_ended": None,
         }

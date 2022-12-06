@@ -1,154 +1,152 @@
 import cgi
-import ctypes
+from pathlib import Path
 
 import pytest
-import xxhash
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from upload import upload_minifam, upload_minifam_db, upload_minifam_hmm, upload_pfam1
 
-from deciphon_api.main import app, settings
+from deciphon_api.config import get_config
+from deciphon_api.filehash import FileHash
 
-api_prefix = settings.api_prefix
-api_key = settings.api_key
-
-
-@pytest.mark.usefixtures("cleandir")
-def test_upload_database():
-    with TestClient(app) as client:
-        response = upload_minifam_hmm(client)
-        assert response.status_code == 201
-
-        response = upload_minifam_db(client)
-        assert response.status_code == 201
-
-        assert response.json() == {
-            "id": 1,
-            "xxh3": -3907098992699871052,
-            "filename": "minifam.dcp",
-            "hmm_id": 1,
-        }
+pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("cleandir")]
+HEADERS = {"X-API-Key": f"{get_config().api_key}"}
+EXPECT = {"id": 1, "xxh3": -3907098992699871052, "filename": "minifam.dcp", "hmm_id": 1}
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_get_database():
-    expect = {
-        "id": 1,
-        "xxh3": -3907098992699871052,
-        "filename": "minifam.dcp",
-        "hmm_id": 1,
+def url(path: str):
+    return f"{get_config().api_prefix}{path}"
+
+
+def files_form(field: str, filepath: Path, mime: str):
+    return {
+        field: (
+            filepath.name,
+            open(filepath, "rb"),
+            mime,
+        )
     }
 
-    with TestClient(app) as client:
-        response = upload_minifam_hmm(client)
+
+def test_no_access(app: FastAPI, minifam_hmm, minifam_dcp):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        response = upload_minifam_db(client)
-        assert response.status_code == 201
-
-        response = client.get(api_prefix + "/dbs/1")
-        assert response.status_code == 200
-        assert response.json() == expect
-
-        params = {"id_type": "db_id"}
-        response = client.get(api_prefix + "/dbs/1", params=params)
-        assert response.status_code == 200
-        assert response.json() == expect
-
-        params = {"id_type": "xxh3"}
-        response = client.get(api_prefix + "/dbs/-3907098992699871052", params=params)
-        assert response.status_code == 200
-        assert response.json() == expect
-
-        params = {"id_type": "filename"}
-        response = client.get(api_prefix + "/dbs/minifam.dcp", params=params)
-        assert response.status_code == 200
-        assert response.json() == expect
-
-        params = {"id_type": "hmm_id"}
-        response = client.get(api_prefix + "/dbs/1", params=params)
-        assert response.status_code == 200
-        assert response.json() == expect
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files)
+        assert response.status_code == 403
+        assert response.json() == {"detail": "Not authenticated"}
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_get_database_notfound():
-    with TestClient(app) as client:
-        response = client.get(api_prefix + "/dbs/1")
+def test_not_found(app: FastAPI):
+    with TestClient(app, backend="trio") as client:
+        response = client.get(url("/dbs/1"))
         assert response.status_code == 404
-        assert response.json() == {
-            "rc": 4,
-            "msg": "database not found",
-        }
+        assert response.json() == {"detail": "DB not found"}
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_download_database():
-    with TestClient(app) as client:
-        response = upload_minifam_hmm(client)
+def test_upload(app: FastAPI, minifam_hmm, minifam_dcp):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        response = upload_minifam_db(client)
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        response = client.get(api_prefix + "/dbs/1/download")
+        assert response.json() == EXPECT
+
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 409
+
+
+def test_get(app: FastAPI, minifam_hmm, minifam_dcp):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+        assert response.json() == EXPECT
+
+        response = client.get(url("/dbs/1"))
         assert response.status_code == 200
+        assert response.json() == EXPECT
 
-        attach = cgi.parse_header(response.headers["content-disposition"])
-        filename = attach[1]["filename"]
+        xxh3 = "-3907098992699871052"
+        response = client.get(url(f"/dbs/xxh3/{xxh3}"))
+        assert response.status_code == 200
+        assert response.json() == EXPECT
 
-        x = xxhash.xxh3_64()
-        with open(filename, "wb") as f:
-            data = response.read()
-            x.update(data)
-            f.write(data)
-
-        v = ctypes.c_int64(x.intdigest()).value
-        assert v == -3907098992699871052
+        response = client.get(url("/dbs/filename/minifam.dcp"))
+        assert response.status_code == 200
+        assert response.json() == EXPECT
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_download_database_notfound():
-    with TestClient(app) as client:
-        response = client.get(api_prefix + "/dbs/1/download")
-        assert response.status_code == 404
-        assert response.json() == {"msg": "database not found", "rc": 4}
+def test_list(app: FastAPI, minifam_hmm, minifam_dcp):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+        assert response.json() == EXPECT
+
+        response = client.get(url("/dbs"))
+        assert response.status_code == 200
+        assert response.json() == [EXPECT]
 
 
-@pytest.mark.usefixtures("cleandir")
-def test_get_database_list():
-    with TestClient(app) as client:
+def test_remove(app: FastAPI, minifam_hmm, minifam_dcp):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
 
-        upload_minifam(client)
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+        assert response.json() == EXPECT
 
-        upload_pfam1(client)
-
-        response = client.get(api_prefix + "/dbs")
-        assert response.json() == [
-            {
-                "id": 1,
-                "xxh3": -3907098992699871052,
-                "filename": "minifam.dcp",
-                "hmm_id": 1,
-            },
-            {
-                "id": 2,
-                "xxh3": -1370598402004110900,
-                "filename": "pfam1.dcp",
-                "hmm_id": 2,
-            },
-        ]
-
-
-@pytest.mark.usefixtures("cleandir")
-def test_remove_database():
-    prefix = api_prefix
-    with TestClient(app) as client:
-        upload_minifam(client)
-
-        response = client.delete(f"{prefix}/dbs/1")
+        response = client.delete(url("/dbs/1"))
         assert response.status_code == 403
 
-        hdrs = {"X-API-Key": f"{api_key}"}
-        response = client.delete(f"{prefix}/dbs/1", headers=hdrs)
+        response = client.delete(url("/dbs/1"), headers=HEADERS)
+        assert response.status_code == 204
+
+        response = client.delete(url("/dbs/1"), headers=HEADERS)
+        assert response.status_code == 404
+        assert response.json() == {"detail": "DB not found"}
+
+
+def test_download(app: FastAPI, minifam_hmm, minifam_dcp):
+    with TestClient(app, backend="trio") as client:
+        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+
+        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        response = client.post(url("/dbs/"), files=files, headers=HEADERS)
+        assert response.status_code == 201
+        assert response.json() == EXPECT
+
+        response = client.get(url("/dbs/1/download"))
         assert response.status_code == 200
-        assert response.json() == {}
+
+        content_disposition = cgi.parse_header(response.headers["content-disposition"])
+        filename = content_disposition[1]["filename"]
+        assert filename == EXPECT["filename"]
+
+        filehash = FileHash()
+        with open(filename, "wb") as file:
+            for chunk in response.iter_bytes():
+                filehash.update(chunk)
+                file.write(chunk)
+        assert filehash.intdigest() == EXPECT["xxh3"]

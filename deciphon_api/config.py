@@ -6,16 +6,12 @@ from loguru import logger
 from pydantic import BaseSettings
 
 from deciphon_api import __version__
-from deciphon_api.core.logging import (
-    InterceptHandler,
-    LoggingLevel,
-    RepeatMessageHandler,
-)
+from deciphon_api.logging import InterceptHandler, LoggingLevel, RepeatMessageHandler
 
-__all__ = ["settings"]
+__all__ = ["Config", "get_config"]
 
 
-class Settings(BaseSettings):
+class Config(BaseSettings):
     debug: bool = False
     docs_url: str = "/docs"
     openapi_prefix: str = ""
@@ -32,6 +28,7 @@ class Settings(BaseSettings):
 
     allowed_hosts: List[str] = ["*"]
 
+    sql_echo: bool = False
     logging_level: LoggingLevel = LoggingLevel("info")
     loggers: Tuple[str, str] = ("uvicorn.asgi", "uvicorn.access")
     # Refer to loguru format for details.
@@ -79,8 +76,5 @@ class Settings(BaseSettings):
 
 
 @lru_cache
-def get_settings() -> Settings:
-    return Settings()
-
-
-settings = get_settings()
+def get_config() -> Config:
+    return Config()

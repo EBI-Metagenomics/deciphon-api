@@ -59,3 +59,8 @@ def prod_tar_gz():
 @pytest.fixture
 def prod_json():
     return json.load(open(get_blob("prod.json")))
+
+
+@pytest.fixture
+def prod_gff():
+    return open(get_blob("prod.gff"), "r").read()

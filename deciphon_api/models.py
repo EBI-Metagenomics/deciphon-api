@@ -76,7 +76,7 @@ class Match(SQLModel):
 
 
 class Prod(Match, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
 
     hmmer_sha256: str
 
@@ -85,7 +85,7 @@ class Prod(Match, table=True):
 
 
 class Seq(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
 
     scan_id: int = Field(default=None, foreign_key="scan.id", nullable=False)
     scan: Scan = Relationship(back_populates="seqs", **SINGLE)

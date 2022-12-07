@@ -2,6 +2,7 @@ import tempfile
 
 from fasta_reader import read_fasta
 from fastapi import APIRouter, File, Form, Path, UploadFile
+from fastapi.responses import PlainTextResponse
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -13,6 +14,7 @@ from deciphon_api.exceptions import (
     SeqNotFoundException,
 )
 from deciphon_api.models import DB, Job, JobType, Scan, Seq
+from deciphon_api.scan_result import ScanResult
 from deciphon_api.sched import get_sched
 
 __all__ = ["router"]
@@ -92,3 +94,15 @@ async def get_scan_seq_list(scan_id: int = ID()):
         if not scan:
             raise ScanNotFoundException()
         return session.exec(select(Seq).where(Seq.scan_id == scan.id)).all()
+
+
+@router.get(
+    "/scans/{scan_id}/prods/gff", response_class=PlainTextResponse, status_code=OK
+)
+async def get_prod_as_gff(scan_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise ScanNotFoundException()
+        scan_result = ScanResult(scan)
+        return scan_result.gff()

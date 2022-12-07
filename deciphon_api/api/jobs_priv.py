@@ -1,13 +1,12 @@
 from typing import Optional
 
 import sqlalchemy.exc
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Path, Query
 from sqlmodel import Session
 from starlette.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
-from deciphon_api.api.utils import ID
-from deciphon_api.auth import auth_request
-from deciphon_api.exceptions import ConflictException, JobNotFoundException
+from deciphon_api.api.utils import AUTH, ID
+from deciphon_api.exceptions import ConflictException, NotFoundException
 from deciphon_api.models import Job, JobState
 from deciphon_api.sched import get_sched
 
@@ -15,7 +14,6 @@ __all__ = ["router"]
 
 router = APIRouter()
 
-AUTH = [Depends(auth_request)]
 OK = HTTP_200_OK
 NO_CONTENT = HTTP_204_NO_CONTENT
 
@@ -31,7 +29,7 @@ async def set_job_state(
     with Session(get_sched()) as session:
         job = session.get(Job, job_id)
         if not job:
-            raise JobNotFoundException()
+            raise NotFoundException(Job)
         job.state = state
         job.error = error
         session.add(job)
@@ -41,11 +39,11 @@ async def set_job_state(
 
 
 @router.delete("/jobs/{job_id}", status_code=NO_CONTENT, dependencies=AUTH)
-async def remove_job(job_id: int = ID()):
+async def delete_job(job_id: int = ID()):
     with Session(get_sched()) as session:
         job = session.get(Job, job_id)
         if not job:
-            raise JobNotFoundException()
+            raise NotFoundException(Job)
         session.delete(job)
         try:
             session.commit()
@@ -66,7 +64,7 @@ async def increment_progress(
     with Session(get_sched()) as session:
         job = session.get(Job, job_id)
         if not job:
-            raise JobNotFoundException()
+            raise NotFoundException(Job)
         job.progress = min(100, job.progress + value)
         session.add(job)
         session.commit()

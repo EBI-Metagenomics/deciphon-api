@@ -1,35 +1,15 @@
+from typing import Type
+
 from fastapi import HTTPException
+from sqlmodel import SQLModel
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+
+__all__ = ["NotFoundException", "ConflictException"]
 
 
 class NotFoundException(HTTPException):
-    def __init__(self, item: str):
-        super().__init__(HTTP_404_NOT_FOUND, f"{item} not found")
-
-
-class HMMNotFoundException(NotFoundException):
-    def __init__(self):
-        super().__init__("HMM")
-
-
-class DBNotFoundException(NotFoundException):
-    def __init__(self):
-        super().__init__("DB")
-
-
-class ScanNotFoundException(NotFoundException):
-    def __init__(self):
-        super().__init__("Scan")
-
-
-class SeqNotFoundException(NotFoundException):
-    def __init__(self):
-        super().__init__("Scan")
-
-
-class JobNotFoundException(NotFoundException):
-    def __init__(self):
-        super().__init__("Job")
+    def __init__(self, T: Type[SQLModel]):
+        super().__init__(HTTP_404_NOT_FOUND, f"{T.__name__} not found")
 
 
 class ConflictException(HTTPException):

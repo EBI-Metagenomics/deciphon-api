@@ -6,7 +6,7 @@ from starlette.status import HTTP_200_OK
 from deciphon_api import mime
 from deciphon_api.api.utils import ID
 from deciphon_api.depo import get_depo
-from deciphon_api.exceptions import DBNotFoundException
+from deciphon_api.exceptions import NotFoundException
 from deciphon_api.models import DB
 from deciphon_api.sched import get_sched
 
@@ -22,7 +22,7 @@ async def get_db_by_id(db_id: int = ID()):
     with Session(get_sched()) as session:
         db = session.get(DB, db_id)
         if not db:
-            raise DBNotFoundException()
+            raise NotFoundException(DB)
         return db
 
 
@@ -32,7 +32,7 @@ async def get_db_by_xxh3(xxh3: int):
         stmt = select(DB).where(DB.xxh3 == xxh3)
         db = session.exec(stmt).one_or_none()
         if not db:
-            raise DBNotFoundException()
+            raise NotFoundException(DB)
         return db
 
 
@@ -42,12 +42,12 @@ async def get_db_by_filename(filename: str):
         stmt = select(DB).where(DB.filename == filename)
         db = session.exec(stmt).one_or_none()
         if not db:
-            raise DBNotFoundException()
+            raise NotFoundException(DB)
         return db
 
 
 @router.get("/dbs", response_model=list[DB], status_code=OK)
-async def get_db_list():
+async def get_dbs():
     with Session(get_sched()) as session:
         return session.exec(select(DB)).all()
 
@@ -57,7 +57,7 @@ async def download_db(db_id: int = ID()):
     with Session(get_sched()) as session:
         db = session.get(DB, db_id)
         if not db:
-            raise DBNotFoundException()
+            raise NotFoundException(DB)
         file = get_depo().fetch(db)
         media_type = mime.OCTET
         return FileResponse(file.path, media_type=media_type, filename=file.name)

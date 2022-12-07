@@ -5,12 +5,11 @@ from typing import Optional, Union
 import trio
 from fastapi import UploadFile
 
+from deciphon_api.bufsize import BUFSIZE
 from deciphon_api.filehash import FileHash
-from deciphon_api.models import DB, HMM, Prod
+from deciphon_api.models import DB, HMM
 
 __all__ = ["get_depo", "Depo", "File"]
-
-BUFSIZE = 4 * 1024 * 1024
 
 
 class File:
@@ -58,21 +57,14 @@ class Depo:
     async def store_db(self, file: UploadFile) -> File:
         return await self._store(file, self._dbs)
 
-    async def store_prodset(self, scan_id: int, file: UploadFile) -> File:
-        folder = self._prods / str(scan_id)
-        folder.mkdir(exist_ok=False)
-        return await self._store(file, self._prods)
-
     def _fetch(self, filename: str) -> File:
         return File(path=self._root / filename)
 
-    def fetch(self, model: Union[HMM, DB, Prod]) -> File:
+    def fetch(self, model: Union[HMM, DB]) -> File:
         if isinstance(model, HMM):
             return File(path=self._hmms / model.filename)
         elif isinstance(model, DB):
             return File(path=self._dbs / model.filename)
-        elif isinstance(model, Prod):
-            return File(path=self._prods / str(model.id) / model.filename)
         else:
             assert False
 

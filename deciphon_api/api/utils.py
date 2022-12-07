@@ -1,6 +1,10 @@
-from fastapi import Path
+from fastapi import Depends, Path
 
-__all__ = ["ID"]
+from deciphon_api.auth import auth_request
+
+__all__ = ["ID", "AUTH"]
+
+AUTH = [Depends(auth_request)]
 
 
 def ID():

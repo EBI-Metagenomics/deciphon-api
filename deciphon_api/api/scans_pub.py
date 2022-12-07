@@ -1,18 +1,15 @@
 import tempfile
 
 from fasta_reader import read_fasta
-from fastapi import APIRouter, File, Form, Path, UploadFile
+from fastapi import APIRouter, Form, Path, UploadFile
 from fastapi.responses import PlainTextResponse
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
-from deciphon_api import mime
+from deciphon_api.api.files import FastaFile
 from deciphon_api.api.utils import ID
-from deciphon_api.exceptions import (
-    DBNotFoundException,
-    ScanNotFoundException,
-    SeqNotFoundException,
-)
+from deciphon_api.bufsize import BUFSIZE
+from deciphon_api.exceptions import NotFoundException
 from deciphon_api.models import DB, Job, JobType, Scan, Seq
 from deciphon_api.scan_result import ScanResult
 from deciphon_api.sched import get_sched
@@ -23,15 +20,11 @@ router = APIRouter()
 
 OK = HTTP_200_OK
 CREATED = HTTP_201_CREATED
-BUFSIZE = 4 * 1024 * 1024
-
-
-def FastaFile():
-    return File(content_type=mime.TEXT, description="fasta file")
+PLAIN = PlainTextResponse
 
 
 @router.post("/scans/", response_model=Job, status_code=CREATED)
-async def submit_scan(
+async def upload_scan(
     db_id: int = Form(...),
     multi_hits: bool = Form(False),
     hmmer3_compat: bool = Form(False),
@@ -52,7 +45,7 @@ async def submit_scan(
     with Session(get_sched()) as session:
         db = session.get(DB, scan.db_id)
         if not db:
-            raise DBNotFoundException()
+            raise NotFoundException(DB)
         session.add(scan)
         session.commit()
         session.refresh(scan)
@@ -64,93 +57,83 @@ async def get_scan_by_id(scan_id: int = ID()):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
-            raise ScanNotFoundException()
+            raise NotFoundException(Scan)
         return scan
 
 
 @router.get("/scans", response_model=list[Scan], status_code=OK)
-async def get_scan_list():
+async def get_scans():
     with Session(get_sched()) as session:
         return session.exec(select(Scan)).all()
 
 
 @router.get("/scans/{scan_id}/seqs/next/{seq_id}", response_model=Seq, status_code=OK)
-async def next_scan_seq(scan_id: int = ID(), seq_id: int = Path(...)):
+async def get_next_scan_seq(scan_id: int = ID(), seq_id: int = Path(...)):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
-            raise ScanNotFoundException()
+            raise NotFoundException(Scan)
         stmt = select(Seq).where(Seq.scan_id == scan_id, col(Seq.id) > seq_id)
         seq = session.exec(stmt).first()
         if not seq:
-            raise SeqNotFoundException()
+            raise NotFoundException(Seq)
         return seq
 
 
 @router.get("/scans/{scan_id}/seqs", response_model=list[Seq], status_code=OK)
-async def get_scan_seq_list(scan_id: int = ID()):
+async def get_scan_seqs(scan_id: int = ID()):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
-            raise ScanNotFoundException()
+            raise NotFoundException(Scan)
         return session.exec(select(Seq).where(Seq.scan_id == scan.id)).all()
 
 
-@router.get(
-    "/scans/{scan_id}/prods/gff", response_class=PlainTextResponse, status_code=OK
-)
-async def get_prod_as_gff(scan_id: int = ID()):
+@router.get("/scans/{scan_id}/prods/gff", response_class=PLAIN, status_code=OK)
+async def get_prod_gff(scan_id: int = ID()):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
-            raise ScanNotFoundException()
+            raise NotFoundException(Scan)
         scan_result = ScanResult(scan)
         return scan_result.gff()
 
 
-@router.get(
-    "/scans/{scan_id}/prods/amino", response_class=PlainTextResponse, status_code=OK
-)
-async def get_prod_as_amino(scan_id: int = ID()):
+@router.get("/scans/{scan_id}/prods/amino", response_class=PLAIN, status_code=OK)
+async def get_prod_amino(scan_id: int = ID()):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
-            raise ScanNotFoundException()
+            raise NotFoundException(Scan)
         scan_result = ScanResult(scan)
         return scan_result.fasta("amino")
 
 
-@router.get(
-    "/scans/{scan_id}/prods/codon", response_class=PlainTextResponse, status_code=OK
-)
-async def get_prod_as_codon(scan_id: int = ID()):
+@router.get("/scans/{scan_id}/prods/codon", response_class=PLAIN, status_code=OK)
+async def get_prod_codon(scan_id: int = ID()):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
-            raise ScanNotFoundException()
+            raise NotFoundException(Scan)
         scan_result = ScanResult(scan)
         return scan_result.fasta("codon")
 
 
-@router.get(
-    "/scans/{scan_id}/prods/fragment", response_class=PlainTextResponse, status_code=OK
-)
-async def get_prod_as_fragment(scan_id: int = ID()):
+@router.get("/scans/{scan_id}/prods/frag", response_class=PLAIN, status_code=OK)
+async def get_prod_frag(scan_id: int = ID()):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
-            raise ScanNotFoundException()
+            raise NotFoundException(Scan)
         scan_result = ScanResult(scan)
         return scan_result.fasta("frag")
 
 
-@router.get(
-    "/scans/{scan_id}/prods/path", response_class=PlainTextResponse, status_code=OK
-)
-async def get_prod_as_path(scan_id: int = ID()):
+@router.get("/scans/{scan_id}/prods/path", response_class=PLAIN, status_code=OK)
+async def get_prod_path(scan_id: int = ID()):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
-            raise ScanNotFoundException()
+            raise NotFoundException(Scan)
         scan_result = ScanResult(scan)
         return scan_result.fasta("state")

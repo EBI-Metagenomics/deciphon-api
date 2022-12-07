@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from starlette.status import HTTP_200_OK
 
 from deciphon_api.api.utils import ID
-from deciphon_api.exceptions import JobNotFoundException
+from deciphon_api.exceptions import NotFoundException
 from deciphon_api.models import HMM, Job, JobState, Scan
 from deciphon_api.sched import get_sched
 
@@ -15,7 +15,7 @@ OK = HTTP_200_OK
 
 
 @router.get("/jobs", response_model=list[Job], status_code=OK)
-async def get_job_list():
+async def get_jobs():
     with Session(get_sched()) as session:
         return session.exec(select(Job)).all()
 
@@ -26,7 +26,7 @@ async def get_next_pend_job():
         stmt = select(Job).where(Job.state == JobState.pend)
         job = session.exec(stmt).first()
         if not job:
-            raise JobNotFoundException()
+            raise NotFoundException(Job)
         return job
 
 
@@ -35,23 +35,23 @@ async def get_job_by_id(job_id: int = ID()):
     with Session(get_sched()) as session:
         job = session.get(Job, job_id)
         if not job:
-            raise JobNotFoundException()
+            raise NotFoundException(Job)
         return job
 
 
 @router.get("/jobs/{job_id}/hmm", response_model=HMM, status_code=OK)
-async def get_hmm_of_job(job_id: int = ID()):
+async def get_job_hmm(job_id: int = ID()):
     with Session(get_sched()) as session:
         job = session.get(Job, job_id)
         if not job:
-            raise JobNotFoundException()
+            raise NotFoundException(Job)
         return job.hmm
 
 
 @router.get("/jobs/{job_id}/scan", response_model=Scan, status_code=OK)
-async def get_scan_of_job(job_id: int = ID()):
+async def get_job_scan(job_id: int = ID()):
     with Session(get_sched()) as session:
         job = session.get(Job, job_id)
         if not job:
-            raise JobNotFoundException()
+            raise NotFoundException(Job)
         return job.scan

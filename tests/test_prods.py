@@ -142,7 +142,7 @@ def test_get_scan_prods_as_frag(
         response = client.post(url("/scans/1/prods/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        response = client.get(url("/scans/1/prods/fragment"))
+        response = client.get(url("/scans/1/prods/frag"))
         assert response.status_code == 200
         assert response.text == prod_frag
 

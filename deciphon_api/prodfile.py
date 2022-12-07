@@ -5,9 +5,10 @@ import tarfile
 import pydantic
 from fsspec.implementations.libarchive import LibArchiveFileSystem
 
+from deciphon_api.bufsize import BUFSIZE
 from deciphon_api.models import Match
+from deciphon_api.utils import isint
 
-BUFSIZE = 4 * 1024 * 1024
 PathLike = str | bytes | os.PathLike
 
 
@@ -25,14 +26,6 @@ class HMMERFile:
         while content := self._fileobj.read(BUFSIZE):
             h.update(content)
         return h.hexdigest()
-
-
-def isint(value: str) -> bool:
-    try:
-        int(value)
-    except ValueError:
-        return False
-    return True
 
 
 class MatchFile:

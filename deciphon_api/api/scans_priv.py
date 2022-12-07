@@ -1,13 +1,13 @@
 import tempfile
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, UploadFile
 from sqlmodel import Session
-from starlette.status import HTTP_200_OK, HTTP_201_CREATED
+from starlette.status import HTTP_201_CREATED
 
-from deciphon_api import mime
-from deciphon_api.api.utils import ID
-from deciphon_api.auth import auth_request
-from deciphon_api.exceptions import ScanNotFoundException
+from deciphon_api.api.files import ProdFile
+from deciphon_api.api.utils import AUTH, ID
+from deciphon_api.bufsize import BUFSIZE
+from deciphon_api.exceptions import NotFoundException
 from deciphon_api.models import Prod, Scan
 from deciphon_api.prodfile import ProdFileReader
 from deciphon_api.sched import get_sched
@@ -16,14 +16,7 @@ __all__ = ["router"]
 
 router = APIRouter()
 
-AUTH = [Depends(auth_request)]
-OK = HTTP_200_OK
 CREATED = HTTP_201_CREATED
-BUFSIZE = 4 * 1024 * 1024
-
-
-def ProdFile():
-    return File(content_type=mime.GZIP, description="product set")
 
 
 def get_session():
@@ -37,7 +30,7 @@ def get_session():
     status_code=CREATED,
     dependencies=AUTH,
 )
-async def upload_product(
+async def upload_prod(
     scan_id: int = ID(),
     prod_file: UploadFile = ProdFile(),
     session: Session = Depends(get_session),
@@ -50,7 +43,7 @@ async def upload_product(
 
         scan = session.get(Scan, scan_id)
         if not scan:
-            raise ScanNotFoundException()
+            raise NotFoundException(Scan)
 
         prod_reader = ProdFileReader(file.name)
         match_file = prod_reader.match_file()

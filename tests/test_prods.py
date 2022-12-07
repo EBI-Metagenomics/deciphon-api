@@ -43,6 +43,7 @@ def test_post_prods(app, minifam_hmm, minifam_dcp, consensus_fna, prod_tar_gz):
         files = files_form("prod_file", prod_tar_gz, OCTET)
         response = client.post(url("/scans/1/prods/"), files=files, headers=HEADERS)
         assert response.status_code == 201
+        print(response.json())
         # assert response.json() == {}
         #
         # response = client.get(f"{prefix}/scans/1/prods")

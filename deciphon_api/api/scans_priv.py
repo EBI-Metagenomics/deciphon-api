@@ -42,7 +42,6 @@ async def upload_product(
     session: Session = Depends(get_session),
 ):
 
-    prods: list[Prod] = []
     with tempfile.NamedTemporaryFile("wb") as file:
         while content := await prod_file.read(BUFSIZE):
             file.write(content)
@@ -58,9 +57,9 @@ async def upload_product(
             assert match.scan_id == scan_id
             hmmer_file = prod_reader.hmmer_file(match.seq_id, match.profile)
             assert hmmer_file is not None
-            prod = Prod(match=match, hmmer=hmmer_file.hmmer())
+            prod = Prod(**match.dict(), hmmer_sha256=hmmer_file.sha256)
+            scan.prods.append(prod)
             session.add(prod)
             session.commit()
-            session.refresh(prod)
-            prods.append(prod)
-        return prods
+        session.refresh(scan)
+        return scan.prods

@@ -56,9 +56,7 @@ class HMM(SQLModel, table=True):
     db: DB = Relationship(back_populates="hmm", **SINGLE)
 
 
-class Match(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
+class Match(SQLModel):
     scan_id: int = Field(default=None, foreign_key="scan.id", nullable=False)
     seq_id: int = Field(default=None, foreign_key="seq.id", nullable=False)
 
@@ -74,27 +72,16 @@ class Match(SQLModel, table=True):
 
     match: str
 
-    prod: Prod = Relationship(back_populates="match", **SINGLE)
-    seq: Seq = Relationship(back_populates="match", **SINGLE)
-
     __table_args__ = (UniqueConstraint("scan_id", "seq_id", "profile"),)
 
 
-class HMMER(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    file_sha256: str
-
-    prod: Prod = Relationship(back_populates="hmmer", **SINGLE)
-
-
-class Prod(SQLModel, table=True):
+class Prod(Match, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
-    match_id: int = Field(default=None, foreign_key="match.id", nullable=False)
-    match: Match = Relationship(back_populates="prod", **SINGLE)
+    hmmer_sha256: str
 
-    hmmer_id: int = Field(default=None, foreign_key="hmmer.id", nullable=False)
-    hmmer: HMMER = Relationship(back_populates="prod", **SINGLE)
+    seq: Seq = Relationship(back_populates="prod", **SINGLE)
+    scan: Scan = Relationship(back_populates="prods", **SINGLE)
 
 
 class Seq(SQLModel, table=True):
@@ -106,7 +93,7 @@ class Seq(SQLModel, table=True):
     name: str
     data: str
 
-    match: Optional[Match] = Relationship(back_populates="seq", **SINGLE)
+    prod: Optional[Prod] = Relationship(back_populates="seq", **SINGLE)
 
 
 class Scan(SQLModel, table=True):
@@ -122,6 +109,7 @@ class Scan(SQLModel, table=True):
     job: Job = Relationship(back_populates="scan", **SINGLE)
 
     seqs: list[Seq] = Relationship(back_populates="scan")
+    prods: list[Prod] = Relationship(back_populates="scan")
 
 
 class DB(SQLModel, table=True):

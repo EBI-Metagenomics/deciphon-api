@@ -5,7 +5,7 @@ import tarfile
 import pydantic
 from fsspec.implementations.libarchive import LibArchiveFileSystem
 
-from deciphon_api.models import HMMER, Match
+from deciphon_api.models import Match
 
 BUFSIZE = 4 * 1024 * 1024
 PathLike = str | bytes | os.PathLike
@@ -18,15 +18,13 @@ class HMMERFile:
     def __init__(self, fileobj):
         self._fileobj = fileobj
 
-    def _sha256(self) -> str:
+    @property
+    def sha256(self) -> str:
         self._fileobj.seek(0)
         h = hashlib.sha256()
         while content := self._fileobj.read(BUFSIZE):
             h.update(content)
         return h.hexdigest()
-
-    def hmmer(self):
-        return HMMER(file_sha256=self._sha256())
 
 
 def isint(value: str) -> bool:

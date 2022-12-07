@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tempfile
@@ -53,3 +54,8 @@ def pfam1_dcp():
 @pytest.fixture
 def prod_tar_gz():
     return get_blob("prod.tar.gz")
+
+
+@pytest.fixture
+def prod_json():
+    return json.load(open(get_blob("prod.json")))

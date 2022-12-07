@@ -106,3 +106,51 @@ async def get_prod_as_gff(scan_id: int = ID()):
             raise ScanNotFoundException()
         scan_result = ScanResult(scan)
         return scan_result.gff()
+
+
+@router.get(
+    "/scans/{scan_id}/prods/amino", response_class=PlainTextResponse, status_code=OK
+)
+async def get_prod_as_amino(scan_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise ScanNotFoundException()
+        scan_result = ScanResult(scan)
+        return scan_result.fasta("amino")
+
+
+@router.get(
+    "/scans/{scan_id}/prods/codon", response_class=PlainTextResponse, status_code=OK
+)
+async def get_prod_as_codon(scan_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise ScanNotFoundException()
+        scan_result = ScanResult(scan)
+        return scan_result.fasta("codon")
+
+
+@router.get(
+    "/scans/{scan_id}/prods/fragment", response_class=PlainTextResponse, status_code=OK
+)
+async def get_prod_as_fragment(scan_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise ScanNotFoundException()
+        scan_result = ScanResult(scan)
+        return scan_result.fasta("frag")
+
+
+@router.get(
+    "/scans/{scan_id}/prods/path", response_class=PlainTextResponse, status_code=OK
+)
+async def get_prod_as_path(scan_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise ScanNotFoundException()
+        scan_result = ScanResult(scan)
+        return scan_result.fasta("state")

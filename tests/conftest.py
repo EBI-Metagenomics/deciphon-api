@@ -64,3 +64,23 @@ def prod_json():
 @pytest.fixture
 def prod_gff():
     return open(get_blob("prod.gff"), "r").read()
+
+
+@pytest.fixture
+def prod_amino():
+    return open(get_blob("prod.amino.faa"), "r").read()
+
+
+@pytest.fixture
+def prod_codon():
+    return open(get_blob("prod.codon.fna"), "r").read()
+
+
+@pytest.fixture
+def prod_frag():
+    return open(get_blob("prod.frag.fna"), "r").read()
+
+
+@pytest.fixture
+def prod_path():
+    return open(get_blob("prod.path.fxx"), "r").read()

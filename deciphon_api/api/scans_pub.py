@@ -5,6 +5,7 @@ from fastapi import APIRouter, File, Form, Path, UploadFile
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
+from deciphon_api import mime
 from deciphon_api.api.utils import ID
 from deciphon_api.exceptions import (
     DBNotFoundException,
@@ -24,7 +25,7 @@ BUFSIZE = 4 * 1024 * 1024
 
 
 def FastaFile():
-    return File(content_type="text/plain", description="fasta file")
+    return File(content_type=mime.TEXT, description="fasta file")
 
 
 @router.post("/scans/", response_model=Job, status_code=CREATED)

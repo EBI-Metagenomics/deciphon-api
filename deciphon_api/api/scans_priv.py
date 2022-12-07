@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from sqlmodel import Session
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
+from deciphon_api import mime
 from deciphon_api.api.utils import ID
 from deciphon_api.auth import auth_request
 from deciphon_api.exceptions import ScanNotFoundException
@@ -22,7 +23,7 @@ BUFSIZE = 4 * 1024 * 1024
 
 
 def ProdFile():
-    return File(content_type="application/gzip", description="product set")
+    return File(content_type=mime.GZIP, description="product set")
 
 
 def get_session():

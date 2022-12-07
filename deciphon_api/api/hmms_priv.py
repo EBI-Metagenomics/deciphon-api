@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from sqlmodel import Session
 from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
+from deciphon_api import mime
 from deciphon_api.api.utils import ID
 from deciphon_api.auth import auth_request
 from deciphon_api.depo import get_depo
@@ -31,7 +32,7 @@ async def remove_hmm(hmm_id: int = ID()):
 
 
 def HMMFile():
-    return File(content_type="text/plain", description="hmmer database")
+    return File(content_type=mime.TEXT, description="hmmer database")
 
 
 @router.post("/hmms/", response_model=HMM, status_code=CREATED, dependencies=AUTH)

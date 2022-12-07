@@ -3,11 +3,13 @@ import typing
 
 from fastapi.responses import Response
 
+from deciphon_api import mime
+
 __all__ = ["PrettyJSONResponse"]
 
 
 class PrettyJSONResponse(Response):
-    media_type = "application/json"
+    media_type = mime.JSON
 
     def render(self, content: typing.Any) -> bytes:
         return json.dumps(

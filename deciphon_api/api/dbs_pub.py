@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 from starlette.status import HTTP_200_OK
 
+from deciphon_api import mime
 from deciphon_api.api.utils import ID
 from deciphon_api.depo import get_depo
 from deciphon_api.exceptions import DBNotFoundException
@@ -58,5 +59,5 @@ async def download_db(db_id: int = ID()):
         if not db:
             raise DBNotFoundException()
         file = get_depo().fetch(db)
-        media_type = "application/octet-stream"
+        media_type = mime.OCTET
         return FileResponse(file.path, media_type=media_type, filename=file.name)

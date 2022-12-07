@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from sqlmodel import Session, select
 from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
+from deciphon_api import mime
 from deciphon_api.api.utils import ID
 from deciphon_api.auth import auth_request
 from deciphon_api.depo import get_depo
@@ -35,7 +36,7 @@ async def remove_db(db_id: int = ID()):
 
 
 def DBFile():
-    content_type = "application/octet-stream"
+    content_type = mime.OCTET
     return File(content_type=content_type, description="deciphon database")
 
 

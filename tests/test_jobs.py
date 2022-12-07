@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from deciphon_api.config import get_config
+from deciphon_api.mime import OCTET, TEXT
 
 pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("cleandir")]
 HEADERS = {"X-API-Key": f"{get_config().api_key}"}
@@ -41,15 +42,15 @@ def test_empty_next_pend(app: FastAPI):
 
 def test_next_pend(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
     with TestClient(app, backend="trio") as client:
-        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        files = files_form("db_file", minifam_dcp, OCTET)
         response = client.post(url("/dbs/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("fasta_file", consensus_fna, "text/plain")
+        files = files_form("fasta_file", consensus_fna, TEXT)
         response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
         assert response.status_code == 201
 
@@ -73,15 +74,15 @@ def test_next_pend(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
 
 def test_set_run(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
     with TestClient(app, backend="trio") as client:
-        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        files = files_form("db_file", minifam_dcp, OCTET)
         response = client.post(url("/dbs/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("fasta_file", consensus_fna, "text/plain")
+        files = files_form("fasta_file", consensus_fna, TEXT)
         response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
         assert response.status_code == 201
         job_id = response.json()["id"]
@@ -101,15 +102,15 @@ def test_set_run(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
 
 def test_set_run_and_fail(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
     with TestClient(app, backend="trio") as client:
-        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        files = files_form("db_file", minifam_dcp, OCTET)
         response = client.post(url("/dbs/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("fasta_file", consensus_fna, "text/plain")
+        files = files_form("fasta_file", consensus_fna, TEXT)
         response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
         assert response.status_code == 201
 
@@ -141,15 +142,15 @@ def test_set_run_and_fail(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna)
 
 def test_set_run_and_done(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
     with TestClient(app, backend="trio") as client:
-        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        files = files_form("db_file", minifam_dcp, OCTET)
         response = client.post(url("/dbs/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("fasta_file", consensus_fna, "text/plain")
+        files = files_form("fasta_file", consensus_fna, TEXT)
         response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
         assert response.status_code == 201
 
@@ -183,23 +184,23 @@ def test_get_list(
     app: FastAPI, minifam_hmm, minifam_dcp, pfam1_hmm, pfam1_dcp, consensus_fna
 ):
     with TestClient(app, backend="trio") as client:
-        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        files = files_form("db_file", minifam_dcp, OCTET)
         response = client.post(url("/dbs/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("hmm_file", pfam1_hmm, "text/plain")
+        files = files_form("hmm_file", pfam1_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("db_file", pfam1_dcp, "application/octet-stream")
+        files = files_form("db_file", pfam1_dcp, OCTET)
         response = client.post(url("/dbs/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("fasta_file", consensus_fna, "text/plain")
+        files = files_form("fasta_file", consensus_fna, TEXT)
         response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
         assert response.status_code == 201
 
@@ -241,7 +242,7 @@ def test_get_list(
 
 def test_get_hmm_from_job(app: FastAPI, minifam_hmm):
     with TestClient(app, backend="trio") as client:
-        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
 
         response = client.get("/jobs/1/hmm")
@@ -256,15 +257,15 @@ def test_get_hmm_from_job(app: FastAPI, minifam_hmm):
 
 def test_get_scan_from_job(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
     with TestClient(app, backend="trio") as client:
-        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        files = files_form("db_file", minifam_dcp, OCTET)
         response = client.post(url("/dbs/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("fasta_file", consensus_fna, "text/plain")
+        files = files_form("fasta_file", consensus_fna, TEXT)
         response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
         assert response.status_code == 201
 
@@ -281,11 +282,11 @@ def test_get_scan_from_job(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna
 
 def test_remove_job(app: FastAPI, minifam_hmm, minifam_dcp):
     with TestClient(app, backend="trio") as client:
-        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("db_file", minifam_dcp, "application/octet-stream")
+        files = files_form("db_file", minifam_dcp, OCTET)
         response = client.post(url("/dbs/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
@@ -318,7 +319,7 @@ def test_remove_job(app: FastAPI, minifam_hmm, minifam_dcp):
 
 def test_add_job_progress(app: FastAPI, minifam_hmm):
     with TestClient(app, backend="trio") as client:
-        files = files_form("hmm_file", minifam_hmm, "text/plain")
+        files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
 
         response = client.delete(url("/dbs/1"))

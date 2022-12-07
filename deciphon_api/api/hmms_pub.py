@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 from starlette.status import HTTP_200_OK
 
+from deciphon_api import mime
 from deciphon_api.api.utils import ID
 from deciphon_api.depo import get_depo
 from deciphon_api.exceptions import HMMNotFoundException
@@ -58,5 +59,5 @@ async def download_hmm(hmm_id: int = ID()):
         if not hmm:
             raise HMMNotFoundException()
         file = get_depo().fetch(hmm)
-        media_type = "text/plain"
+        media_type = mime.TEXT
         return FileResponse(file.path, media_type=media_type, filename=file.name)

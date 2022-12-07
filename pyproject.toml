@@ -20,10 +20,10 @@ pydantic = { extras = ["dotenv"], version = "^1.10.2" }
 python = "^3.10"
 python-multipart = "^0.0.5"
 sqlmodel = "^0.0.8"
-uvicorn = { extras = ["standard"], version = "^0.20.0" }
 xxhash = "^3.1.0"
 fasta-reader = "^1.0.3"
-anyblob = "^1.0.0"
+anyblob = "^1.0.1"
+hypercorn = {extras = ["trio"], version = "^0.14.3"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"

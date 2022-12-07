@@ -51,5 +51,5 @@ def pfam1_dcp():
 
 
 @pytest.fixture
-def prodset_tar_gz():
-    return get_blob("prodset.tar.gz")
+def prod_tar_gz():
+    return get_blob("prod.tar.gz")

@@ -56,12 +56,11 @@ class HMM(SQLModel, table=True):
     db: DB = Relationship(back_populates="hmm", **SINGLE)
 
 
-class Prod(SQLModel, table=True):
+class Match(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
     scan_id: int = Field(default=None, foreign_key="scan.id", nullable=False)
     seq_id: int = Field(default=None, foreign_key="seq.id", nullable=False)
-    seq: Seq = Relationship(back_populates="prod", **SINGLE)
 
     profile: str
     abc: str
@@ -74,9 +73,28 @@ class Prod(SQLModel, table=True):
     version: str
 
     match: str
-    filename: str = Field(..., index=True, unique=True, title="File name")
+
+    prod: Prod = Relationship(back_populates="match", **SINGLE)
+    seq: Seq = Relationship(back_populates="match", **SINGLE)
 
     __table_args__ = (UniqueConstraint("scan_id", "seq_id", "profile"),)
+
+
+class HMMER(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    file_sha256: str
+
+    prod: Prod = Relationship(back_populates="hmmer", **SINGLE)
+
+
+class Prod(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    match_id: int = Field(default=None, foreign_key="match.id", nullable=False)
+    match: Match = Relationship(back_populates="prod", **SINGLE)
+
+    hmmer_id: int = Field(default=None, foreign_key="hmmer.id", nullable=False)
+    hmmer: HMMER = Relationship(back_populates="prod", **SINGLE)
 
 
 class Seq(SQLModel, table=True):
@@ -88,7 +106,7 @@ class Seq(SQLModel, table=True):
     name: str
     data: str
 
-    prod: Optional[Prod] = Relationship(back_populates="seq", **SINGLE)
+    match: Optional[Match] = Relationship(back_populates="seq", **SINGLE)
 
 
 class Scan(SQLModel, table=True):

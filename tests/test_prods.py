@@ -26,7 +26,7 @@ def files_form(field: str, filepath: Path, mime: str):
     }
 
 
-def test_post_prods(app, minifam_hmm, minifam_dcp, consensus_fna, prodset_tar_gz):
+def test_post_prods(app, minifam_hmm, minifam_dcp, consensus_fna, prod_tar_gz):
     with TestClient(app, backend="trio") as client:
         files = files_form("hmm_file", minifam_hmm, "text/plain")
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
@@ -40,8 +40,8 @@ def test_post_prods(app, minifam_hmm, minifam_dcp, consensus_fna, prodset_tar_gz
         response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        files = files_form("prods_file", prodset_tar_gz, OCTET)
-        response = client.post(url("/prods/"), files=files, headers=HEADERS)
+        files = files_form("prod_file", prod_tar_gz, OCTET)
+        response = client.post(url("/scans/1/prods/"), files=files, headers=HEADERS)
         assert response.status_code == 201
         # assert response.json() == {}
         #

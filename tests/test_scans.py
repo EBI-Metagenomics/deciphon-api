@@ -138,11 +138,10 @@ def test_get_next_seq(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
         response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        items = read_fasta(consensus_fna).read_items()
-
         response = client.get(url("/scans/1/seqs/next/0"))
         assert response.status_code == 200
 
+        items = read_fasta(consensus_fna).read_items()
         assert response.json() == {
             "id": 1,
             "scan_id": 1,

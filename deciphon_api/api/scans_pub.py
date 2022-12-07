@@ -72,7 +72,7 @@ async def get_scan_list():
 
 
 @router.get("/scans/{scan_id}/seqs/next/{seq_id}", response_model=Seq, status_code=OK)
-async def next_scan_seq(scan_id: int = ID(), seq_id: int = ID()):
+async def next_scan_seq(scan_id: int = ID(), seq_id: int = Path(...)):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:

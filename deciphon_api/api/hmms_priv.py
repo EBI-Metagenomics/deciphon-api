@@ -1,5 +1,6 @@
 import sqlalchemy.exc
 from fastapi import APIRouter, UploadFile
+from kombu import Connection, Exchange, Queue
 from sqlmodel import Session
 from starlette.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
@@ -41,4 +42,17 @@ async def upload_hmm(hmm_file: UploadFile = HMMFile()):
         except sqlalchemy.exc.IntegrityError as e:
             raise ConflictException(str(e.orig))
         session.refresh(hmm)
+
+        hmm_exchange = Exchange("hmm", "direct", durable=True)
+        hmm_queue = Queue("hmm", exchange=hmm_exchange, routing_key="hmm")
+
+        with Connection("amqp://guest:guest@localhost//") as conn:
+            producer = conn.Producer(serializer="json")
+            producer.publish(
+                {"id": hmm.id, "filename": hmm.filename},
+                exchange=hmm_exchange,
+                routing_key="hmm",
+                declare=[hmm_queue],
+            )
+
         return hmm

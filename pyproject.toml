@@ -26,6 +26,7 @@ anyblob = "^1.0.1"
 hypercorn = {extras = ["trio"], version = "^0.14.3"}
 biopython = "^1.80"
 bcbio-gff = "^0.6.9"
+kombu = "^5.2.4"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"

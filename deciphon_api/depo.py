@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional, Union
 
-import trio
+from anyio import open_file
 from fastapi import UploadFile
 
 from deciphon_api.bufsize import BUFSIZE
@@ -45,7 +45,7 @@ class Depo:
 
     async def _store(self, file: UploadFile, root_dir: Path) -> File:
         filehash = FileHash()
-        async with await trio.open_file(root_dir / file.filename, "wb") as f:
+        async with await open_file(root_dir / file.filename, "wb") as f:
             while content := await file.read(BUFSIZE):
                 filehash.update(content)
                 await f.write(content)

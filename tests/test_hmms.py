@@ -12,6 +12,7 @@ from deciphon_api.mime import TEXT
 pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("cleandir")]
 HEADERS = {"X-API-Key": f"{get_config().api_key}"}
 EXPECT = {"id": 1, "xxh3": -1400478458576472411, "filename": "minifam.hmm", "job_id": 1}
+BACKEND = "asyncio"
 
 
 def url(path: str):
@@ -29,7 +30,7 @@ def files_form(field: str, filepath: Path, mime: str):
 
 
 def test_no_access(app: FastAPI, minifam_hmm):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files)
         assert response.status_code == 403
@@ -37,7 +38,7 @@ def test_no_access(app: FastAPI, minifam_hmm):
 
 
 def test_not_found(app: FastAPI):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         response = client.get(url("/hmms/1"))
         assert response.status_code == 404
         assert response.json() == {"detail": "HMM not found"}
@@ -52,7 +53,7 @@ def test_not_found(app: FastAPI):
 
 
 def test_upload(app: FastAPI, minifam_hmm):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -62,7 +63,7 @@ def test_upload(app: FastAPI, minifam_hmm):
 
 
 def test_get(app: FastAPI, minifam_hmm):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -83,7 +84,7 @@ def test_get(app: FastAPI, minifam_hmm):
 
 
 def test_list(app: FastAPI, minifam_hmm):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -95,7 +96,7 @@ def test_list(app: FastAPI, minifam_hmm):
 
 
 def test_remove(app: FastAPI, minifam_hmm):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -113,7 +114,7 @@ def test_remove(app: FastAPI, minifam_hmm):
 
 
 def test_download(app: FastAPI, minifam_hmm):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201

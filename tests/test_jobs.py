@@ -10,6 +10,7 @@ from deciphon_api.mime import OCTET, TEXT
 pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("cleandir")]
 HEADERS = {"X-API-Key": f"{get_config().api_key}"}
 DATA = {"db_id": "1", "multi_hits": "True", "hmmer3_compat": "False"}
+BACKEND = "asyncio"
 
 
 def url(path: str):
@@ -27,21 +28,21 @@ def files_form(field: str, filepath: Path, mime: str):
 
 
 def test_not_found(app: FastAPI):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         response = client.get("/jobs/1")
         assert response.status_code == 404
         assert response.json() == {"detail": "Job not found"}
 
 
 def test_empty_next_pend(app: FastAPI):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         response = client.get("/jobs/next-pend")
         assert response.status_code == 404
         assert response.json() == {"detail": "Job not found"}
 
 
 def test_next_pend(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -73,7 +74,7 @@ def test_next_pend(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
 
 
 def test_set_run(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -101,7 +102,7 @@ def test_set_run(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
 
 
 def test_set_run_and_fail(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -141,7 +142,7 @@ def test_set_run_and_fail(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna)
 
 
 def test_set_run_and_done(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -183,7 +184,7 @@ def test_set_run_and_done(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna)
 def test_get_list(
     app: FastAPI, minifam_hmm, minifam_dcp, pfam1_hmm, pfam1_dcp, consensus_fna
 ):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -241,7 +242,7 @@ def test_get_list(
 
 
 def test_get_hmm_from_job(app: FastAPI, minifam_hmm):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
 
@@ -256,7 +257,7 @@ def test_get_hmm_from_job(app: FastAPI, minifam_hmm):
 
 
 def test_get_scan_from_job(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -281,7 +282,7 @@ def test_get_scan_from_job(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna
 
 
 def test_remove_job(app: FastAPI, minifam_hmm, minifam_dcp):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -318,7 +319,7 @@ def test_remove_job(app: FastAPI, minifam_hmm, minifam_dcp):
 
 
 def test_add_job_progress(app: FastAPI, minifam_hmm):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
 

@@ -11,7 +11,6 @@ keywords = ["deciphon", "api"]
 classifiers = ["License :: OSI Approved :: MIT License"]
 
 [tool.poetry.dependencies]
-anyio = { extras = ["trio"], version = "^3.6.2" }
 fastapi = { extras = ["all"], version = "^0.88.0" }
 fsspec = { extras = ["libarchive"], version = "^2022.11.0" }
 gunicorn = "^20.1.0"
@@ -23,10 +22,10 @@ sqlmodel = "^0.0.8"
 xxhash = "^3.1.0"
 fasta-reader = "^1.0.3"
 anyblob = "^1.0.1"
-hypercorn = {extras = ["trio"], version = "^0.14.3"}
 biopython = "^1.80"
 bcbio-gff = "^0.6.9"
 kombu = "^5.2.4"
+uvicorn = "^0.20.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"

@@ -11,6 +11,7 @@ from deciphon_api.mime import OCTET, TEXT
 pytestmark = [pytest.mark.anyio, pytest.mark.usefixtures("cleandir")]
 HEADERS = {"X-API-Key": f"{get_config().api_key}"}
 DATA = {"db_id": "1", "multi_hits": "True", "hmmer3_compat": "False"}
+BACKEND = "asyncio"
 
 
 def url(path: str):
@@ -28,7 +29,7 @@ def files_form(field: str, filepath: Path, mime: str):
 
 
 def test_db_not_found(app: FastAPI, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("fasta_file", consensus_fna, TEXT)
         response = client.post(
             url("/scans/"),
@@ -41,7 +42,7 @@ def test_db_not_found(app: FastAPI, consensus_fna):
 
 
 def test_submit(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -70,7 +71,7 @@ def test_submit(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
 
 
 def test_get(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -99,7 +100,7 @@ def test_get(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
 
 
 def test_get_list(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -126,7 +127,7 @@ def test_get_list(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
 
 
 def test_get_next_seq(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
@@ -173,7 +174,7 @@ def test_get_next_seq(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
 
 
 def test_get_seqs(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
-    with TestClient(app, backend="trio") as client:
+    with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
         response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201

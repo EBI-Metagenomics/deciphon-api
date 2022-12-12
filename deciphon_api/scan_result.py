@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import io
-from typing import Dict, List
+from typing import List
 
 from BCBio import GFF
 from Bio import SeqIO
@@ -45,8 +45,6 @@ def is_core_state(state: str):
 
 class ScanResult:
     scan: Scan
-    prods: list[Prod]
-    seqs: Dict[int, Seq]
     hits: List[Hit]
 
     def __init__(self, scan: Scan):
@@ -55,6 +53,12 @@ class ScanResult:
 
         for prod in self.scan.prods:
             self._make_hits(prod)
+
+    def get_seq(self, seq_id: int) -> Seq:
+        for seq in self.scan.seqs:
+            if seq.id == seq_id:
+                return seq
+        assert False
 
     def _make_hits(self, prod: Prod):
         hit_start = 0
@@ -70,7 +74,7 @@ class ScanResult:
                 hit_start = offset
                 hit_start_found = True
                 evalue_log = prod.evalue_log
-                name = self.scan.seqs[prod.seq_id].name
+                name = self.get_seq(prod.seq_id).name
                 self.hits.append(Hit(len(self.hits) + 1, name, prod.id, evalue_log))
 
             if hit_start_found and not is_core_state(state):
@@ -97,8 +101,8 @@ class ScanResult:
         for prod in self.scan.prods:
             hits = [hit for hit in self.hits if hit.prod_id == prod.id]
 
-            seq = BioSeq(self.scan.seqs[prod.seq_id].data)
-            rec = SeqRecord(seq, self.scan.seqs[prod.seq_id].name)
+            seq = BioSeq(self.get_seq(prod.seq_id).data)
+            rec = SeqRecord(seq, self.get_seq(prod.seq_id).name)
 
             evalue_log = hits[0].evalue_log
             qualifiers = {

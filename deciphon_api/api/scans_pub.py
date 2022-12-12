@@ -1,4 +1,5 @@
 import tempfile
+import textwrap
 
 from fasta_reader import read_fasta
 from fastapi import APIRouter, Depends, Form, Path, UploadFile
@@ -241,3 +242,64 @@ async def get_prod_path(scan_id: int = ID()):
             raise NotFoundException(Scan)
         scan_result = ScanResult(scan)
         return scan_result.fasta("state")
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/fpath", response_class=PLAIN, status_code=OK
+)
+async def get_prod_fpath(scan_id: int = ID(), prod_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        scan_result = ScanResult(scan)
+        (
+            state_stream,
+            amino_stream,
+            codon1_stream,
+            codon2_stream,
+            codon3_stream,
+            frag1_stream,
+            frag2_stream,
+            frag3_stream,
+            frag4_stream,
+            frag5_stream,
+        ) = scan_result.path(scan_result.get_prod(prod_id))
+
+        states = textwrap.wrap(state_stream, 40, drop_whitespace=False)
+        aminos = textwrap.wrap(amino_stream, 40, drop_whitespace=False)
+        codon1 = textwrap.wrap(codon1_stream, 40, drop_whitespace=False)
+        codon2 = textwrap.wrap(codon2_stream, 40, drop_whitespace=False)
+        codon3 = textwrap.wrap(codon3_stream, 40, drop_whitespace=False)
+        frags1 = textwrap.wrap(frag1_stream, 40, drop_whitespace=False)
+        frags2 = textwrap.wrap(frag2_stream, 40, drop_whitespace=False)
+        frags3 = textwrap.wrap(frag3_stream, 40, drop_whitespace=False)
+        frags4 = textwrap.wrap(frag4_stream, 40, drop_whitespace=False)
+        frags5 = textwrap.wrap(frag5_stream, 40, drop_whitespace=False)
+
+        content = ""
+        for r0, r1, c1, c2, c3, r2, r3, r4, r5, r6 in zip(
+            states,
+            aminos,
+            codon1,
+            codon2,
+            codon3,
+            frags1,
+            frags2,
+            frags3,
+            frags4,
+            frags5,
+        ):
+            content += "state " + r0 + "\n"
+            content += "amino " + r1 + "\n"
+            content += "codon " + c1 + "\n"
+            content += "      " + c2 + "\n"
+            content += "      " + c3 + "\n"
+            content += "seq   " + r2 + "\n"
+            content += "      " + r3 + "\n"
+            content += "      " + r4 + "\n"
+            content += "      " + r5 + "\n"
+            content += "      " + r6 + "\n"
+            content += "\n"
+
+        return content

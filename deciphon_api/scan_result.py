@@ -60,6 +60,48 @@ class ScanResult:
                 return seq
         assert False
 
+    def get_prod(self, prod_id: int) -> Prod:
+        for prod in self.scan.prods:
+            if prod.id == prod_id:
+                return prod
+        assert False
+
+    def path(self, prod: Prod):
+        state_stream = []
+        amino_stream = []
+        codon1_stream = []
+        codon2_stream = []
+        codon3_stream = []
+        frag1_stream = []
+        frag2_stream = []
+        frag3_stream = []
+        frag4_stream = []
+        frag5_stream = []
+        for frag_match in prod.match.split(";"):
+            frag, state, codon, amino = frag_match.split(",")
+            state_stream.append(state[0])
+            amino_stream.append(amino)
+            codon1_stream.append(codon[0] if len(codon) > 0 else " ")
+            codon2_stream.append(codon[1] if len(codon) > 1 else " ")
+            codon3_stream.append(codon[2] if len(codon) > 2 else " ")
+            frag1_stream.append(frag[0] if len(frag) > 0 else " ")
+            frag2_stream.append(frag[1] if len(frag) > 1 else " ")
+            frag3_stream.append(frag[2] if len(frag) > 2 else " ")
+            frag4_stream.append(frag[3] if len(frag) > 3 else " ")
+            frag5_stream.append(frag[4] if len(frag) > 4 else " ")
+        return (
+            "".join(state_stream),
+            "".join(amino_stream),
+            "".join(codon1_stream),
+            "".join(codon2_stream),
+            "".join(codon3_stream),
+            "".join(frag1_stream),
+            "".join(frag2_stream),
+            "".join(frag3_stream),
+            "".join(frag4_stream),
+            "".join(frag5_stream),
+        )
+
     def _make_hits(self, prod: Prod):
         hit_start = 0
         hit_end = 0

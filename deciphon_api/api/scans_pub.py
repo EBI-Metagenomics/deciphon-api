@@ -3,6 +3,7 @@ import tempfile
 from fasta_reader import read_fasta
 from fastapi import APIRouter, Depends, Form, Path, UploadFile
 from fastapi.responses import PlainTextResponse
+from kombu import Connection, Exchange, Queue
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
@@ -53,9 +54,31 @@ async def upload_scan(
         db = session.get(DB, scan.db_id)
         if not db:
             raise NotFoundException(DB)
+
+        hmm_id = db.hmm.id
+        hmm_file = db.hmm.filename
         session.add(scan)
         session.commit()
         session.refresh(scan)
+
+        exchange = Exchange("scan", "direct", durable=True)
+        queue = Queue("scan", exchange=exchange, routing_key="scan")
+
+        with Connection("amqp://guest:guest@localhost//") as conn:
+            producer = conn.Producer(serializer="json")
+            producer.publish(
+                {
+                    "id": scan.id,
+                    "hmm_id": hmm_id,
+                    "hmm_file": hmm_file,
+                    "db_id": db_id,
+                    "db_file": db.filename,
+                },
+                exchange=exchange,
+                routing_key="scan",
+                declare=[queue],
+            )
+
         return scan.job
 
 

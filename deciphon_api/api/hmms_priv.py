@@ -49,7 +49,7 @@ async def upload_hmm(hmm_file: UploadFile = HMMFile()):
         with Connection("amqp://guest:guest@localhost//") as conn:
             producer = conn.Producer(serializer="json")
             producer.publish(
-                {"id": hmm.id, "filename": hmm.filename},
+                {"id": hmm.id, "filename": hmm.filename, "job_id": hmm.job.id},
                 exchange=exchange,
                 routing_key="hmm",
                 declare=[queue],

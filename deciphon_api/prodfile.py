@@ -19,13 +19,19 @@ class HMMERFile:
     def __init__(self, fileobj):
         self._fileobj = fileobj
 
+    # @property
+    # def sha256(self) -> str:
+    #     self._fileobj.seek(0)
+    #     h = hashlib.sha256()
+    #     while content := self._fileobj.read(BUFSIZE):
+    #         h.update(content)
+    #     return h.hexdigest()
+
     @property
-    def sha256(self) -> str:
+    def content(self):
         self._fileobj.seek(0)
-        h = hashlib.sha256()
         while content := self._fileobj.read(BUFSIZE):
-            h.update(content)
-        return h.hexdigest()
+            yield content
 
 
 class MatchFile:
@@ -71,6 +77,16 @@ class ProdFileReader:
             _prof = name.split("/", 3)[3][:-4]
             if _id == seq_id and _prof == profile:
                 return HMMERFile(self._fs.open(name, "rb"))
+        return None
+
+    def hmmer_blob(self, seq_id: int, profile: str):
+        for name in self._hmmer_names:
+            _id = int(name.split("/", 3)[2])
+            _prof = name.split("/", 3)[3][:-4]
+            if _id == seq_id and _prof == profile:
+                content = self._fs.open(name, "rb").read()
+                assert isinstance(content, bytes)
+                return content
         return None
 
     def _check_names(self):

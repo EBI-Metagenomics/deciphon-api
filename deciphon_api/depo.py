@@ -1,3 +1,5 @@
+import hashlib
+import uuid
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional, Union
@@ -8,6 +10,7 @@ from fastapi import UploadFile
 from deciphon_api.bufsize import BUFSIZE
 from deciphon_api.filehash import FileHash
 from deciphon_api.models import DB, HMM
+from deciphon_api.safe_move import safe_move
 
 __all__ = ["get_depo", "Depo", "File"]
 
@@ -36,12 +39,14 @@ class Depo:
         self._root = Path("depo").resolve()
         self._hmms = self._root / "hmms"
         self._dbs = self._root / "dbs"
-        self._prods = self._root / "prods"
+        self._blobs = self._root / "blobs"
+        self._tmpdir = self._root / "tmp"
 
         self._root.mkdir(exist_ok=True)
         self._hmms.mkdir(exist_ok=True)
         self._dbs.mkdir(exist_ok=True)
-        self._prods.mkdir(exist_ok=True)
+        self._blobs.mkdir(exist_ok=True)
+        self._tmpdir.mkdir(exist_ok=True)
 
     async def _store(self, file: UploadFile, root_dir: Path) -> File:
         filehash = FileHash()
@@ -57,6 +62,16 @@ class Depo:
     async def store_db(self, file: UploadFile) -> File:
         return await self._store(file, self._dbs)
 
+    async def store_blob(self, content: bytes) -> str:
+        m = hashlib.sha256()
+        tmpname = self._tmpdir / str(uuid.uuid4())
+        async with await open_file(tmpname, "wb") as f:
+            m.update(content)
+            await f.write(content)
+        dst = self._blobs / m.hexdigest()
+        safe_move(tmpname, dst)
+        return dst.name
+
     def _fetch(self, filename: str) -> File:
         return File(path=self._root / filename)
 
@@ -67,6 +82,9 @@ class Depo:
             return File(path=self._dbs / model.filename)
         else:
             assert False
+
+    def fetch_blob(self, sha256: str):
+        return self._blobs / sha256
 
 
 @lru_cache

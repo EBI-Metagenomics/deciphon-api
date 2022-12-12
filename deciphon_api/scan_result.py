@@ -148,3 +148,10 @@ class ScanResult:
         SeqIO.write(recs, fasta_io, "fasta")
         fasta_io.seek(0)
         return fasta_io.read()
+
+    def hmmer_targets(self):
+        for prod in self.scan.prods:
+            # get_depo().fetch()
+            prod.hmmer_sha256
+        pass
+        # h3result_targets

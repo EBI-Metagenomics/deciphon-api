@@ -1,7 +1,7 @@
 import tempfile
 
 from fasta_reader import read_fasta
-from fastapi import APIRouter, Form, Path, UploadFile
+from fastapi import APIRouter, Depends, Form, Path, UploadFile
 from fastapi.responses import PlainTextResponse
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
@@ -9,8 +9,10 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 from deciphon_api.api.files import FastaFile
 from deciphon_api.api.utils import ID
 from deciphon_api.bufsize import BUFSIZE
+from deciphon_api.depo import get_depo
 from deciphon_api.exceptions import NotFoundException
-from deciphon_api.models import DB, Job, JobType, Scan, Seq
+from deciphon_api.hmmer_result import HMMERResult
+from deciphon_api.models import DB, Job, JobType, Prod, Scan, Seq
 from deciphon_api.scan_result import ScanResult
 from deciphon_api.sched import get_sched
 
@@ -21,6 +23,11 @@ router = APIRouter()
 OK = HTTP_200_OK
 CREATED = HTTP_201_CREATED
 PLAIN = PlainTextResponse
+
+
+def get_session():
+    with Session(get_sched()) as session:
+        yield session
 
 
 @router.post("/scans/", response_model=Job, status_code=CREATED)
@@ -87,6 +94,80 @@ async def get_scan_seqs(scan_id: int = ID()):
         if not scan:
             raise NotFoundException(Scan)
         return session.exec(select(Seq).where(Seq.scan_id == scan.id)).all()
+
+
+@router.get("/scans/{scan_id}/prods", response_model=list[Prod], status_code=OK)
+async def get_scan_prods(
+    scan_id: int = ID(),
+    session: Session = Depends(get_session),
+):
+    scan = session.get(Scan, scan_id)
+    if not scan:
+        raise NotFoundException(Scan)
+    return scan.prods
+
+
+def get_hmmer_result(scan, prod_id: int):
+    if not scan:
+        raise NotFoundException(Scan)
+    for prod in scan.prods:
+        if prod.id == prod_id:
+            depo = get_depo()
+            return HMMERResult(depo.fetch_blob(prod.hmmer_sha256))
+    else:
+        raise NotFoundException(Prod)
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/hmmer/targets",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_hmmer_targets(
+    scan_id: int = ID(),
+    prod_id: int = ID(),
+    session: Session = Depends(get_session),
+):
+    return get_hmmer_result(session.get(Scan, scan_id), prod_id).targets()
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/hmmer/domains",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_hmmer_domains(
+    scan_id: int = ID(),
+    prod_id: int = ID(),
+    session: Session = Depends(get_session),
+):
+    return get_hmmer_result(session.get(Scan, scan_id), prod_id).domains()
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/hmmer/targets-table",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_hmmer_targets_table(
+    scan_id: int = ID(),
+    prod_id: int = ID(),
+    session: Session = Depends(get_session),
+):
+    return get_hmmer_result(session.get(Scan, scan_id), prod_id).targets_table()
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/hmmer/domains-table",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_hmmer_domains_table(
+    scan_id: int = ID(),
+    prod_id: int = ID(),
+    session: Session = Depends(get_session),
+):
+    return get_hmmer_result(session.get(Scan, scan_id), prod_id).domains_table()
 
 
 @router.get("/scans/{scan_id}/prods/gff", response_class=PLAIN, status_code=OK)

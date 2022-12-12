@@ -62,8 +62,8 @@ def test_next_pend(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
         del json["submission"]
 
         assert json == {
-            "id": 1,
-            "type": "hmm",
+            "id": 2,
+            "type": "scan",
             "state": "pend",
             "progress": 0,
             "error": None,
@@ -213,8 +213,8 @@ def test_get_list(
             {
                 "id": 1,
                 "type": "hmm",
-                "state": "pend",
-                "progress": 0,
+                "state": "done",
+                "progress": 100,
                 "error": None,
                 "exec_started": None,
                 "exec_ended": None,
@@ -222,8 +222,8 @@ def test_get_list(
             {
                 "id": 2,
                 "type": "hmm",
-                "state": "pend",
-                "progress": 0,
+                "state": "done",
+                "progress": 100,
                 "error": None,
                 "exec_started": None,
                 "exec_ended": None,

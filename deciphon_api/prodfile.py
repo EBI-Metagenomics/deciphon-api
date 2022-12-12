@@ -40,8 +40,8 @@ class MatchFile:
 
     def _check_header(self):
         header = self._fileobj.readline().strip()
-        if header.split("\t") != MatchFile.fields:
-            raise ValueError("Invalid match file header")
+        # if header.split("\t") != MatchFile.fields:
+        #     raise ValueError("Invalid match file header")
 
     def read_records(self):
         self._rewind()

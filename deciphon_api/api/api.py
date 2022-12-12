@@ -10,11 +10,13 @@ from deciphon_api.api import (
     jobs_pub,
     scans_priv,
     scans_pub,
+    wipe,
 )
 from deciphon_api.responses import PrettyJSONResponse
 
 router = APIRouter()
 
+router.include_router(wipe.router)
 router.include_router(dbs_priv.router)
 router.include_router(dbs_pub.router)
 router.include_router(hmms_priv.router)

@@ -7,7 +7,7 @@ from deciphon_api.api.files import DBFile
 from deciphon_api.api.utils import AUTH, ID
 from deciphon_api.depo import get_depo
 from deciphon_api.exceptions import ConflictException, NotFoundException
-from deciphon_api.models import DB, HMM
+from deciphon_api.models import DB, HMM, JobState
 from deciphon_api.sched import get_sched
 
 __all__ = ["router"]
@@ -32,16 +32,17 @@ async def delete_db(db_id: int = ID()):
 async def upload_db(db_file: UploadFile = DBFile()):
 
     hmm_filename = db_file.filename.replace(".dcp", ".hmm")
+    file = await get_depo().store_db(db_file)
+
     with Session(get_sched()) as session:
         stmt = select(HMM).where(HMM.filename == hmm_filename)
         hmm = session.exec(stmt).one_or_none()
         if not hmm:
             raise NotFoundException(HMM)
 
-    file = await get_depo().store_db(db_file)
-    db = DB(xxh3=file.xxh3_64, filename=file.name, hmm=hmm)
-
-    with Session(get_sched()) as session:
+        hmm.job.state = JobState.done
+        hmm.job.progress = 100
+        db = DB(xxh3=file.xxh3_64, filename=file.name, hmm=hmm)
         session.add(db)
         try:
             session.commit()

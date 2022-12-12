@@ -1,5 +1,6 @@
 import tempfile
 
+import sqlalchemy.exc
 from fastapi import APIRouter, Depends, UploadFile
 from sqlmodel import Session
 from starlette.status import HTTP_201_CREATED
@@ -7,8 +8,8 @@ from starlette.status import HTTP_201_CREATED
 from deciphon_api.api.files import ProdFile
 from deciphon_api.api.utils import AUTH, ID
 from deciphon_api.bufsize import BUFSIZE
-from deciphon_api.exceptions import NotFoundException
-from deciphon_api.models import Prod, Scan
+from deciphon_api.exceptions import ConflictException, NotFoundException
+from deciphon_api.models import JobState, Prod, Scan
 from deciphon_api.prodfile import ProdFileReader
 from deciphon_api.sched import get_sched
 
@@ -45,6 +46,9 @@ async def upload_prod(
         if not scan:
             raise NotFoundException(Scan)
 
+        scan.job.state = JobState.done
+        scan.job.progress = 100
+
         prod_reader = ProdFileReader(file.name)
         match_file = prod_reader.match_file()
         for match in match_file.read_records():
@@ -54,6 +58,9 @@ async def upload_prod(
             prod = Prod(**match.dict(), hmmer_sha256=hmmer_file.sha256)
             scan.prods.append(prod)
             session.add(prod)
-            session.commit()
+            try:
+                session.commit()
+            except sqlalchemy.exc.IntegrityError as e:
+                raise ConflictException(str(e.orig))
         session.refresh(scan)
         return scan.prods

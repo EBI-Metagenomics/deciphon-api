@@ -66,10 +66,14 @@ async def increment_progress(
         job = session.get(Job, job_id)
         if not job:
             raise NotFoundException(Job)
-        job.progress = min(100, job.progress + value)
-        session.add(job)
-        session.commit()
-        session.refresh(job)
+        if job.progress < 100:
+            # It is truly done (from user's point of view)
+            # when the job payload has been stored by
+            # another API call.
+            job.progress = min(99, job.progress + value)
+            session.add(job)
+            session.commit()
+            session.refresh(job)
         return job
 
 

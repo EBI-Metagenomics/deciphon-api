@@ -264,20 +264,39 @@ async def get_prod_fpath(scan_id: int = ID(), prod_id: int = ID()):
             frag4_stream,
             frag5_stream,
         ) = scan_result.path(scan_result.get_prod(prod_id))
+        (
+            hmm_cs_stream,
+            seq_cs_stream,
+            match_stream,
+            target_stream,
+            pp_stream,
+        ) = get_hmmer_result(scan, prod_id).stream()
 
-        states = textwrap.wrap(state_stream, 40, drop_whitespace=False)
-        aminos = textwrap.wrap(amino_stream, 40, drop_whitespace=False)
-        codon1 = textwrap.wrap(codon1_stream, 40, drop_whitespace=False)
-        codon2 = textwrap.wrap(codon2_stream, 40, drop_whitespace=False)
-        codon3 = textwrap.wrap(codon3_stream, 40, drop_whitespace=False)
-        frags1 = textwrap.wrap(frag1_stream, 40, drop_whitespace=False)
-        frags2 = textwrap.wrap(frag2_stream, 40, drop_whitespace=False)
-        frags3 = textwrap.wrap(frag3_stream, 40, drop_whitespace=False)
-        frags4 = textwrap.wrap(frag4_stream, 40, drop_whitespace=False)
-        frags5 = textwrap.wrap(frag5_stream, 40, drop_whitespace=False)
+        hmm_cs_stream = "  " + hmm_cs_stream + "  "
+        seq_cs_stream = "  " + seq_cs_stream + "  "
+        match_stream = "  " + match_stream + "  "
+        target_stream = "  " + target_stream + "  "
+        pp_stream = "  " + pp_stream + "  "
+
+        kwargs = {"drop_whitespace": False, "break_on_hyphens": False}
+        states = textwrap.wrap(state_stream, 99, **kwargs)
+        aminos = textwrap.wrap(amino_stream, 99, **kwargs)
+        codon1 = textwrap.wrap(codon1_stream, 99, **kwargs)
+        codon2 = textwrap.wrap(codon2_stream, 99, **kwargs)
+        codon3 = textwrap.wrap(codon3_stream, 99, **kwargs)
+        frags1 = textwrap.wrap(frag1_stream, 99, **kwargs)
+        frags2 = textwrap.wrap(frag2_stream, 99, **kwargs)
+        frags3 = textwrap.wrap(frag3_stream, 99, **kwargs)
+        frags4 = textwrap.wrap(frag4_stream, 99, **kwargs)
+        frags5 = textwrap.wrap(frag5_stream, 99, **kwargs)
+        hmm_cs = textwrap.wrap(hmm_cs_stream, 99, **kwargs)
+        seq_cs = textwrap.wrap(seq_cs_stream, 99, **kwargs)
+        match = textwrap.wrap(match_stream, 99, **kwargs)
+        target = textwrap.wrap(target_stream, 99, **kwargs)
+        pp = textwrap.wrap(pp_stream, 99, **kwargs)
 
         content = ""
-        for r0, r1, c1, c2, c3, r2, r3, r4, r5, r6 in zip(
+        for r0, r1, c1, c2, c3, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11 in zip(
             states,
             aminos,
             codon1,
@@ -288,17 +307,27 @@ async def get_prod_fpath(scan_id: int = ID(), prod_id: int = ID()):
             frags3,
             frags4,
             frags5,
+            hmm_cs,
+            seq_cs,
+            match,
+            target,
+            pp,
         ):
-            content += "state " + r0 + "\n"
-            content += "amino " + r1 + "\n"
-            content += "codon " + c1 + "\n"
-            content += "      " + c2 + "\n"
-            content += "      " + c3 + "\n"
-            content += "seq   " + r2 + "\n"
-            content += "      " + r3 + "\n"
-            content += "      " + r4 + "\n"
-            content += "      " + r5 + "\n"
-            content += "      " + r6 + "\n"
+            content += "state  " + r0 + "\n"
+            content += "amino  " + r1 + "\n"
+            content += "codon  " + c1 + "\n"
+            content += "       " + c2 + "\n"
+            content += "       " + c3 + "\n"
+            content += "seq    " + r2 + "\n"
+            content += "       " + r3 + "\n"
+            content += "       " + r4 + "\n"
+            content += "       " + r5 + "\n"
+            content += "       " + r6 + "\n"
+            content += "CS     " + r7 + "\n"
+            content += "ACC    " + r8 + "\n"
+            content += "MATCH  " + r9 + "\n"
+            content += "TARGET " + r10 + "\n"
+            content += "PP     " + r11 + "\n"
             content += "\n"
 
         return content

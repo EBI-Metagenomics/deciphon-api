@@ -1,4 +1,5 @@
 import tempfile
+from datetime import datetime
 
 import sqlalchemy.exc
 from fastapi import APIRouter, Depends, UploadFile
@@ -49,6 +50,7 @@ async def upload_prod(
 
         scan.job.state = JobState.done
         scan.job.progress = 100
+        scan.job.exec_ended = datetime.now()
 
         prod_reader = ProdFileReader(file.name)
         match_file = prod_reader.match_file()

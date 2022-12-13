@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import sqlalchemy.exc
 from fastapi import APIRouter, UploadFile
 from sqlmodel import Session, select
@@ -42,6 +44,8 @@ async def upload_db(db_file: UploadFile = DBFile()):
 
         hmm.job.state = JobState.done
         hmm.job.progress = 100
+        hmm.job.exec_ended = datetime.now()
+
         db = DB(xxh3=file.xxh3_64, filename=file.name, hmm=hmm)
         session.add(db)
         try:

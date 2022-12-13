@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 import sqlalchemy.exc
@@ -66,6 +67,27 @@ async def increment_progress(
         if not job:
             raise NotFoundException(Job)
         job.progress = min(100, job.progress + value)
+        session.add(job)
+        session.commit()
+        session.refresh(job)
+        return job
+
+
+@router.patch(
+    "/jobs/{job_id}/set-run",
+    response_model=Job,
+    status_code=OK,
+    dependencies=AUTH,
+)
+async def set_run(
+    job_id: int = ID(),
+):
+    with Session(get_sched()) as session:
+        job = session.get(Job, job_id)
+        if not job:
+            raise NotFoundException(Job)
+        job.state = JobState.run
+        job.exec_started = datetime.now()
         session.add(job)
         session.commit()
         session.refresh(job)

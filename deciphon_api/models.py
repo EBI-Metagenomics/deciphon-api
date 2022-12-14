@@ -6,6 +6,9 @@ from typing import Optional
 
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
+from deciphon_api.exceptions import NotFoundException
+from deciphon_api.hmmer_result import HMMERResult
+
 
 class JobType(Enum):
     hmm = "hmm"
@@ -75,6 +78,10 @@ class Match(SQLModel):
     __table_args__ = (UniqueConstraint("scan_id", "seq_id", "profile"),)
 
 
+def is_core_state(state: str):
+    return state.startswith("M") or state.startswith("I") or state.startswith("D")
+
+
 class Prod(Match, table=True):
     id: int = Field(default=None, primary_key=True)
 
@@ -82,6 +89,66 @@ class Prod(Match, table=True):
 
     seq: Seq = Relationship(back_populates="prod", **SINGLE)
     scan: Scan = Relationship(back_populates="prods", **SINGLE)
+
+    def _stream(self, name: str, idx: int):
+        if name == "frag":
+            name_idx = 0
+        elif name == "state":
+            name_idx = 1
+        elif name == "codon":
+            name_idx = 2
+        elif name == "amino":
+            name_idx = 3
+        else:
+            raise ValueError(f"Invalid stream name: {name}")
+
+        stream = []
+        for m in self.match.split(";"):
+            value = m.split(",")[name_idx]
+            stream.append(value[idx] if len(value) > idx else " ")
+        return "".join(stream)
+
+    def hit_bounds(self):
+        hit_start = 0
+        hit_end = 0
+        hit_bounds = []
+        offset = 0
+        hit_start_found = False
+        hit_end_found = False
+        for m in self.match.split(";"):
+            frag, state = m.split(",")[:2]
+            if not hit_start_found and is_core_state(state):
+                hit_start = offset
+                hit_start_found = True
+
+            if hit_start_found and not is_core_state(state):
+                hit_end = offset + len(frag)
+                hit_end_found = True
+
+            if hit_end_found:
+                hit_bounds.append((hit_start, hit_end))
+                hit_start_found = False
+                hit_end_found = False
+
+            offset += len(frag)
+        return hit_bounds
+
+    def frag_stream(self, idx: int):
+        return self._stream("frag", idx)
+
+    def state_stream(self, idx: int):
+        return self._stream("state", idx)
+
+    def codon_stream(self, idx: int):
+        return self._stream("codon", idx)
+
+    def amino_stream(self, idx: int):
+        return self._stream("amino", idx)
+
+    def hmmer(self):
+        from deciphon_api.depo import get_depo
+
+        return HMMERResult(get_depo().fetch_blob(self.hmmer_sha256))
 
 
 class Seq(SQLModel, table=True):
@@ -110,6 +177,12 @@ class Scan(SQLModel, table=True):
 
     seqs: list[Seq] = Relationship(back_populates="scan")
     prods: list[Prod] = Relationship(back_populates="scan")
+
+    def get_prod(self, prod_id: int):
+        for prod in self.prods:
+            if prod.id == prod_id:
+                return prod
+        raise NotFoundException(Prod)
 
 
 class DB(SQLModel, table=True):

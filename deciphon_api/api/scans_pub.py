@@ -9,7 +9,7 @@ from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.files import FastaFile
-from deciphon_api.api.utils import ID
+from deciphon_api.api.utils import ID, IDX
 from deciphon_api.bufsize import BUFSIZE
 from deciphon_api.depo import get_depo
 from deciphon_api.exceptions import NotFoundException
@@ -241,6 +241,135 @@ async def get_prod_path(scan_id: int = ID()):
             raise NotFoundException(Scan)
         scan_result = ScanResult(scan)
         return scan_result.fasta("state")
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/streams/frag/{idx}",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_frag_stream(
+    scan_id: int = ID(), prod_id: int = ID(), idx: int = IDX()
+):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        return scan.get_prod(prod_id).frag_stream(idx)
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/streams/state/{idx}",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_state_stream(
+    scan_id: int = ID(), prod_id: int = ID(), idx: int = IDX()
+):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        return scan.get_prod(prod_id).state_stream(idx)
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/streams/codon/{idx}",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_codon_stream(
+    scan_id: int = ID(), prod_id: int = ID(), idx: int = IDX()
+):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        return scan.get_prod(prod_id).codon_stream(idx)
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/streams/amino/{idx}",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_amino_stream(
+    scan_id: int = ID(), prod_id: int = ID(), idx: int = IDX()
+):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        return scan.get_prod(prod_id).amino_stream(idx)
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/streams/hmmer/hmm-cs",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_hmmer_cs_stream(scan_id: int = ID(), prod_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        return scan.get_prod(prod_id).hmmer().hmm_cs_stream()
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/streams/hmmer/seq-cs",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_seq_cs_stream(scan_id: int = ID(), prod_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        return scan.get_prod(prod_id).hmmer().seq_cs_stream()
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/streams/hmmer/match",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_match_stream(scan_id: int = ID(), prod_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        return scan.get_prod(prod_id).hmmer().match_stream()
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/streams/hmmer/target",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_target_stream(scan_id: int = ID(), prod_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        prod = scan.get_prod(prod_id)
+        hit_bounds = prod.hit_bounds()
+        start = hit_bounds[0][0]
+        print(start)
+        return " " * start + prod.hmmer().target_stream()
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/streams/hmmer/pp",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_pp_stream(scan_id: int = ID(), prod_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        return scan.get_prod(prod_id).hmmer().pp_stream()
 
 
 @router.get(

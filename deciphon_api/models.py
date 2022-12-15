@@ -7,8 +7,8 @@ from typing import Optional
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 from deciphon_api.exceptions import NotFoundException
-from deciphon_api.hmm_path import Path as HMMPath
-from deciphon_api.hmmer_path import Path as HMMERPath
+from deciphon_api.hmm_path import HMMPath as HMMPath
+from deciphon_api.hmmer_path import HMMERPath as HMMERPath
 from deciphon_api.hmmer_result import HMMERResult
 
 

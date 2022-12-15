@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Iterable
 
-from deciphon_api.coordinates import Coord, Interval, Pixel
-
-__all__ = ["Path", "Step", "Hit"]
+__all__ = ["HMMPath", "HMMStep", "HMMSegment"]
 
 
 @dataclasses.dataclass
-class Step:
+class HMMStep:
     frag: str
     state: str
     codon: str
@@ -37,61 +36,81 @@ class Step:
         return self.frag[level]
 
 
-@dataclasses.dataclass
-class Hit:
-    path: Path
-    interval: Interval
+class HMMSegment:
+    def __init__(self, path: HMMPath, start: int, end: int, hit: bool):
+        self._path = path
+        self._start = start
+        self._end = end
+        self._hit = hit
+
+    @property
+    def hit(self):
+        return self._hit
+
+    @property
+    def path(self) -> HMMPath:
+        path = self._path
+        start = self._start
+        end = self._end
+        return HMMPath(x for i, x in enumerate(path) if start <= i and i < end)
+
+    def __str__(self):
+        return f"{self.path}"
 
 
 def is_core_state(state: str):
     return state.startswith("M") or state.startswith("I") or state.startswith("D")
 
 
-class Path:
-    def __init__(self, payload: str, coord: Coord | None = None):
-        self.steps = [Step(*m.split(",")) for m in payload.split(";")]
-        self.coord = coord if coord else Coord(len(self.steps))
+class HMMPath:
+    def __init__(self, steps: Iterable[HMMStep]):
+        self._steps = list(steps)
 
-    def hits(self):
-        hit_start = 0
-        hit_end = 0
-        hit_start_found = False
-        hit_end_found = False
+    @classmethod
+    def make(cls, payload: str):
+        steps = [HMMStep(*m.split(",")) for m in payload.split(";")]
+        return cls(steps)
 
-        for i, x in enumerate(self.steps):
+    def segments(self):
+        last = 0
+        hit = False
+
+        for i, x in enumerate(self._steps):
             state = x.get_state()
 
-            if not hit_start_found and is_core_state(state):
-                hit_start = i
-                hit_start_found = True
+            if not hit and is_core_state(state):
+                yield HMMSegment(self, last, i, hit)
+                last = i
+                hit = True
+            elif hit and not is_core_state(state):
+                yield HMMSegment(self, last, i, hit)
+                last = i
+                hit = False
 
-            if hit_start_found and not is_core_state(state):
-                hit_end = i
-                hit_end_found = True
+        yield HMMSegment(self, last, len(self._steps), False)
 
-            if hit_end_found:
-                yield Hit(self, self.coord.make_interval(hit_start, hit_end))
-                hit_start_found = False
-                hit_end_found = False
+    def state_stream(self) -> str:
+        arr = bytearray()
+        for x in self._steps:
+            arr.append(ord(x.get_state()[0]))
+        return arr.decode()
 
-    def state_pixels(self):
-        for i, x in enumerate(self.steps):
-            yield Pixel(self.coord.make_point(i), x.get_state())
+    def amino_stream(self) -> str:
+        arr = bytearray()
+        for x in self._steps:
+            y = ord(x.get_amino()) if x.has_amino() else ord(" ")
+            arr.append(y)
+        return arr.decode()
 
-    def target_pixels(self, level: int):
-        for i, x in enumerate(self.steps):
-            if not x.has_frag(level):
-                continue
-            yield Pixel(self.coord.make_point(i), x.get_frag(level))
+    def __len__(self):
+        return len(self._steps)
 
-    def codon_pixels(self, level: int):
-        for i, x in enumerate(self.steps):
-            if not x.has_codon():
-                continue
-            yield Pixel(self.coord.make_point(i), x.get_codon()[level])
+    def __getitem__(self, idx: int):
+        return self._steps[idx]
 
-    def amino_pixels(self):
-        for i, x in enumerate(self.steps):
-            if not x.has_amino():
-                continue
-            yield Pixel(self.coord.make_point(i), x.get_amino())
+    def __iter__(self):
+        return iter(self._steps)
+
+    def __str__(self):
+        txt = ", ".join((str(x) for x in self._steps))
+        return f"HMMPath({txt})"

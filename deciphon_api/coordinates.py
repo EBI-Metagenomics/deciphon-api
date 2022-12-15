@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Iterable
 
-__all__ = ["Coord", "Interval", "Point", "Viewport", "Pixel"]
+__all__ = ["Coord", "Interval", "Point", "Viewport", "Pixel", "PixelList", "PointList"]
 
 
 def common_coord_ancestor(a: Coord, b: Coord):
@@ -162,10 +162,32 @@ class Point:
         return f"[{self.pos}]"
 
 
+class PointList:
+    def __init__(self, points: Iterable[Point]):
+        self._points = list(points)
+
+    def __getitem__(self, idx) -> Point:
+        return self._points[idx]
+
+    def __str__(self):
+        return ", ".join(str(x) for x in self)
+
+
 @dataclasses.dataclass
 class Pixel:
     point: Point
     char: str
+
+
+class PixelList:
+    def __init__(self, pixels: Iterable[Pixel]):
+        self._pixels = list(pixels)
+
+    def __getitem__(self, idx) -> Pixel:
+        return self._pixels[idx]
+
+    def __str__(self):
+        return ", ".join(str(x) for x in self)
 
 
 class Viewport:

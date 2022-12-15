@@ -7,6 +7,8 @@ from typing import Optional
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 from deciphon_api.exceptions import NotFoundException
+from deciphon_api.hmm_path import Path as HMMPath
+from deciphon_api.hmmer_path import Path as HMMERPath
 from deciphon_api.hmmer_result import HMMERResult
 
 
@@ -149,6 +151,25 @@ class Prod(Match, table=True):
         from deciphon_api.depo import get_depo
 
         return HMMERResult(get_depo().fetch_blob(self.hmmer_sha256))
+
+    def hmm_path(self):
+        return HMMPath(self.match)
+
+    def hmmer_path(self, hmm_path):
+        from io import StringIO
+        from subprocess import check_output
+
+        from deciphon_api.depo import get_depo
+
+        BIN = "/Users/horta/code/deciphon-api/deciphon_api/h3result-mac"
+
+        coord = next(hmm_path.hits()).interval.as_coord()
+
+        output = check_output(
+            [BIN, "--domains", str(get_depo().fetch_blob(self.hmmer_sha256))]
+        )
+        f = StringIO(output.decode())
+        return HMMERPath(f, coord)
 
 
 class Seq(SQLModel, table=True):

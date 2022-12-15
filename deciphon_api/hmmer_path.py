@@ -14,7 +14,7 @@ class Step:
     target_consensus: str
     match: str
     target: str
-    accuracy: str
+    score: str
 
 
 def reach_header_line(payload: TextIOBase):
@@ -66,10 +66,10 @@ def stepit(payload: TextIOBase):
         row = next(i)
         last = row.rfind(" ")
         assert row[last:].strip() == "PP"
-        accuracy = row[:last].strip()
+        score = row[:last].strip()
 
-        assert len(hmm_cs) == len(tgt_cs) == len(match) == len(tgt) == len(accuracy)
-        for x in zip(hmm_cs, tgt_cs, match, tgt, accuracy):
+        assert len(hmm_cs) == len(tgt_cs) == len(match) == len(tgt) == len(score)
+        for x in zip(hmm_cs, tgt_cs, match, tgt, score):
             yield Step(*x)
 
 
@@ -94,5 +94,5 @@ class Path:
     def target_pixels(self):
         return self._pixels("target")
 
-    def accuracy_pixels(self):
-        return self._pixels("accuracy")
+    def score_pixels(self):
+        return self._pixels("score")

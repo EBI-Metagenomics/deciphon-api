@@ -1,42 +1,70 @@
 from __future__ import annotations
 
 import dataclasses
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from typing import Iterator
 
 __all__ = ["HMMPath", "HMMStep", "HMMSegment"]
 
 
+def steps_string(steps: Iterable[HMMStep]):
+    return ", ".join((str(x) for x in steps))
+
+
 @dataclasses.dataclass
 class HMMStep:
-    frag: str
+    query: str
     state: str
     codon: str
     amino: str
 
-    def get_state(self):
-        return self.state
+    def has_query(self, level: int):
+        return len(self.query) > level
 
     def has_codon(self):
         assert len(self.codon) == 0 or len(self.codon) == 3
         return len(self.codon) > 0
 
-    def get_codon(self):
-        return self.codon
-
     def has_amino(self):
         return len(self.amino) > 0
 
-    def get_amino(self):
-        return self.amino[0]
 
-    def has_frag(self, level: int):
-        return len(self.frag) > level
+class HMMPathRead(ABC):
+    @abstractmethod
+    def query_stream(self, level: int) -> str:
+        pass
 
-    def get_frag(self, level: int):
-        return self.frag[level]
+    @abstractmethod
+    def state_stream(self) -> str:
+        pass
+
+    @abstractmethod
+    def codon_stream(self, level: int) -> str:
+        pass
+
+    @abstractmethod
+    def amino_stream(self) -> str:
+        pass
+
+    @abstractmethod
+    def __len__(self) -> int:
+        pass
+
+    @abstractmethod
+    def __getitem__(self, idx: int) -> HMMStep:
+        pass
+
+    @abstractmethod
+    def __iter__(self) -> Iterator[HMMStep]:
+        pass
+
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
 
 
-class HMMSegment:
+class HMMSegment(HMMPathRead):
     def __init__(self, path: HMMPath, start: int, end: int, hit: bool):
         self._path = path
         self._start = start
@@ -47,22 +75,39 @@ class HMMSegment:
     def hit(self):
         return self._hit
 
-    @property
-    def path(self) -> HMMPath:
+    def query_stream(self, level: int) -> str:
+        return HMMPath(iter(self)).query_stream(level)
+
+    def state_stream(self) -> str:
+        return HMMPath(iter(self)).state_stream()
+
+    def codon_stream(self, level: int) -> str:
+        return HMMPath(iter(self)).codon_stream(level)
+
+    def amino_stream(self) -> str:
+        return HMMPath(iter(self)).amino_stream()
+
+    def __len__(self) -> int:
+        return len(list(self))
+
+    def __getitem__(self, idx: int) -> HMMStep:
+        return list(self)[idx]
+
+    def __iter__(self) -> Iterator[HMMStep]:
         path = self._path
         start = self._start
         end = self._end
-        return HMMPath(x for i, x in enumerate(path) if start <= i and i < end)
+        return iter(x for i, x in enumerate(path) if start <= i and i < end)
 
     def __str__(self):
-        return f"{self.path}"
+        return f"HMMPath({steps_string(iter(self))})"
 
 
 def is_core_state(state: str):
     return state.startswith("M") or state.startswith("I") or state.startswith("D")
 
 
-class HMMPath:
+class HMMPath(HMMPathRead):
     def __init__(self, steps: Iterable[HMMStep]):
         self._steps = list(steps)
 
@@ -76,7 +121,7 @@ class HMMPath:
         hit = False
 
         for i, x in enumerate(self._steps):
-            state = x.get_state()
+            state = x.state
 
             if not hit and is_core_state(state):
                 yield HMMSegment(self, last, i, hit)
@@ -89,16 +134,30 @@ class HMMPath:
 
         yield HMMSegment(self, last, len(self._steps), False)
 
+    def query_stream(self, level: int) -> str:
+        arr = bytearray()
+        for x in self._steps:
+            y = ord(x.query[level]) if x.has_query(level) else ord(" ")
+            arr.append(y)
+        return arr.decode()
+
     def state_stream(self) -> str:
         arr = bytearray()
         for x in self._steps:
-            arr.append(ord(x.get_state()[0]))
+            arr.append(ord(x.state[0]))
+        return arr.decode()
+
+    def codon_stream(self, level: int) -> str:
+        arr = bytearray()
+        for x in self._steps:
+            y = ord(x.codon[level]) if x.has_codon() else ord(" ")
+            arr.append(y)
         return arr.decode()
 
     def amino_stream(self) -> str:
         arr = bytearray()
         for x in self._steps:
-            y = ord(x.get_amino()) if x.has_amino() else ord(" ")
+            y = ord(x.amino[0]) if x.has_amino() else ord(" ")
             arr.append(y)
         return arr.decode()
 
@@ -112,5 +171,4 @@ class HMMPath:
         return iter(self._steps)
 
     def __str__(self):
-        txt = ", ".join((str(x) for x in self._steps))
-        return f"HMMPath({txt})"
+        return f"HMMPath({steps_string(self._steps)})"

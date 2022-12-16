@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Iterable
-from io import TextIOBase
+
+from deciphon_api.liner import Liner
 
 __all__ = ["HMMERPath", "HMMERStep"]
 
@@ -20,8 +21,8 @@ def is_header(row: str):
     return row.replace(" ", "").startswith("==")
 
 
-def reach_header_line(payload: TextIOBase):
-    for row in payload:
+def reach_header_line(data: Liner):
+    for row in data:
         row = row.strip()
         if len(row) == 0:
             continue
@@ -29,16 +30,16 @@ def reach_header_line(payload: TextIOBase):
             return
 
 
-def rowit(payload: TextIOBase):
-    for row in payload:
+def rowit(data: Liner):
+    for row in data:
         row = row.strip()
         if len(row) == 0:
             continue
         yield row
 
 
-def stepit(payload: TextIOBase):
-    i = rowit(payload)
+def stepit(data: Liner):
+    i = rowit(data)
     while True:
         try:
             row = next(i)
@@ -78,18 +79,18 @@ def stepit(payload: TextIOBase):
             yield HMMERStep(*x)
 
 
-def pathit(payload: TextIOBase):
-    reach_header_line(payload)
+def pathit(data: Liner):
+    reach_header_line(data)
 
     while True:
-        y = [x for x in stepit(payload)]
+        y = [x for x in stepit(data)]
         if len(y) == 0:
             break
         yield HMMERPath(y)
 
 
-def make_hmmer_paths(payload: TextIOBase):
-    return [x for x in pathit(payload)]
+def make_hmmer_paths(data: Liner):
+    return [x for x in pathit(data)]
 
 
 class HMMERPath:
@@ -102,7 +103,7 @@ class HMMERPath:
             arr.append(ord(x.hmm_cs))
         return arr.decode()
 
-    def target_cs_stream(self):
+    def query_cs_stream(self):
         arr = bytearray()
         for x in self._steps:
             arr.append(ord(x.target_cs))
@@ -114,7 +115,7 @@ class HMMERPath:
             arr.append(ord(x.match))
         return arr.decode()
 
-    def target_stream(self):
+    def query_stream(self):
         arr = bytearray()
         for x in self._steps:
             arr.append(ord(x.target))

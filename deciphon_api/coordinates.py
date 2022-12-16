@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import dataclasses
 from collections.abc import Iterable
 
-__all__ = ["Coord", "Interval", "Point", "Viewport", "Pixel", "PixelList", "PointList"]
+__all__ = ["Coord", "Interval", "Point", "PointList"]
 
 
 def common_coord_ancestor(a: Coord, b: Coord):
@@ -171,39 +170,3 @@ class PointList:
 
     def __str__(self):
         return ", ".join(str(x) for x in self)
-
-
-@dataclasses.dataclass
-class Pixel:
-    point: Point
-    char: str
-
-
-class PixelList:
-    def __init__(self, pixels: Iterable[Pixel]):
-        self._pixels = list(pixels)
-
-    def __getitem__(self, idx) -> Pixel:
-        return self._pixels[idx]
-
-    def __str__(self):
-        return ", ".join(str(x) for x in self)
-
-
-class Viewport:
-    def __init__(self, coord: Coord, padding=b" "):
-        self.coord = coord
-        assert len(padding) == 1
-        self._padding = padding
-
-    def cut(self, interval: Interval):
-        interval = interval.project(self.coord)
-        return Viewport(interval.as_coord(), self._padding)
-
-    def display(self, pixels: Iterable[Pixel]) -> str:
-        arr = bytearray(self._padding) * self.coord.length
-        interval = self.coord.as_interval()
-        for x in pixels:
-            if interval.has(x.point):
-                arr[x.point.project(self.coord).pos] = ord(x.char[0])
-        return arr.decode()

@@ -1,31 +1,17 @@
 from __future__ import annotations
 
-import dataclasses
-from io import TextIOBase
+from deciphon_api.hmmer_path import HMMERPath, HMMERStep
+from deciphon_api.liner import Liner
 
-__all__ = ["DomainStep", "DomainHit", "make_domain_hits"]
-
-
-@dataclasses.dataclass
-class DomainStep:
-    hmm_consensus: str
-    target_consensus: str
-    match: str
-    target: str
-    score: str
-
-
-@dataclasses.dataclass
-class DomainHit:
-    steps: list[DomainStep]
+__all__ = ["read_hmmer_paths"]
 
 
 def is_header(row: str):
     return row.replace(" ", "").startswith("==")
 
 
-def reach_header_line(payload: TextIOBase):
-    for row in payload:
+def reach_header_line(data: Liner):
+    for row in data:
         row = row.strip()
         if len(row) == 0:
             continue
@@ -33,16 +19,16 @@ def reach_header_line(payload: TextIOBase):
             return
 
 
-def rowit(payload: TextIOBase):
-    for row in payload:
+def rowit(data: Liner):
+    for row in data:
         row = row.strip()
         if len(row) == 0:
             continue
         yield row
 
 
-def stepit(payload: TextIOBase):
-    i = rowit(payload)
+def stepit(data: Liner):
+    i = rowit(data)
     while True:
         try:
             row = next(i)
@@ -79,18 +65,18 @@ def stepit(payload: TextIOBase):
 
         assert len(hmm_cs) == len(tgt_cs) == len(match) == len(tgt) == len(score)
         for x in zip(hmm_cs, tgt_cs, match, tgt, score):
-            yield DomainStep(*x)
+            yield HMMERStep(*x)
 
 
-def hitit(payload: TextIOBase):
-    reach_header_line(payload)
+def pathit(data: Liner):
+    reach_header_line(data)
 
     while True:
-        y = [x for x in stepit(payload)]
+        y = [x for x in stepit(data)]
         if len(y) == 0:
             break
-        yield DomainHit(y)
+        yield HMMERPath(y)
 
 
-def make_domain_hits(payload: TextIOBase) -> list[DomainHit]:
-    return [x for x in hitit(payload)]
+def read_hmmer_paths(data: Liner):
+    return [x for x in pathit(data)]

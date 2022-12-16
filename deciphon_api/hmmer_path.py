@@ -11,9 +11,9 @@ __all__ = ["HMMERPath", "HMMERStep"]
 @dataclasses.dataclass
 class HMMERStep:
     hmm_cs: str
-    target_cs: str
+    query_cs: str
     match: str
-    target: str
+    query: str
     score: str
 
 
@@ -106,7 +106,7 @@ class HMMERPath:
     def query_cs_stream(self):
         arr = bytearray()
         for x in self._steps:
-            arr.append(ord(x.target_cs))
+            arr.append(ord(x.query_cs))
         return arr.decode()
 
     def match_stream(self):
@@ -118,7 +118,7 @@ class HMMERPath:
     def query_stream(self):
         arr = bytearray()
         for x in self._steps:
-            arr.append(ord(x.target))
+            arr.append(ord(x.query))
         return arr.decode()
 
     def score_stream(self):

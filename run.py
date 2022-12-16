@@ -1,80 +1,176 @@
-import sys
+import dataclasses
+from collections.abc import Iterable
 
-from deciphon_api.coordinates import Coord, Interval, Point, Viewport
-from deciphon_api.hmm_path import HMMPath
-from deciphon_api.hmmer_path import make_hmmer_paths
+from deciphon_api.coordinates import Coord, Pixel, PixelList, Point, Viewport, Interval
+from deciphon_api.hmm_path import HMMPath, HMMStep
+from deciphon_api.hmmer_path import HMMERStep, make_hmmer_paths
+from deciphon_api.liner import mkliner
+from deciphon_api.right_join import RightJoin
 
-# ab = Coord(10)
-# a1 = ab.make_interval(1, 7).as_coord()
-# a2 = a1.make_interval(2, 5).as_coord()
-# b1 = ab.make_interval(3, 10).as_coord()
-# b2 = b1.make_interval(1, 7).as_coord()
 
-# print(ab.make_point(5).project(ab).pos)
-# print(a1.make_point(5).project(ab).pos)
-# print(a1.make_point(5).project(b1).pos)
-# print(a1.make_point(5).project(b2).pos)
+@dataclasses.dataclass
+class Step:
+    hmm: HMMStep | None
+    hmmer: HMMERStep | None
 
-# print(a2.make_point(2).project(ab).pos)
-# print(a2.make_point(2).project(b1).pos)
-# print(a2.make_point(2).project(b2).pos)
 
-# print(c00.make_point(5).project(c00).pos)
-# print(c00.make_point(5).project(c01).pos)
+class Path:
+    def __init__(self, steps: Iterable[Step]):
+        self._steps = list(steps)
+
 
 hmm = HMMPath.make(open("match.txt", "r").read().strip())
-amino_stream = hmm.amino_stream()
-# print(amino_stream)
-segments = list(hmm.segments())
-# print(segments[0].path.amino_stream())
-print(segments[1].path.state_stream())
-print(segments[1].path.amino_stream())
-# print(segments[2].path.amino_stream())
-# print(segments[3].path.amino_stream())
-# print(segments[4].path.amino_stream())
 
-# coord = hmm.coord
-# pixels = hmm.amino_pixels()
+# query_streams = [hmm.query_stream(i) for i in range(5)]
+# state_stream = hmm.state_stream()
+# codon_streams = [hmm.codon_stream(i) for i in range(3)]
+# amino_stream = hmm.amino_stream()
+
+segs = list(hmm.segments())
+hits = [i for i in segs if i.hit]
+
+hmmers = make_hmmer_paths(mkliner(path="domains.txt"))
+
+
+class Checkpoint:
+    def __init__(self, amino_stream: str, hmmer_match_stream: str):
+        self.amino = amino_stream
+        self.match = hmmer_match_stream
+
+    def __call__(self, i: int, j: int) -> bool:
+        return self.amino[i] != " " and self.match[j] == "-"
+
+
+padding = "#"
+assert len(hits) == len(hmmers)
+
+rjs = []
+for hit, hmmer in zip(hits, hmmers):
+    x = hit.amino_stream()
+    y = hmmer.match_stream()
+    rjs.append(RightJoin(len(x), len(y), Checkpoint(x, y)))
+
+size = 0
+hmmerit = iter(hmmers)
+rjit = iter(rjs)
+for seg in segs:
+    if not seg.hit:
+        size += len(seg)
+        continue
+
+    hit = seg
+    hmmer = next(hmmerit)
+    rj = next(rjit)
+    size += rj.size
+
+print(size)
+
+steps = [Step(None, None) for _ in range(size)]
+
+hmmerit = iter(hmmers)
+rjit = iter(rjs)
+idx = 0
+bounds = [0]
+for seg in segs:
+    if not seg.hit:
+        # for x in seg:
+        #     state.append()
+        #     pass
+        for y in seg:
+            steps[idx].hmm = y
+            idx += 1
+        bounds.append(idx)
+        continue
+
+    hmmstepit = iter(seg)
+    hmmerstepit = iter(next(hmmerit))
+    rj = next(rjit)
+    for li, ri in zip(rj.left, rj.right):
+        if li:
+            steps[idx].hmm = next(hmmstepit)
+        if ri:
+            steps[idx].hmmer = next(hmmerstepit)
+        idx += 1
+    bounds.append(idx)
+
+#     state += "".join(rj.left_expand(iter(hit.state_stream()), padding))
+#     rj.left_expand(iter(hit.query_stream(0)), padding)
+#     rj.left_expand(iter(hit.query_stream(1)), padding)
+#     rj.left_expand(iter(hit.query_stream(2)), padding)
+#     rj.left_expand(iter(hit.query_stream(3)), padding)
+#     rj.left_expand(iter(hit.query_stream(4)), padding)
+#     amino += "".join(rj.left_expand(iter(hit.amino_stream()), padding))
+#     rj.left_expand(iter(hit.codon_stream(0)), padding)
+#     rj.left_expand(iter(hit.codon_stream(1)), padding)
+#     rj.left_expand(iter(hit.codon_stream(2)), padding)
 #
-# hits = list(hmm.hits())
-hmmers = make_hmmer_paths(open("domains.txt", "r"))
-# print(len(hmmers[0]))
-# print(len(hmmers[1]))
+#     rj.right_expand(iter(hmmer.hmm_cs_stream()), padding)
+#     rj.right_expand(iter(hmmer.query_cs_stream()), padding)
+#     rj.right_expand(iter(hmmer.query_stream()), padding)
+#     rj.right_expand(iter(hmmer.match_stream()), padding)
+#     rj.right_expand(iter(hmmer.score_stream()), padding)
 
-print(hmmers[0].target_cs_stream())
-print(hmmers[0].match_stream())
-print(hmmers[0].target_stream())
 
-hmm_items = []
-hmmer_items = []
-# for x, y in zip(segments[1].path.amino_stream(), hmmers[0].match_stream()):
-i = 0
-j = 0
-x = segments[1].path.amino_stream()
-y = hmmers[0].match_stream()
-while i < len(x) and j < len(y):
-    if x[i] != " " and y[j] == "-":
-        hmm_items.append("#")
-        j += 1
-    else:
-        hmm_items.append(x[i])
-        hmmer_items.append(y[j])
-        i += 1
-        j += 1
+class Segment:
+    def __init__(self, path: Path, start: int, end: int, hit: bool):
+        self._path = path
+        self._start = start
+        self._end = end
+        self._hit = hit
 
-while i < len(x):
-    hmm_items.append(x[i])
-    hmmer_items.append("#")
-    i += 1
 
-while j < len(y):
-    hmm_items.append("#")
-    hmmer_items.append(y[j])
-    j += 1
+coord = Coord(size)
+intervals = [Interval(coord, bounds[i], bounds[i+ 1]) for i in range(len(bounds) - 1)]
+interval = intervals[4]
+viewport = Viewport(coord)
 
-print()
-print("".join(hmm_items))
-print("".join(hmmer_items))
+def mkchar_state(step: Step):
+    if step.hmm:
+        return step.hmm.state[0]
+    return "^"
+pixels = [Pixel(Point(coord, i), mkchar_state(s)) for i, s in enumerate(steps)]
+print(viewport.cut(interval).display(pixels))
+
+def mkchar_amino(step: Step):
+    if step.hmm:
+        if step.hmm.has_amino():
+            return step.hmm.amino
+    return "^"
+pixels = [Pixel(Point(coord, i), mkchar_amino(s)) for i, s in enumerate(steps)]
+print(viewport.cut(interval).display(pixels))
+
+def mkchar_match(step: Step):
+    if step.hmmer:
+        return step.hmmer.match
+    return "^"
+pixels = [Pixel(Point(coord, i), mkchar_match(s)) for i, s in enumerate(steps)]
+print(viewport.cut(interval).display(pixels))
+
+# print(bounds)
+# path = Path(steps)
+
+# gsegs = []
+# start = 0
+# ishit = False
+# for end in bounds + [len(steps)]:
+#     gsegs.append(Segment(path, start, end, ishit))
+#     ishit = False if ishit else False
+
+# print(gsegs[0])
+# for s in gsegs[0]._path._steps:
+#     print(s)
+
+# for s in gsegs[1]._path._steps:
+#     print(s)
+
+# hits[0].amino_stream
+# print(u[0][0])
+# print(u[0][1])
+
+# print()
+# print("".join(hmm_items))
+# print("".join(hmmer_items))
+
 #
 # hit = hits[0]
 # dhit = dhits[0]

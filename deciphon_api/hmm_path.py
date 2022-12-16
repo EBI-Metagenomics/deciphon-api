@@ -88,7 +88,7 @@ class HMMSegment(HMMPathRead):
         return HMMPath(iter(self)).amino_stream()
 
     def __len__(self) -> int:
-        return len(list(self))
+        return sum([1 for _ in self])
 
     def __getitem__(self, idx: int) -> HMMStep:
         return list(self)[idx]

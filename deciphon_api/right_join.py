@@ -39,8 +39,22 @@ class RightJoin:
             self._b.append(True)
             j += 1
 
+        assert len(self._a) == len(self._b)
+
     def left_expand(self, items: Iterator[Any], padding):
         return expand(self._a, items, padding)
 
     def right_expand(self, items: Iterator[Any], padding):
         return expand(self._b, items, padding)
+
+    @property
+    def left(self) -> list[bool]:
+        return self._a
+
+    @property
+    def right(self) -> list[bool]:
+        return self._b
+
+    @property
+    def size(self) -> int:
+        return len(self._a)

@@ -1,18 +1,42 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from enum import Enum
+
+from pydantic import BaseModel
 
 from deciphon_api.coord_path import CStep
 from deciphon_api.viewport import Pixel
 
-__all__ = ["CPainter"]
+__all__ = ["Painter"]
 
 
-class CPainter:
+class StreamName(str, Enum):
+    AMINO = "amino"
+    CODON = "codon"
+    QUERY = "query"
+    STATE = "state"
+    H3HMM_CS = "h3hmm_cs"
+    H3QUERY_CS = "h3query_cs"
+    H3MATCH = "h3match"
+    H3QUERY = "h3query"
+    H3SCORE = "h3score"
+
+
+class Stream(BaseModel):
+    name: StreamName
+    level: int | None = None
+
+
+class Painter:
     def __init__(self, blank=" "):
         self._blank = blank
 
-    def amino(self, steps: Iterable[CStep]) -> list[Pixel]:
+    def draw(self, stream: Stream, steps: Iterable[CStep]) -> list[Pixel]:
+        return getattr(self, stream.name.value)(steps, stream.level)
+
+    def amino(self, steps: Iterable[CStep], level: int | None = None) -> list[Pixel]:
+        assert not level or level == 0
         return list(draw_amino(steps, self._blank))
 
     def codon(self, steps: Iterable[CStep], level: int) -> list[Pixel]:
@@ -21,23 +45,31 @@ class CPainter:
     def query(self, steps: Iterable[CStep], level: int) -> list[Pixel]:
         return list(draw_query(steps, level, self._blank))
 
-    def state(self, steps: Iterable[CStep]) -> list[Pixel]:
+    def state(self, steps: Iterable[CStep], level: int | None = None) -> list[Pixel]:
+        assert not level or level == 0
         return list(draw_state(steps, self._blank))
 
-    def hmmer_hmm_cs(self, steps: Iterable[CStep]) -> list[Pixel]:
-        return list(draw_hmmer_hmm_cs(steps, self._blank))
+    def h3hmm_cs(self, steps: Iterable[CStep], level: int | None = None) -> list[Pixel]:
+        assert not level or level == 0
+        return list(draw_h3hmm_cs(steps, self._blank))
 
-    def hmmer_query_cs(self, steps: Iterable[CStep]) -> list[Pixel]:
-        return list(draw_hmmer_query_cs(steps, self._blank))
+    def h3query_cs(
+        self, steps: Iterable[CStep], level: int | None = None
+    ) -> list[Pixel]:
+        assert not level or level == 0
+        return list(draw_h3query_cs(steps, self._blank))
 
-    def hmmer_match(self, steps: Iterable[CStep]) -> list[Pixel]:
-        return list(draw_hmmer_match(steps, self._blank))
+    def h3match(self, steps: Iterable[CStep], level: int | None = None) -> list[Pixel]:
+        assert not level or level == 0
+        return list(draw_h3match(steps, self._blank))
 
-    def hmmer_query(self, steps: Iterable[CStep]) -> list[Pixel]:
-        return list(draw_hmmer_query(steps, self._blank))
+    def h3query(self, steps: Iterable[CStep], level: int | None = None) -> list[Pixel]:
+        assert not level or level == 0
+        return list(draw_h3query(steps, self._blank))
 
-    def hmmer_score(self, steps: Iterable[CStep]) -> list[Pixel]:
-        return list(draw_hmmer_score(steps, self._blank))
+    def h3score(self, steps: Iterable[CStep], level: int | None = None) -> list[Pixel]:
+        assert not level or level == 0
+        return list(draw_h3score(steps, self._blank))
 
 
 def draw_amino(steps: Iterable[CStep], blank: str):
@@ -72,7 +104,7 @@ def draw_state(steps: Iterable[CStep], blank: str):
             yield Pixel(step.point, blank)
 
 
-def draw_hmmer_hmm_cs(steps: Iterable[CStep], blank: str):
+def draw_h3hmm_cs(steps: Iterable[CStep], blank: str):
     for step in steps:
         if step.hmmer:
             yield Pixel(step.point, step.hmmer.hmm_cs)
@@ -80,7 +112,7 @@ def draw_hmmer_hmm_cs(steps: Iterable[CStep], blank: str):
             yield Pixel(step.point, blank)
 
 
-def draw_hmmer_query_cs(steps: Iterable[CStep], blank: str):
+def draw_h3query_cs(steps: Iterable[CStep], blank: str):
     for step in steps:
         if step.hmmer:
             yield Pixel(step.point, step.hmmer.query_cs)
@@ -88,7 +120,7 @@ def draw_hmmer_query_cs(steps: Iterable[CStep], blank: str):
             yield Pixel(step.point, blank)
 
 
-def draw_hmmer_match(steps: Iterable[CStep], blank: str):
+def draw_h3match(steps: Iterable[CStep], blank: str):
     for step in steps:
         if step.hmmer:
             yield Pixel(step.point, step.hmmer.match)
@@ -96,7 +128,7 @@ def draw_hmmer_match(steps: Iterable[CStep], blank: str):
             yield Pixel(step.point, blank)
 
 
-def draw_hmmer_query(steps: Iterable[CStep], blank: str):
+def draw_h3query(steps: Iterable[CStep], blank: str):
     for step in steps:
         if step.hmmer:
             yield Pixel(step.point, step.hmmer.query)
@@ -104,7 +136,7 @@ def draw_hmmer_query(steps: Iterable[CStep], blank: str):
             yield Pixel(step.point, blank)
 
 
-def draw_hmmer_score(steps: Iterable[CStep], blank: str):
+def draw_h3score(steps: Iterable[CStep], blank: str):
     for step in steps:
         if step.hmmer:
             yield Pixel(step.point, step.hmmer.score)

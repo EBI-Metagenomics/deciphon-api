@@ -102,3 +102,7 @@ class Hit:
     @property
     def path(self):
         return self._segment
+
+    @property
+    def coord(self):
+        return self._segment.coord

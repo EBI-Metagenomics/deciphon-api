@@ -4,22 +4,24 @@ from datetime import datetime
 
 import sqlalchemy.exc
 from fasta_reader import read_fasta
-from fastapi import APIRouter, Depends, Form, Path, UploadFile
+from fastapi import APIRouter, Body, Depends, Form, Path, UploadFile
 from fastapi.responses import PlainTextResponse
 from kombu import Connection, Exchange, Queue
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.files import FastaFile, ProdFile
-from deciphon_api.api.utils import AUTH, ID
+from deciphon_api.api.utils import AUTH, ID, IDX
 from deciphon_api.bufsize import BUFSIZE
 from deciphon_api.depo import get_depo
 from deciphon_api.exceptions import ConflictException, NotFoundException
 from deciphon_api.hmmer_result import HMMERResult
 from deciphon_api.models import DB, Job, JobState, JobType, Prod, Scan, Seq
+from deciphon_api.painter import Painter, Stream
 from deciphon_api.prodfile import ProdFileReader
 from deciphon_api.scan_result import ScanResult
 from deciphon_api.sched import get_sched
+from deciphon_api.viewport import Viewport
 
 __all__ = ["router"]
 
@@ -375,15 +377,54 @@ async def get_prod_path(scan_id: int = ID()):
 #         return scan.get_prod(prod_id).hmmer().pp_stream()
 
 
-# @router.get(
-#     "/scans/{scan_id}/prods/{prod_id}/hits", response_model=list[Hit], status_code=OK
-# )
-# async def get_prod_hits(scan_id: int = ID(), prod_id: int = ID()):
-#     with Session(get_sched()) as session:
-#         scan = session.get(Scan, scan_id)
-#         if not scan:
-#             raise NotFoundException(Scan)
-#         return scan.get_prod(prod_id).hits
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/align",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_aligment(
+    scan_id: int = ID(), prod_id: int = ID(), streams: list[Stream] = Body()
+):
+    txt = []
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        prod = scan.get_prod(prod_id)
+        align = prod.alignment()
+        steps = align.steps
+        paint = Painter()
+        v = Viewport(align.coord, "▒")
+        for stream in streams:
+            txt += [v.display(paint.draw(stream, steps))]
+    return "\n".join(txt)
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/align/hits/{hit_idx}",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_hit(
+    scan_id: int = ID(),
+    prod_id: int = ID(),
+    streams: list[Stream] = Body(),
+    hit_idx: int = IDX(),
+):
+    txt = []
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        prod = scan.get_prod(prod_id)
+        align = prod.alignment()
+        hit = align.hits[hit_idx]
+        steps = list(hit.path)
+        paint = Painter()
+        v = Viewport(hit.coord, "▒").cut(hit.path.interval)
+        for stream in streams:
+            txt += [v.display(paint.draw(stream, steps))]
+    return "\n".join(txt)
 
 
 @router.get(

@@ -2,14 +2,18 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from io import StringIO
 from typing import Optional
 
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
+from deciphon_api.alignment import Alignment
 from deciphon_api.exceptions import NotFoundException
 from deciphon_api.hmm_path import HMMPath as HMMPath
+from deciphon_api.hmmer_domains import read_hmmer_paths
 from deciphon_api.hmmer_path import HMMERPath as HMMERPath
 from deciphon_api.hmmer_result import HMMERResult
+from deciphon_api.liner import mkliner
 
 
 class JobType(Enum):
@@ -91,6 +95,11 @@ class Prod(Match, table=True):
 
     seq: Seq = Relationship(back_populates="prod", **SINGLE)
     scan: Scan = Relationship(back_populates="prods", **SINGLE)
+
+    def alignment(self):
+        hmm = HMMPath.make(self.match)
+        hmmers = read_hmmer_paths(mkliner(data=StringIO(self.hmmer().domains())))
+        return Alignment.make(hmm, hmmers)
 
     def _stream(self, name: str, idx: int):
         if name == "frag":

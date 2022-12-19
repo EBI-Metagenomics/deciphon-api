@@ -6,22 +6,24 @@ import sqlalchemy.exc
 from fasta_reader import read_fasta
 from fastapi import APIRouter, Body, Depends, Form, Path, UploadFile
 from fastapi.responses import PlainTextResponse
-from kombu import Connection, Exchange, Queue
+from pydantic import BaseModel
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
 from deciphon_api.api.files import FastaFile, ProdFile
 from deciphon_api.api.utils import AUTH, ID, IDX
+from deciphon_api.broker import broker_publish_scan
 from deciphon_api.bufsize import BUFSIZE
 from deciphon_api.depo import get_depo
 from deciphon_api.exceptions import ConflictException, NotFoundException
 from deciphon_api.hmmer_result import HMMERResult
 from deciphon_api.models import DB, Job, JobState, JobType, Prod, Scan, Seq
-from deciphon_api.painter import Painter, Stream
+from deciphon_api.painter import Painter, Stream, StreamName
 from deciphon_api.prodfile import ProdFileReader
 from deciphon_api.scan_result import ScanResult
 from deciphon_api.sched import get_sched
 from deciphon_api.viewport import Viewport
+from tabulate import tabulate
 
 __all__ = ["router"]
 
@@ -37,8 +39,52 @@ def get_session():
         yield session
 
 
+class SeqPost(BaseModel):
+    name: str = ""
+    data: str = ""
+
+
+class ScanPost(BaseModel):
+    db_id: int = 0
+
+    multi_hits: bool = False
+    hmmer3_compat: bool = False
+
+    seqs: list[SeqPost] = []
+
+
 @router.post("/scans/", response_model=Job, status_code=CREATED)
-async def upload_scan(
+async def post_scan(scanp: ScanPost = Body(...)):
+    job = Job(type=JobType.scan)
+    scan = Scan(
+        db_id=scanp.db_id,
+        multi_hits=scanp.multi_hits,
+        hmmer3_compat=scanp.hmmer3_compat,
+        job=job,
+    )
+    for item in scanp.seqs:
+        scan.seqs.append(Seq(name=item.name, data=item.data))
+
+    with Session(get_sched()) as session:
+        db = session.get(DB, scan.db_id)
+        if not db:
+            raise NotFoundException(DB)
+
+        session.add(scan)
+        session.commit()
+        session.refresh(scan)
+
+        assert scan.id
+        assert db.hmm.id
+        assert scan.job.id
+        broker_publish_scan(
+            scan.id, db.hmm.id, db.hmm.filename, scan.db_id, db.filename, scan.job.id
+        )
+        return scan.job
+
+
+@router.post("/scans/", response_model=Job, status_code=CREATED)
+async def post_fasta_file_scan(
     db_id: int = Form(...),
     multi_hits: bool = Form(False),
     hmmer3_compat: bool = Form(False),
@@ -64,26 +110,12 @@ async def upload_scan(
         session.add(scan)
         session.commit()
         session.refresh(scan)
-
-        exchange = Exchange("scan", "direct", durable=True)
-        queue = Queue("scan", exchange=exchange, routing_key="scan")
-
-        with Connection("amqp://guest:guest@localhost//") as conn:
-            producer = conn.Producer(serializer="json")
-            producer.publish(
-                {
-                    "id": scan.id,
-                    "hmm_id": db.hmm.id,
-                    "hmm_file": db.hmm.filename,
-                    "db_id": db_id,
-                    "db_file": db.filename,
-                    "job_id": scan.job.id,
-                },
-                exchange=exchange,
-                routing_key="scan",
-                declare=[queue],
-            )
-
+        assert scan.id
+        assert db.hmm.id
+        assert scan.job.id
+        broker_publish_scan(
+            scan.id, db.hmm.id, db.hmm.filename, scan.db_id, db.filename, scan.job.id
+        )
         return scan.job
 
 
@@ -425,6 +457,49 @@ async def get_prod_hit(
         for stream in streams:
             txt += [v.display(paint.draw(stream, steps))]
     return "\n".join(txt)
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/view",
+    response_class=PLAIN,
+    status_code=OK,
+)
+async def get_prod_view(
+    scan_id: int = ID(),
+    prod_id: int = ID(),
+):
+    table = []
+    state = Stream(name=StreamName("state"))
+    amino = Stream(name=StreamName("amino"))
+
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        prod = scan.get_prod(prod_id)
+        align = prod.alignment()
+        hit = align.hits[0]
+        steps = list(hit.path)
+        paint = Painter()
+        v = Viewport(hit.coord, "▒").cut(hit.path.interval)
+
+        kwargs = {"drop_whitespace": False, "break_on_hyphens": False}
+        states = textwrap.wrap(v.display(paint.draw(state, steps)), 99, **kwargs)
+        aminos = textwrap.wrap(v.display(paint.draw(amino, steps)), 99, **kwargs)
+
+        rows = []
+        for s, a in zip(states, aminos):
+            rows.append([align._profile, s])
+            rows.append(["", a])
+
+            rows.append(states)
+            table.append(rows)
+
+            rows = []
+            rows.append(v.display(paint.draw(amino, steps)))
+            table.append(rows)
+
+    return tabulate(table)
 
 
 @router.get(

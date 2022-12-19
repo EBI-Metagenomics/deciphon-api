@@ -99,7 +99,7 @@ class Prod(Match, table=True):
     def alignment(self):
         hmm = HMMPath.make(self.match)
         hmmers = read_hmmer_paths(mkliner(data=StringIO(self.hmmer().domains())))
-        return Alignment.make(hmm, hmmers)
+        return Alignment.make(self.profile, self.evalue_log, hmm, hmmers)
 
     def _stream(self, name: str, idx: int):
         if name == "frag":

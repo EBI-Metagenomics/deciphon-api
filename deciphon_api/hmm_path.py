@@ -14,7 +14,7 @@ def steps_string(steps: Iterable[HMMStep]):
 
 
 @dataclasses.dataclass
-class HMMStep:
+class HMMStepBase:
     query: str
     state: str
     codon: str
@@ -40,6 +40,21 @@ class HMMStep:
     @property
     def mute(self) -> bool:
         return len(self.amino) == 0
+
+
+@dataclasses.dataclass
+class HMMStep(HMMStepBase):
+    index: int
+
+    @classmethod
+    def make(cls, index: int, step: HMMStepBase):
+        return cls(
+            index=index,
+            query=step.query,
+            state=step.state,
+            codon=step.codon,
+            amino=step.amino,
+        )
 
 
 class HMMPathRead(ABC):
@@ -94,8 +109,11 @@ class HMMPath(HMMPathRead):
 
     @classmethod
     def make(cls, data: str):
-        steps = [HMMStep(*m.split(",")) for m in data.split(";")]
-        return cls(steps)
+        steps = [HMMStepBase(*m.split(",")) for m in data.split(";")]
+        index = [0]
+        for x in steps[:-1]:
+            index += [len(x.query) + index[-1]]
+        return cls([HMMStep.make(i, x) for x, i in zip(steps, index)])
 
     def segments(self):
         last = 0

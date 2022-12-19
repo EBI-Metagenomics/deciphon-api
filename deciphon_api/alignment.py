@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 from collections.abc import Sequence
+from math import exp
 
 from deciphon_api.any_path import AnyPath, AnyStep
 from deciphon_api.coord_path import CPath, CSegment
@@ -63,11 +64,17 @@ def make_rjoins(hits: Sequence[HMMSegment], hmmers: Sequence[HMMERPath]):
 
 
 class Alignment:
-    def __init__(self, path: CPath):
+    def __init__(self, profile: str, evalue: float, path: CPath):
+        self._profile = profile
+        self._evalue = evalue
         self._path = path
+        self._query_idx: dict[HMMStep, int] = {}
 
     @classmethod
-    def make(cls, hmm: HMMPath, hmmers: Sequence[HMMERPath]):
+    def make(
+        cls, profile: str, evalue_log: float, hmm: HMMPath, hmmers: Sequence[HMMERPath]
+    ):
+
         segments = list(hmm.segments())
         hits = [i for i in segments if i.hit]
         assert len(hits) == len(hmmers)
@@ -76,7 +83,8 @@ class Alignment:
 
         paths = list(make_paths(segments, hmmers, rjoins))
         path = AnyPath(itertools.chain.from_iterable([list(x) for x in paths]))
-        return cls(CPath(path))
+        evalue = exp(evalue_log)
+        return cls(profile, evalue, CPath(path))
 
     @property
     def hits(self) -> list[Hit]:

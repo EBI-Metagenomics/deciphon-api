@@ -1,224 +1,148 @@
-import dataclasses
-from collections.abc import Iterable
+from __future__ import annotations
 
-from deciphon_api.coordinates import Coord, Pixel, PixelList, Point, Viewport, Interval
-from deciphon_api.hmm_path import HMMPath, HMMStep
-from deciphon_api.hmmer_path import HMMERStep, make_hmmer_paths
+import pickle
+import textwrap
+
+from tabulate import tabulate
+
+from deciphon_api.alignment import Alignment
+from deciphon_api.hmm_path import HMMPath
+from deciphon_api.hmmer_domains import read_hmmer_paths
 from deciphon_api.liner import mkliner
-from deciphon_api.right_join import RightJoin
+from deciphon_api.models import Prod
+from deciphon_api.painter import Painter, Stream, StreamName
+from deciphon_api.viewport import Viewport
 
 
-@dataclasses.dataclass
-class Step:
-    hmm: HMMStep | None
-    hmmer: HMMERStep | None
+def wrap(txt: str) -> list[str]:
+    return textwrap.wrap(txt, 99, drop_whitespace=False, break_on_hyphens=False)
 
 
-class Path:
-    def __init__(self, steps: Iterable[Step]):
-        self._steps = list(steps)
+prod = Prod(**pickle.load(open("prod.dict", "rb")))
+# seqid = prod.seq.name
+seqid = "AA_kinase-1"
+align = prod.alignment()
+hit = align.hits[0]
+steps = list(hit.path)
+paint = Painter()
+v = Viewport(hit.coord, "▒").cut(hit.path.interval)
 
 
-hmm = HMMPath.make(open("match.txt", "r").read().strip())
-
-# query_streams = [hmm.query_stream(i) for i in range(5)]
-# state_stream = hmm.state_stream()
-# codon_streams = [hmm.codon_stream(i) for i in range(3)]
-# amino_stream = hmm.amino_stream()
-
-segs = list(hmm.segments())
-hits = [i for i in segs if i.hit]
-
-hmmers = make_hmmer_paths(mkliner(path="domains.txt"))
+def disp(stream: Stream):
+    return v.display(paint.draw(stream, steps))
 
 
-class Checkpoint:
-    def __init__(self, amino_stream: str, hmmer_match_stream: str):
-        self.amino = amino_stream
-        self.match = hmmer_match_stream
-
-    def __call__(self, i: int, j: int) -> bool:
-        return self.amino[i] != " " and self.match[j] == "-"
+qsteps = [x if x.hmm and x.hmm.has_query(0) else None for x in steps]
 
 
-padding = "#"
-assert len(hits) == len(hmmers)
+def index_bounds(steps):
+    indices = [x.hmm.index for x in steps if x]
+    return (indices[0], indices[-1])
 
-rjs = []
-for hit, hmmer in zip(hits, hmmers):
-    x = hit.amino_stream()
-    y = hmmer.match_stream()
-    rjs.append(RightJoin(len(x), len(y), Checkpoint(x, y)))
 
-size = 0
-hmmerit = iter(hmmers)
-rjit = iter(rjs)
-for seg in segs:
-    if not seg.hit:
-        size += len(seg)
-        continue
+QUERY = [wrap(disp(Stream(name=StreamName("query"), level=i))) for i in range(5)]
+STATE = wrap(disp(Stream(name=StreamName("state"))))
+AMINO = wrap(disp(Stream(name=StreamName("amino"))))
+H3HMM_CS = wrap(disp(Stream(name=StreamName("h3hmm_cs"))))
+H3QUERY_CS = wrap(disp(Stream(name=StreamName("h3query_cs"))))
+H3MATCH = wrap(disp(Stream(name=StreamName("h3match"))))
+H3QUERY = wrap(disp(Stream(name=StreamName("h3query"))))
+H3SCORE = wrap(disp(Stream(name=StreamName("h3score"))))
 
-    hit = seg
-    hmmer = next(hmmerit)
-    rj = next(rjit)
-    size += rj.size
+table = []
+offset = 0
+for i in range(len(STATE)):
+    # align._profile
+    bounds = index_bounds(qsteps[offset:offset+len(H3HMM_CS[i])])
+    row = [
+        [None, None, H3HMM_CS[i], "CS"],
+        [seqid, None, AMINO[i], None],
+        [None, None, H3MATCH[i], None],
+        [align._profile, None, H3QUERY[i], None],
+        [None, None, H3SCORE[i], "PP"],
+        [None, bounds[0] + 1, QUERY[0][i], bounds[1] + 1],
+        [None, None, QUERY[1][i], None],
+        [None, None, QUERY[2][i], None],
+        [None, None, QUERY[3][i], None],
+    ]
+    offset += len(H3HMM_CS[i])
 
-print(size)
+    table += row + [[None, None, None]]
 
-steps = [Step(None, None) for _ in range(size)]
+print(tabulate(table, tablefmt="plain"))
 
-hmmerit = iter(hmmers)
-rjit = iter(rjs)
-idx = 0
-bounds = [0]
-for seg in segs:
-    if not seg.hit:
-        # for x in seg:
-        #     state.append()
-        #     pass
-        for y in seg:
-            steps[idx].hmm = y
-            idx += 1
-        bounds.append(idx)
-        continue
-
-    hmmstepit = iter(seg)
-    hmmerstepit = iter(next(hmmerit))
-    rj = next(rjit)
-    for li, ri in zip(rj.left, rj.right):
-        if li:
-            steps[idx].hmm = next(hmmstepit)
-        if ri:
-            steps[idx].hmmer = next(hmmerstepit)
-        idx += 1
-    bounds.append(idx)
-
-#     state += "".join(rj.left_expand(iter(hit.state_stream()), padding))
-#     rj.left_expand(iter(hit.query_stream(0)), padding)
-#     rj.left_expand(iter(hit.query_stream(1)), padding)
-#     rj.left_expand(iter(hit.query_stream(2)), padding)
-#     rj.left_expand(iter(hit.query_stream(3)), padding)
-#     rj.left_expand(iter(hit.query_stream(4)), padding)
-#     amino += "".join(rj.left_expand(iter(hit.amino_stream()), padding))
-#     rj.left_expand(iter(hit.codon_stream(0)), padding)
-#     rj.left_expand(iter(hit.codon_stream(1)), padding)
-#     rj.left_expand(iter(hit.codon_stream(2)), padding)
+# hmm = HMMPath.make(open("match.txt", "r").read().strip())
+# hmmers = read_hmmer_paths(mkliner(path="domains.txt"))
 #
-#     rj.right_expand(iter(hmmer.hmm_cs_stream()), padding)
-#     rj.right_expand(iter(hmmer.query_cs_stream()), padding)
-#     rj.right_expand(iter(hmmer.query_stream()), padding)
-#     rj.right_expand(iter(hmmer.match_stream()), padding)
-#     rj.right_expand(iter(hmmer.score_stream()), padding)
-
-
-class Segment:
-    def __init__(self, path: Path, start: int, end: int, hit: bool):
-        self._path = path
-        self._start = start
-        self._end = end
-        self._hit = hit
-
-
-coord = Coord(size)
-intervals = [Interval(coord, bounds[i], bounds[i+ 1]) for i in range(len(bounds) - 1)]
-interval = intervals[4]
-viewport = Viewport(coord)
-
-def mkchar_state(step: Step):
-    if step.hmm:
-        return step.hmm.state[0]
-    return "^"
-pixels = [Pixel(Point(coord, i), mkchar_state(s)) for i, s in enumerate(steps)]
-print(viewport.cut(interval).display(pixels))
-
-def mkchar_amino(step: Step):
-    if step.hmm:
-        if step.hmm.has_amino():
-            return step.hmm.amino
-    return "^"
-pixels = [Pixel(Point(coord, i), mkchar_amino(s)) for i, s in enumerate(steps)]
-print(viewport.cut(interval).display(pixels))
-
-def mkchar_match(step: Step):
-    if step.hmmer:
-        return step.hmmer.match
-    return "^"
-pixels = [Pixel(Point(coord, i), mkchar_match(s)) for i, s in enumerate(steps)]
-print(viewport.cut(interval).display(pixels))
-
-# print(bounds)
-# path = Path(steps)
-
-# gsegs = []
-# start = 0
-# ishit = False
-# for end in bounds + [len(steps)]:
-#     gsegs.append(Segment(path, start, end, ishit))
-#     ishit = False if ishit else False
-
-# print(gsegs[0])
-# for s in gsegs[0]._path._steps:
-#     print(s)
-
-# for s in gsegs[1]._path._steps:
-#     print(s)
-
-# hits[0].amino_stream
-# print(u[0][0])
-# print(u[0][1])
-
+#
+# align = Alignment.make(hmm, hmmers)
+#
+# paint = Painter()
+# v = Viewport(align.coord, "▒")
+# segs = align.segments
+#
+# print("# User input")
+# print("Query: " + hmm.query)
 # print()
-# print("".join(hmm_items))
-# print("".join(hmmer_items))
-
 #
-# hit = hits[0]
-# dhit = dhits[0]
-
-# hit.path.amino_pixels()
-
-# hmmers = [HMMERPath.make(d, h.coord) for d, h in zip(dhits, hits)]
-
-# viewport = Viewport(hmm.coord)
+# steps = align.steps
+# print("# Whole aligment")
+# print("State         : " + v.display(paint.state(steps)))
+# print("Amino         : " + v.display(paint.amino(steps)))
+# print("Query 0       : " + v.display(paint.query(steps, 0)))
+# print("Query 1       : " + v.display(paint.query(steps, 1)))
+# print("Query 2       : " + v.display(paint.query(steps, 2)))
+# print("Query 3       : " + v.display(paint.query(steps, 3)))
+# print("Query 4       : " + v.display(paint.query(steps, 4)))
+# print("Codon 0       : " + v.display(paint.codon(steps, 0)))
+# print("Codon 1       : " + v.display(paint.codon(steps, 1)))
+# print("Codon 2       : " + v.display(paint.codon(steps, 2)))
+# print("HMMER hmm_cs  : " + v.display(paint.h3hmm_cs(steps)))
+# print("HMMER query_cs: " + v.display(paint.h3query_cs(steps)))
+# print("HMMER match   : " + v.display(paint.h3match(steps)))
+# print("HMMER query   : " + v.display(paint.h3query(steps)))
+# print("HMMER score   : " + v.display(paint.h3score(steps)))
+# print()
 #
-# print(viewport.display(hmm.state_pixels()))
-# print(viewport.display(hmm.amino_pixels()))
-# print(viewport.display(hits[0].path.amino_pixels()))
-# list(hmmers[0].match_pixels())
-# print(viewport.display(hmmers[0].match_pixels()))
-# print(viewport.display(hit1.path.amino_pixels()))
-
-# [HMMStep(frag='ACC', state='M216', codon='ACC', amino='T'), HMMStep(frag='GGT', state='M217', codon='GGT', amino='G'), HMMStep(frag='GGG', state='M218', codon='GGG', amino='G'), HMMStep(frag='ATG', state='M219', codon='ATG', amino='M'), HMMStep(frag='AAG', state='M220', codon='AAG', amino='K')]
-# ['T', 'G', 'G', 'M', 'K']
-#      ['G', 'G', 'M', 'K', 'I']
-
-# ACC,M216,ACC,T; GGT,M217,GGT,G; GGG,M218,GGG,G; ATG,M219,ATG,M; AAG,M220,AAG,K; ,E,,;
-
-
-# GGSSLTDKEEASLRRLAEQIAALKESGNKLVVVHGGGSFTDGLLALKSGLSSGELAAGLRSTLEEAGEVATRDALASLGERIVAALLAAGLPAVGLSAAACD^^EAGRDEGSDGNVESVDAEAIEELLEAGVVPVLTGFIGLDEEGELGRGSSDTRGKEVEVIAALLAEALGADKLIILTDVDGVYDADPKKVRGKDARLLPEISVDEAEESASELATGGMK^
-# GGssltdkeeaslrrlaeqiaalkesgnklvvVhGggsftdgllalksglssgelaaglrstleeagevatrdalaslger+vaallaaglpavglsaaa+d  eagrdegsdgnvesvdaeaieelleagvvpvltgfigldeegelgrgssDt       iaallAealgAdkliiltdVdGVydadpkkv  +darllpeisvdeaeesaselatgGmk+ MATCH
-# GGSSLTDKEEASLRRLAEQIAALKESGNKLVVVHGGGSFTDGLLALKSGLSSGELAAGLRSTLEEAGEVATRDALASLGERIVAALLAAGLPAVGLSAAACD--EAGRDEGSDGNVESVDAEAIEELLEAGVVPVLTGFIGLDEEGELGRGSSDTrgkevevIAALLAEALGADKLIILTDVDGVYDADPKKVrgKDARLLPEISVDEAEESASELATGGMKI TARGET
-# -TTCCCCTCCHHHHHHHHHHHHHHHHTTEEEEEE--HHHHHHHHHHTCCCCCHHHC....E..HHHHHHHHHHHHHHHHHHHHHHHHHTTHGEEEE-GGGTCEECCCE..HHHTTTCEEECCHHHHHHHTT-EEEEESEEEEETTTEEEEE-HHH.......HHHHHHHHCTSSEEEEEESSSSCESSTTTTS..CTTCECCEEEHHHCHHCSSS.TTTHHHH
-
-# hmmer = HMMERPath.make_path(open("domains.txt", "r"), hit.coord)
+# print("# Aligment per segment")
+# for idx, seg in enumerate(segs):
+#     print(f"## Segment {idx}")
+#     i = seg.interval
+#     print("State         : " + v.cut(i).display(paint.state(steps)))
+#     print("Amino         : " + v.cut(i).display(paint.amino(steps)))
+#     print("Query 0       : " + v.cut(i).display(paint.query(steps, 0)))
+#     print("Query 1       : " + v.cut(i).display(paint.query(steps, 1)))
+#     print("Query 2       : " + v.cut(i).display(paint.query(steps, 2)))
+#     print("Query 3       : " + v.cut(i).display(paint.query(steps, 3)))
+#     print("Query 4       : " + v.cut(i).display(paint.query(steps, 4)))
+#     print("Codon 0       : " + v.cut(i).display(paint.codon(steps, 0)))
+#     print("Codon 1       : " + v.cut(i).display(paint.codon(steps, 1)))
+#     print("Codon 2       : " + v.cut(i).display(paint.codon(steps, 2)))
+#     print("HMMER hmm_cs  : " + v.cut(i).display(paint.h3hmm_cs(steps)))
+#     print("HMMER query_cs: " + v.cut(i).display(paint.h3query_cs(steps)))
+#     print("HMMER match   : " + v.cut(i).display(paint.h3match(steps)))
+#     print("HMMER query   : " + v.cut(i).display(paint.h3query(steps)))
+#     print("HMMER score   : " + v.cut(i).display(paint.h3score(steps)))
+#     print()
 #
-# hit = next(hits)
-# print(len(hit.path))
-#
-# # print(viewport.cut(hit.interval).display(hmm.state_pixels()))
-# # print(viewport.cut(hit.interval).display(hmmer.match_pixels()))
-#
-# v = viewport.cut(hit.interval)
-# print(v.display(hmm.state_pixels()))
-# print(v.display(hmmer.match_pixels()))
-# print(v.display(hmmer.score_pixels()))
-# print(v.display(hmm.target_pixels(0)))
-# print(v.display(hmm.target_pixels(1)))
-# print(v.display(hmm.target_pixels(2)))
-# print(v.display(hmm.target_pixels(3)))
-#
-# # i = hmm.coord.make_interval(1, 5)
-# # print(viewport.cut(i).display(hmm.state_pixels()))
-# # print(viewport.display(hmm.state_pixels(), cut=hit.interval))
-#
-# # scans/ID/prods/ID/streams/hmm_state+hmmer_match+hmm_target0+hmm_target1+hmm_target2+hmm_target3+hmm_target4/projected-onto/hmm_state
+# print("# Aligment per segment projected onto whole alignment coordinates")
+# print("")
+# for idx, seg in enumerate(segs):
+#     print(f"## Segment {idx}")
+#     i = seg.interval
+#     print("State         : " + v.mask(i).display(paint.state(steps)))
+#     print("Amino         : " + v.mask(i).display(paint.amino(steps)))
+#     print("Query 0       : " + v.mask(i).display(paint.query(steps, 0)))
+#     print("Query 1       : " + v.mask(i).display(paint.query(steps, 1)))
+#     print("Query 2       : " + v.mask(i).display(paint.query(steps, 2)))
+#     print("Query 3       : " + v.mask(i).display(paint.query(steps, 3)))
+#     print("Query 4       : " + v.mask(i).display(paint.query(steps, 4)))
+#     print("Codon 0       : " + v.mask(i).display(paint.codon(steps, 0)))
+#     print("Codon 1       : " + v.mask(i).display(paint.codon(steps, 1)))
+#     print("Codon 2       : " + v.mask(i).display(paint.codon(steps, 2)))
+#     print("HMMER hmm_cs  : " + v.mask(i).display(paint.h3hmm_cs(steps)))
+#     print("HMMER query_cs: " + v.mask(i).display(paint.h3query_cs(steps)))
+#     print("HMMER match   : " + v.mask(i).display(paint.h3match(steps)))
+#     print("HMMER query   : " + v.mask(i).display(paint.h3query(steps)))
+#     print("HMMER score   : " + v.mask(i).display(paint.h3score(steps)))
+#     print()

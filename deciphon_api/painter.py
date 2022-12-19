@@ -93,7 +93,7 @@ def draw_query(steps: Iterable[CStep], level: int, blank: str):
         if step.hmm and step.hmm.has_query(level):
             yield Pixel(step.point, step.hmm.query[level])
         else:
-            yield Pixel(step.point, blank)
+            yield Pixel(step.point, ".")
 
 
 def draw_state(steps: Iterable[CStep], blank: str):

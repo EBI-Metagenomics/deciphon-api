@@ -1,6 +1,8 @@
 import tempfile
 import textwrap
+from datetime import datetime
 
+import sqlalchemy.exc
 from fasta_reader import read_fasta
 from fastapi import APIRouter, Depends, Form, Path, UploadFile
 from fastapi.responses import PlainTextResponse
@@ -8,13 +10,14 @@ from kombu import Connection, Exchange, Queue
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 
-from deciphon_api.api.files import FastaFile
-from deciphon_api.api.utils import ID, IDX
+from deciphon_api.api.files import FastaFile, ProdFile
+from deciphon_api.api.utils import AUTH, ID
 from deciphon_api.bufsize import BUFSIZE
 from deciphon_api.depo import get_depo
-from deciphon_api.exceptions import NotFoundException
+from deciphon_api.exceptions import ConflictException, NotFoundException
 from deciphon_api.hmmer_result import HMMERResult
-from deciphon_api.models import DB, Job, JobType, Prod, Scan, Seq
+from deciphon_api.models import DB, Job, JobState, JobType, Prod, Scan, Seq
+from deciphon_api.prodfile import ProdFileReader
 from deciphon_api.scan_result import ScanResult
 from deciphon_api.sched import get_sched
 
@@ -460,3 +463,47 @@ async def get_prod_fpath(scan_id: int = ID(), prod_id: int = ID()):
             content += "\n"
 
         return content
+
+
+@router.post(
+    "/scans/{scan_id}/prods/",
+    response_model=list[Prod],
+    status_code=CREATED,
+    dependencies=AUTH,
+)
+async def upload_prod(
+    scan_id: int = ID(),
+    prod_file: UploadFile = ProdFile(),
+    session: Session = Depends(get_session),
+):
+
+    with tempfile.NamedTemporaryFile("wb") as file:
+        while content := await prod_file.read(BUFSIZE):
+            file.write(content)
+        file.flush()
+
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+
+        scan.job.state = JobState.done
+        scan.job.progress = 100
+        scan.job.exec_ended = datetime.now()
+
+        prod_reader = ProdFileReader(file.name)
+        match_file = prod_reader.match_file()
+        for match in match_file.read_records():
+            assert match.scan_id == scan_id
+            hmmer_blob = prod_reader.hmmer_blob(match.seq_id, match.profile)
+            assert hmmer_blob is not None
+            depo = get_depo()
+            sha256_hexdigest = await depo.store_blob(hmmer_blob)
+            prod = Prod(**match.dict(), hmmer_sha256=sha256_hexdigest)
+            scan.prods.append(prod)
+            session.add(prod)
+            try:
+                session.commit()
+            except sqlalchemy.exc.IntegrityError as e:
+                raise ConflictException(str(e.orig))
+        session.refresh(scan)
+        return scan.prods

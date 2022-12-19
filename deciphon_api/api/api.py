@@ -8,7 +8,6 @@ from deciphon_api.api import (
     hmms_pub,
     jobs_priv,
     jobs_pub,
-    prod_streams,
     scans_priv,
     scans_pub,
     wipe,
@@ -26,7 +25,6 @@ router.include_router(jobs_priv.router)
 router.include_router(jobs_pub.router)
 router.include_router(scans_priv.router)
 router.include_router(scans_pub.router)
-router.include_router(prod_streams.router)
 
 
 @router.get(

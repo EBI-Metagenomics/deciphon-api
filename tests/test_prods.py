@@ -123,8 +123,8 @@ def test_get_scan_prods_as_codon(
         assert response.text == prod_codon
 
 
-def test_get_scan_prods_as_frag(
-    app, minifam_hmm, minifam_dcp, consensus_fna, prod_tar_gz, prod_frag
+def test_get_scan_prods_as_query(
+    app, minifam_hmm, minifam_dcp, consensus_fna, prod_tar_gz, prod_query
 ):
     with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
@@ -143,9 +143,9 @@ def test_get_scan_prods_as_frag(
         response = client.post(url("/scans/1/prods/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
-        response = client.get(url("/scans/1/prods/frag"))
+        response = client.get(url("/scans/1/prods/query"))
         assert response.status_code == 200
-        assert response.text == prod_frag
+        assert response.text == prod_query
 
 
 def test_get_scan_prods_as_path(

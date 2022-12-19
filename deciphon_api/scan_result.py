@@ -10,6 +10,7 @@ from Bio.Seq import Seq as BioSeq
 from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio.SeqRecord import SeqRecord
 
+from deciphon_api.gff import GFFWriter
 from deciphon_api.models import Prod, Scan, Seq
 
 EPSILON = "0.01"
@@ -20,7 +21,7 @@ __all__ = ["ScanResult"]
 @dataclasses.dataclass
 class Match:
     state: str
-    frag: str
+    query: str
     codon: str
     amino: str
 
@@ -72,34 +73,34 @@ class ScanResult:
         codon1_stream = []
         codon2_stream = []
         codon3_stream = []
-        frag1_stream = []
-        frag2_stream = []
-        frag3_stream = []
-        frag4_stream = []
-        frag5_stream = []
-        for frag_match in prod.match.split(";"):
-            frag, state, codon, amino = frag_match.split(",")
+        query1_stream = []
+        query2_stream = []
+        query3_stream = []
+        query4_stream = []
+        query5_stream = []
+        for query_match in prod.match.split(";"):
+            query, state, codon, amino = query_match.split(",")
             state_stream.append(state[0])
             amino_stream.append(amino)
             codon1_stream.append(codon[0] if len(codon) > 0 else " ")
             codon2_stream.append(codon[1] if len(codon) > 1 else " ")
             codon3_stream.append(codon[2] if len(codon) > 2 else " ")
-            frag1_stream.append(frag[0] if len(frag) > 0 else " ")
-            frag2_stream.append(frag[1] if len(frag) > 1 else " ")
-            frag3_stream.append(frag[2] if len(frag) > 2 else " ")
-            frag4_stream.append(frag[3] if len(frag) > 3 else " ")
-            frag5_stream.append(frag[4] if len(frag) > 4 else " ")
+            query1_stream.append(query[0] if len(query) > 0 else " ")
+            query2_stream.append(query[1] if len(query) > 1 else " ")
+            query3_stream.append(query[2] if len(query) > 2 else " ")
+            query4_stream.append(query[3] if len(query) > 3 else " ")
+            query5_stream.append(query[4] if len(query) > 4 else " ")
         return (
             "".join(state_stream),
             "".join(amino_stream),
             "".join(codon1_stream),
             "".join(codon2_stream),
             "".join(codon3_stream),
-            "".join(frag1_stream),
-            "".join(frag2_stream),
-            "".join(frag3_stream),
-            "".join(frag4_stream),
-            "".join(frag5_stream),
+            "".join(query1_stream),
+            "".join(query2_stream),
+            "".join(query3_stream),
+            "".join(query4_stream),
+            "".join(query5_stream),
         )
 
     def _make_hits(self, prod: Prod):
@@ -109,8 +110,8 @@ class ScanResult:
         hit_start_found = False
         hit_end_found = False
 
-        for frag_match in prod.match.split(";"):
-            frag, state, codon, amino = frag_match.split(",")
+        for query_match in prod.match.split(";"):
+            query, state, codon, amino = query_match.split(",")
 
             if not hit_start_found and is_core_state(state):
                 hit_start = offset
@@ -120,11 +121,11 @@ class ScanResult:
                 self.hits.append(Hit(len(self.hits) + 1, name, prod.id, evalue_log))
 
             if hit_start_found and not is_core_state(state):
-                hit_end = offset + len(frag)
+                hit_end = offset + len(query)
                 hit_end_found = True
 
             if hit_start_found and not hit_end_found:
-                self.hits[-1].matchs.append(Match(state[0], frag, codon, amino))
+                self.hits[-1].matchs.append(Match(state[0], query, codon, amino))
 
             if hit_end_found:
                 self.hits[-1].feature_start = hit_start
@@ -132,13 +133,13 @@ class ScanResult:
                 hit_start_found = False
                 hit_end_found = False
 
-            offset += len(frag)
+            offset += len(query)
 
     def gff(self):
         if len(self.scan.prods) == 0:
             return "##gff-version 3\n"
 
-        recs = []
+        gff = GFFWriter()
 
         for prod in self.scan.prods:
             hits = [hit for hit in self.hits if hit.prod_id == prod.id]
@@ -163,15 +164,12 @@ class ScanResult:
                 )
                 rec.features.append(feat)
 
-            recs.append(rec)
+            gff.add(rec)
 
-        gff_io = io.StringIO()
-        GFF.write(recs, gff_io, False)
-        gff_io.seek(0)
-        return gff_io.read()
+        return gff.dumps()
 
     def fasta(self, type_):
-        assert type_ in ["amino", "frag", "codon", "state"]
+        assert type_ in ["amino", "query", "codon", "state"]
 
         recs = []
 

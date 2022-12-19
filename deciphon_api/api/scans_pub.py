@@ -223,14 +223,14 @@ async def get_prod_codon(scan_id: int = ID()):
         return scan_result.fasta("codon")
 
 
-@router.get("/scans/{scan_id}/prods/frag", response_class=PLAIN, status_code=OK)
-async def get_prod_frag(scan_id: int = ID()):
+@router.get("/scans/{scan_id}/prods/query", response_class=PLAIN, status_code=OK)
+async def get_prod_query(scan_id: int = ID()):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
             raise NotFoundException(Scan)
         scan_result = ScanResult(scan)
-        return scan_result.fasta("frag")
+        return scan_result.fasta("query")
 
 
 @router.get("/scans/{scan_id}/prods/path", response_class=PLAIN, status_code=OK)
@@ -244,18 +244,18 @@ async def get_prod_path(scan_id: int = ID()):
 
 
 # @router.get(
-#     "/scans/{scan_id}/prods/{prod_id}/streams/frag/{idx}",
+#     "/scans/{scan_id}/prods/{prod_id}/streams/query/{idx}",
 #     response_class=PLAIN,
 #     status_code=OK,
 # )
-# async def get_prod_frag_stream(
+# async def get_prod_query_stream(
 #     scan_id: int = ID(), prod_id: int = ID(), idx: int = IDX()
 # ):
 #     with Session(get_sched()) as session:
 #         scan = session.get(Scan, scan_id)
 #         if not scan:
 #             raise NotFoundException(Scan)
-#         return scan.get_prod(prod_id).frag_stream(idx)
+#         return scan.get_prod(prod_id).query_stream(idx)
 #
 #
 # @router.get(
@@ -387,11 +387,11 @@ async def get_prod_fpath(scan_id: int = ID(), prod_id: int = ID()):
             codon1_stream,
             codon2_stream,
             codon3_stream,
-            frag1_stream,
-            frag2_stream,
-            frag3_stream,
-            frag4_stream,
-            frag5_stream,
+            query1_stream,
+            query2_stream,
+            query3_stream,
+            query4_stream,
+            query5_stream,
         ) = scan_result.path(scan_result.get_prod(prod_id))
         (
             hmm_cs_stream,
@@ -413,11 +413,11 @@ async def get_prod_fpath(scan_id: int = ID(), prod_id: int = ID()):
         codon1 = textwrap.wrap(codon1_stream, 99, **kwargs)
         codon2 = textwrap.wrap(codon2_stream, 99, **kwargs)
         codon3 = textwrap.wrap(codon3_stream, 99, **kwargs)
-        frags1 = textwrap.wrap(frag1_stream, 99, **kwargs)
-        frags2 = textwrap.wrap(frag2_stream, 99, **kwargs)
-        frags3 = textwrap.wrap(frag3_stream, 99, **kwargs)
-        frags4 = textwrap.wrap(frag4_stream, 99, **kwargs)
-        frags5 = textwrap.wrap(frag5_stream, 99, **kwargs)
+        querys1 = textwrap.wrap(query1_stream, 99, **kwargs)
+        querys2 = textwrap.wrap(query2_stream, 99, **kwargs)
+        querys3 = textwrap.wrap(query3_stream, 99, **kwargs)
+        querys4 = textwrap.wrap(query4_stream, 99, **kwargs)
+        querys5 = textwrap.wrap(query5_stream, 99, **kwargs)
         hmm_cs = textwrap.wrap(hmm_cs_stream, 99, **kwargs)
         seq_cs = textwrap.wrap(seq_cs_stream, 99, **kwargs)
         match = textwrap.wrap(match_stream, 99, **kwargs)
@@ -431,11 +431,11 @@ async def get_prod_fpath(scan_id: int = ID(), prod_id: int = ID()):
             codon1,
             codon2,
             codon3,
-            frags1,
-            frags2,
-            frags3,
-            frags4,
-            frags5,
+            querys1,
+            querys2,
+            querys3,
+            querys4,
+            querys5,
             hmm_cs,
             seq_cs,
             match,

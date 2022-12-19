@@ -77,8 +77,8 @@ def prod_codon():
 
 
 @pytest.fixture
-def prod_frag():
-    return open(get_blob("prod.frag.fna"), "r").read()
+def prod_query():
+    return open(get_blob("prod.query.fna"), "r").read()
 
 
 @pytest.fixture

@@ -210,6 +210,11 @@ def test_get_list(
         jdata = response.json().copy()
         for v in jdata:
             del v["submission"]
+
+        del jdata[0]["exec_started"]
+        del jdata[0]["exec_ended"]
+        del jdata[1]["exec_started"]
+        del jdata[1]["exec_ended"]
         assert jdata == [
             {
                 "id": 1,
@@ -217,8 +222,6 @@ def test_get_list(
                 "state": "done",
                 "progress": 100,
                 "error": None,
-                "exec_started": None,
-                "exec_ended": None,
             },
             {
                 "id": 2,
@@ -226,8 +229,6 @@ def test_get_list(
                 "state": "done",
                 "progress": 100,
                 "error": None,
-                "exec_started": None,
-                "exec_ended": None,
             },
             {
                 "id": 3,
@@ -348,7 +349,7 @@ def test_add_job_progress(app: FastAPI, minifam_hmm):
             "id": 1,
             "type": "hmm",
             "state": "pend",
-            "progress": 100,
+            "progress": 99,
             "error": None,
             "exec_started": None,
             "exec_ended": None,

@@ -44,7 +44,10 @@ async def upload_db(db_file: UploadFile = DBFile()):
 
         hmm.job.state = JobState.done
         hmm.job.progress = 100
-        hmm.job.exec_ended = datetime.now()
+        now = datetime.now()
+        if not hmm.job.exec_started:
+            hmm.job.exec_started = now
+        hmm.job.exec_ended = now
 
         db = DB(xxh3=file.xxh3_64, filename=file.name, hmm=hmm)
         session.add(db)

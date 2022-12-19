@@ -7,6 +7,7 @@ from deciphon_api.viewport import Pixel
 
 __all__ = ["CPainter"]
 
+
 class CPainter:
     def __init__(self, blank=" "):
         self._blank = blank

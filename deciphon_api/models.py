@@ -152,25 +152,6 @@ class Prod(Match, table=True):
 
         return HMMERResult(get_depo().fetch_blob(self.hmmer_sha256))
 
-    def hmm_path(self):
-        return HMMPath(self.match)
-
-    def hmmer_path(self, hmm_path):
-        from io import StringIO
-        from subprocess import check_output
-
-        from deciphon_api.depo import get_depo
-
-        BIN = "/Users/horta/code/deciphon-api/deciphon_api/h3result-mac"
-
-        coord = next(hmm_path.hits()).interval.as_coord()
-
-        output = check_output(
-            [BIN, "--domains", str(get_depo().fetch_blob(self.hmmer_sha256))]
-        )
-        f = StringIO(output.decode())
-        return HMMERPath(f, coord)
-
 
 class Seq(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)

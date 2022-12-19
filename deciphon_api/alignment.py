@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import itertools
+from collections.abc import Sequence
 
 from deciphon_api.any_path import AnyPath, AnyStep
+from deciphon_api.coord_path import CPath, CSegment
 from deciphon_api.hmm_path import HMMPath, HMMSegment, HMMStep
 from deciphon_api.hmmer_path import HMMERPath, HMMERStep
 from deciphon_api.right_join import RightJoin
 
-__all__ = ["make_alignment"]
+__all__ = ["Alignment", "Hit"]
 
 
 class Checkpoint:
@@ -21,18 +23,9 @@ class Checkpoint:
         return not x[i].mute and y[j].match == "-"
 
 
-def make_alignment(hmm: HMMPath, hmmers: list[HMMERPath]) -> AnyPath:
-    segments = list(hmm.segments())
-    hits = [i for i in segments if i.hit]
-    assert len(hits) == len(hmmers)
-
-    rjoins = list(make_rjoins(hits, hmmers))
-
-    paths = list(make_paths(segments, hmmers, rjoins))
-    return AnyPath(itertools.chain.from_iterable([list(x) for x in paths]))
-
-
-def make_paths(segs: list[HMMSegment], hmmers: list[HMMERPath], rjs: list[RightJoin]):
+def make_paths(
+    segs: Sequence[HMMSegment], hmmers: Sequence[HMMERPath], rjs: Sequence[RightJoin]
+):
     hmmer_iter = iter(hmmers)
     rjoin_iter = iter(rjs)
     for segment in segs:
@@ -62,19 +55,50 @@ def make_path_hit(segment: HMMSegment, hmmer: HMMERPath, rjoin: RightJoin):
     return AnyPath(make_step_hit(segment, hmmer, rjoin))
 
 
-def make_rjoins(hits: list[HMMSegment], hmmers: list[HMMERPath]):
+def make_rjoins(hits: Sequence[HMMSegment], hmmers: Sequence[HMMERPath]):
     for hit, hmmer in zip(hits, hmmers):
         x = [i for i in hit]
         y = [i for i in hmmer]
         yield RightJoin(len(x), len(y), Checkpoint(x, y))
 
 
-# def count_alignment(segments: list[HMMSegment], rjoins: list[RightJoin]):
-#     size = 0
-#     it = iter(rjoins)
-#     for segment in segments:
-#         if not segment.hit:
-#             size += len(segment)
-#             continue
-#         size += next(it).size
-#     return size
+class Alignment:
+    def __init__(self, path: CPath):
+        self._path = path
+
+    @classmethod
+    def make(cls, hmm: HMMPath, hmmers: Sequence[HMMERPath]):
+        segments = list(hmm.segments())
+        hits = [i for i in segments if i.hit]
+        assert len(hits) == len(hmmers)
+
+        rjoins = list(make_rjoins(hits, hmmers))
+
+        paths = list(make_paths(segments, hmmers, rjoins))
+        path = AnyPath(itertools.chain.from_iterable([list(x) for x in paths]))
+        return cls(CPath(path))
+
+    @property
+    def hits(self) -> list[Hit]:
+        return [Hit(x) for x in self._path.segments if x.hit]
+
+    @property
+    def coord(self):
+        return self._path.coord
+
+    @property
+    def segments(self):
+        return self._path.segments
+
+    @property
+    def steps(self):
+        return list(self._path)
+
+
+class Hit:
+    def __init__(self, segment: CSegment):
+        self._segment = segment
+
+    @property
+    def path(self):
+        return self._segment

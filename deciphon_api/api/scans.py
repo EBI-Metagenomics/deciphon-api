@@ -375,6 +375,17 @@ async def get_prod_path(scan_id: int = ID()):
 #         return scan.get_prod(prod_id).hmmer().pp_stream()
 
 
+# @router.get(
+#     "/scans/{scan_id}/prods/{prod_id}/hits", response_model=list[Hit], status_code=OK
+# )
+# async def get_prod_hits(scan_id: int = ID(), prod_id: int = ID()):
+#     with Session(get_sched()) as session:
+#         scan = session.get(Scan, scan_id)
+#         if not scan:
+#             raise NotFoundException(Scan)
+#         return scan.get_prod(prod_id).hits
+
+
 @router.get(
     "/scans/{scan_id}/prods/{prod_id}/fpath", response_class=PLAIN, status_code=OK
 )

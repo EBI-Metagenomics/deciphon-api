@@ -41,6 +41,13 @@ class HMMStepBase:
     def mute(self) -> bool:
         return len(self.amino) == 0
 
+    @property
+    def state_position(self) -> int:
+        if self.core:
+            return int(self.state[1:]) - 0
+        # TODO: warn the user?
+        return -1
+
 
 @dataclasses.dataclass
 class HMMStep(HMMStepBase):

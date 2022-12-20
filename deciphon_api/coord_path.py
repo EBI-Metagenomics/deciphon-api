@@ -5,6 +5,7 @@ import itertools
 
 from deciphon_api.any_path import AnyPath, AnyStep
 from deciphon_api.coordinates import Coord, Interval, Point
+from deciphon_api.viewport import Pixel
 
 __all__ = ["CStep", "CSegment", "CPath"]
 
@@ -21,6 +22,9 @@ class CStep(AnyStep):
     @classmethod
     def make(cls, step: AnyStep, point: Point):
         return cls(step.hmm, step.hmmer, point)
+
+    def pixel(self, char: str):
+        return Pixel(self.point, char)
 
 
 class CSegment:

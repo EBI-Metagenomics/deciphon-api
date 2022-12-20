@@ -52,7 +52,9 @@ def test_next_pend(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         response = client.get("/jobs/next-pend")
@@ -84,7 +86,9 @@ def test_set_run(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna):
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
         job_id = response.json()["id"]
 
@@ -112,7 +116,9 @@ def test_set_run_and_fail(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna)
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         assert response.status_code == 201
@@ -152,7 +158,9 @@ def test_set_run_and_done(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna)
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         assert response.status_code == 201
@@ -202,7 +210,9 @@ def test_get_list(
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         response = client.get("/jobs")
@@ -268,7 +278,9 @@ def test_get_scan_from_job(app: FastAPI, minifam_hmm, minifam_dcp, consensus_fna
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         response = client.get("/jobs/2/scan")

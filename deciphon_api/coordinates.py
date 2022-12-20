@@ -116,6 +116,12 @@ class Interval:
         p = point.project(coord)
         return i.start <= p.pos and p.pos < i.end
 
+    def intervals(self, size: int | None = None):
+        assert size
+        for start in range(self.start, self.end, size):
+            end = min(start + size, self.end)
+            yield self.coord.make_interval(start, end)
+
     def __str__(self):
         return f"[{self.start}, {self.end})"
 

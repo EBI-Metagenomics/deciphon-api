@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import itertools
-from collections.abc import Sequence
+from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 from math import exp
+from typing import Iterator
 
 from deciphon_api.any_path import AnyPath, AnyStep
-from deciphon_api.coord_path import CPath, CSegment
+from deciphon_api.coord_path import CPath, CSegment, CStep
+from deciphon_api.coordinates import Interval
 from deciphon_api.hmm_path import HMMPath, HMMSegment, HMMStep
 from deciphon_api.hmmer_path import HMMERPath, HMMERStep
 from deciphon_api.right_join import RightJoin
@@ -103,7 +106,78 @@ class Alignment:
         return list(self._path)
 
 
-class Hit:
+class SegmentRead(ABC):
+    # inclusive on both sizes, zero-indexed
+    @property
+    def query_bounds(self) -> tuple[int, int]:
+        indices = [x.hmm.index for x in iter(self) if x.hmm]
+        if len(indices) == 0:
+            # TODO: tell the user this is an error?
+            return (0, 0)
+        return (indices[0], indices[-1])
+
+    # inclusive on both sizes, zero-indexed
+    @property
+    def state_bounds(self) -> tuple[int, int]:
+        pos = [x.hmm.state_position for x in iter(self) if x.hmm]
+        if len(pos) == 0:
+            # TODO: tell the user this is an error?
+            return (0, 0)
+        return (pos[0], pos[-1])
+
+    @property
+    def hmm(self):
+        return [x for x in self if x.hmm]
+
+    @property
+    def hmmer(self):
+        return [x for x in self if x.hmmer]
+
+    @abstractmethod
+    def __len__(self) -> int:
+        ...
+
+    @abstractmethod
+    def __getitem__(self, idx: int) -> CStep:
+        ...
+
+    @abstractmethod
+    def __iter__(self) -> Iterator[CStep]:
+        ...
+
+    @abstractmethod
+    def __str__(self) -> str:
+        ...
+
+
+def steps_string(steps: Iterable[CStep]):
+    return ", ".join((str(x) for x in steps))
+
+
+class Segment(SegmentRead):
+    def __init__(self, hit: Hit, interval: Interval):
+        self._interval = interval
+        self._hit = hit
+        self._steps = [x for x in hit if interval.has(x.point)]
+
+    @property
+    def coord(self):
+        return self._hit.coord
+
+    def __len__(self) -> int:
+        return len(self._steps)
+
+    def __getitem__(self, idx: int) -> CStep:
+        return self._steps[idx]
+
+    def __iter__(self) -> Iterator[CStep]:
+        return iter(self._steps)
+
+    def __str__(self):
+        return f"Segment({steps_string(iter(self))})"
+
+
+class Hit(SegmentRead):
     def __init__(self, segment: CSegment):
         self._segment = segment
 
@@ -114,3 +188,22 @@ class Hit:
     @property
     def coord(self):
         return self._segment.coord
+
+    def cut(self, interval: Interval):
+        return Segment(self, interval)
+
+    @property
+    def interval(self):
+        return self._segment.interval
+
+    def __len__(self) -> int:
+        return len(self._segment)
+
+    def __getitem__(self, idx: int) -> CStep:
+        return self._segment[idx]
+
+    def __iter__(self) -> Iterator[CStep]:
+        return iter(self._segment)
+
+    def __str__(self):
+        return f"Hit({steps_string(iter(self))})"

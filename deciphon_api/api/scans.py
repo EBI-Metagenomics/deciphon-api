@@ -9,6 +9,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
+from tabulate import tabulate
 
 from deciphon_api.api.files import FastaFile, ProdFile
 from deciphon_api.api.utils import AUTH, ID, IDX
@@ -23,7 +24,6 @@ from deciphon_api.prodfile import ProdFileReader
 from deciphon_api.scan_result import ScanResult
 from deciphon_api.sched import get_sched
 from deciphon_api.viewport import Viewport
-from tabulate import tabulate
 
 __all__ = ["router"]
 
@@ -83,7 +83,7 @@ async def post_scan(scanp: ScanPost = Body(...)):
         return scan.job
 
 
-@router.post("/scans/", response_model=Job, status_code=CREATED)
+@router.post("/scans/fasta/", response_model=Job, status_code=CREATED)
 async def post_fasta_file_scan(
     db_id: int = Form(...),
     multi_hits: bool = Form(False),

@@ -39,7 +39,9 @@ def test_post_prods(
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         files = files_form("prod_file", prod_tar_gz, OCTET)
@@ -61,7 +63,9 @@ def test_get_scan_prods_as_gff(
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         files = files_form("prod_file", prod_tar_gz, OCTET)
@@ -86,7 +90,9 @@ def test_get_scan_prods_as_amino(
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         files = files_form("prod_file", prod_tar_gz, OCTET)
@@ -111,7 +117,9 @@ def test_get_scan_prods_as_codon(
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         files = files_form("prod_file", prod_tar_gz, OCTET)
@@ -136,7 +144,9 @@ def test_get_scan_prods_as_query(
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         files = files_form("prod_file", prod_tar_gz, OCTET)
@@ -161,7 +171,9 @@ def test_get_scan_prods_as_path(
         assert response.status_code == 201
 
         files = files_form("fasta_file", consensus_fna, TEXT)
-        response = client.post(url("/scans/"), data=DATA, files=files, headers=HEADERS)
+        response = client.post(
+            url("/scans/fasta/"), data=DATA, files=files, headers=HEADERS
+        )
         assert response.status_code == 201
 
         files = files_form("prod_file", prod_tar_gz, OCTET)

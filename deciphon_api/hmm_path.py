@@ -1,24 +1,21 @@
 from __future__ import annotations
 
 import dataclasses
-import itertools
-from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Iterator
+from typing import Any, Iterator
 
-__all__ = ["HMMPath", "HMMStep", "HMMSegment"]
+from deciphon_api.path_view import PathView
 
-
-def steps_string(steps: Iterable[HMMStep]):
-    return ", ".join((str(x) for x in steps))
+__all__ = ["HMMPath", "HMMStep", "HMMPathInterval"]
 
 
 @dataclasses.dataclass
-class HMMStepBase:
+class HMMStep:
     query: str
     state: str
     codon: str
     amino: str
+    index: int
 
     def has_query(self, level: int):
         return len(self.query) > level
@@ -46,41 +43,11 @@ class HMMStepBase:
         # TODO: warn the user?
         return -1
 
-
-@dataclasses.dataclass
-class HMMStep(HMMStepBase):
-    index: int
-
-    @classmethod
-    def make(cls, index: int, step: HMMStepBase):
-        return cls(
-            index=index,
-            query=step.query,
-            state=step.state,
-            codon=step.codon,
-            amino=step.amino,
-        )
+    def replace(self, changes: Any):
+        return dataclasses.replace(self, **changes)
 
 
-class HMMPathRead(ABC):
-    @abstractmethod
-    def __len__(self) -> int:
-        ...
-
-    @abstractmethod
-    def __getitem__(self, idx: int) -> HMMStep:
-        ...
-
-    @abstractmethod
-    def __iter__(self) -> Iterator[HMMStep]:
-        ...
-
-    @abstractmethod
-    def __str__(self) -> str:
-        ...
-
-
-class HMMSegment(HMMPathRead):
+class HMMPathInterval(PathView):
     def __init__(self, path: HMMPath, start: int, end: int, hit: bool):
         self._start = start
         self._end = end
@@ -100,41 +67,38 @@ class HMMSegment(HMMPathRead):
     def __iter__(self) -> Iterator[HMMStep]:
         return iter(self._steps)
 
-    def __str__(self):
-        return f"HMMSegment({steps_string(iter(self))})"
 
-
-class HMMPath(HMMPathRead):
+class HMMPath(PathView):
     def __init__(self, steps: Iterable[HMMStep]):
         self._steps = list(steps)
 
-    @property
-    def query(self) -> str:
-        return "".join(itertools.chain.from_iterable((x.query for x in self._steps)))
-
     @classmethod
     def make(cls, data: str):
-        steps = [HMMStepBase(*m.split(",")) for m in data.split(";")]
+        steps = [HMMStep(*m.split(","), index=0) for m in data.split(";")]
         index = [0]
         for x in steps[:-1]:
             index += [len(x.query) + index[-1]]
-        return cls([HMMStep.make(i, x) for x, i in zip(steps, index)])
+        return cls([x.replace({"index": i}) for x, i in zip(steps, index)])
 
-    def segments(self):
+    @property
+    def intervals(self):
+        return list(self._make_intervals())
+
+    def _make_intervals(self):
         last = 0
         hit = False
 
         for i, x in enumerate(self._steps):
             if not hit and x.core:
-                yield HMMSegment(self, last, i, hit)
+                yield HMMPathInterval(self, last, i, hit)
                 last = i
                 hit = True
             elif hit and not x.core:
-                yield HMMSegment(self, last, i, hit)
+                yield HMMPathInterval(self, last, i, hit)
                 last = i
                 hit = False
 
-        yield HMMSegment(self, last, len(self._steps), False)
+        yield HMMPathInterval(self, last, len(self._steps), False)
 
     def __len__(self):
         return len(self._steps)
@@ -144,6 +108,3 @@ class HMMPath(HMMPathRead):
 
     def __iter__(self):
         return iter(self._steps)
-
-    def __str__(self):
-        return f"HMMPath({steps_string(self._steps)})"

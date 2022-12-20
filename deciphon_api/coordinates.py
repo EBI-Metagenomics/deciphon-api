@@ -17,9 +17,12 @@ def common_coord_ancestor(a: Coord, b: Coord):
 
 
 class Coord:
-    def __init__(self, length: int):
-        assert length >= 0
-        self._length = length
+    def __init__(self, length: int | None = None):
+        if length:
+            assert length >= 0
+            self._length = length
+        else:
+            self._length = 2_147_483_648
 
     @property
     def offset(self):
@@ -74,6 +77,11 @@ class Interval:
         self.coord = coord
         self.start = start
         self.end = end
+
+    @property
+    def points(self):
+        for i in range(self.start, self.end):
+            yield Point(self.coord, i)
 
     @property
     def length(self):

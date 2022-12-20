@@ -3,11 +3,9 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Iterable
 
+from deciphon_api.path_view import PathView
+
 __all__ = ["HMMERPath", "HMMERStep"]
-
-
-def steps_string(steps: Iterable[HMMERStep]):
-    return ", ".join((str(x) for x in steps))
 
 
 @dataclasses.dataclass
@@ -19,7 +17,7 @@ class HMMERStep:
     score: str
 
 
-class HMMERPath:
+class HMMERPath(PathView):
     def __init__(self, steps: Iterable[HMMERStep]):
         self._steps = list(steps)
 
@@ -31,6 +29,3 @@ class HMMERPath:
 
     def __iter__(self):
         return iter(self._steps)
-
-    def __str__(self):
-        return f"HMMERPath({steps_string(self._steps)})"

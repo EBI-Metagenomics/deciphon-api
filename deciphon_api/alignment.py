@@ -89,7 +89,6 @@ class Alignment:
         rjoins = list(make_rjoins(hits, hmmers))
 
         paths = list(make_paths(segments, hmmers, rjoins))
-        # path = AnyPath(itertools.chain.from_iterable([x.steps for x in paths]))
         evalue = exp(evalue_log)
         return cls(profile, evalue, CPath(paths))
 

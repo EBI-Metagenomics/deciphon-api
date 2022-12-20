@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import itertools
 
 from deciphon_api.coordinates import Coord, Interval, Point
@@ -51,6 +52,16 @@ class CStep(CStepBase):
     def pixel(self, char: str):
         assert self.point
         return Pixel(self.point, char)
+
+
+@dataclasses.dataclass
+class HMMCStep(HMMStep):
+    point: Point
+
+
+@dataclasses.dataclass
+class HMMERCStep(HMMERStep):
+    point: Point
 
 
 class CSegment:

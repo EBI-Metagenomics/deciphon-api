@@ -32,7 +32,15 @@ class MatchFile:
         self._fileobj = fileobj
 
         self._fileobj.seek(0)
+        self._check_header()
         self._record_offset = self._fileobj.tell()
+
+    def _check_header(self):
+        # TODO: finish this
+        header = self._fileobj.readline().strip()
+        assert header
+        # if header.split("\t") != MatchFile.fields:
+        #     raise ValueError("Invalid match file header")
 
     def read_records(self):
         self._rewind()

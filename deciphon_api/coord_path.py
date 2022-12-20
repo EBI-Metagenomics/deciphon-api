@@ -1,29 +1,55 @@
 from __future__ import annotations
 
-import dataclasses
 import itertools
 
-from deciphon_api.any_path import AnyPath, AnyStep
 from deciphon_api.coordinates import Coord, Interval, Point
+from deciphon_api.hmm_path import HMMStep
+from deciphon_api.hmmer_path import HMMERStep
 from deciphon_api.viewport import Pixel
 
 __all__ = ["CStep", "CSegment", "CPath"]
 
 
-@dataclasses.dataclass
-class CStep(AnyStep):
-    point: Point
+class CStepBase:
+    def __init__(
+        self,
+        hmm: HMMStep | None = None,
+        hmmer: HMMERStep | None = None,
+        point: Point | None = None,
+    ):
+        self._hmm = hmm
+        self._hmmer = hmmer
+        self._point = point
 
-    def amino(self) -> str | None:
-        if self.hmm and self.hmm.has_amino():
-            return self.hmm.amino
-        return None
+    @property
+    def hmm(self):
+        return self._hmm
 
+    @hmm.setter
+    def hmm(self, hmm: HMMStep):
+        self._hmm = hmm
+
+    @property
+    def hmmer(self):
+        return self._hmmer
+
+    @hmmer.setter
+    def hmmer(self, hmmer: HMMERStep):
+        self._hmmer = hmmer
+
+    @property
+    def point(self):
+        assert self._point
+        return self._point
+
+
+class CStep(CStepBase):
     @classmethod
-    def make(cls, step: AnyStep, point: Point):
+    def make(cls, step, point: Point):
         return cls(step.hmm, step.hmmer, point)
 
     def pixel(self, char: str):
+        assert self.point
         return Pixel(self.point, char)
 
 
@@ -56,30 +82,31 @@ class CSegment:
 
 
 class CPath:
-    def __init__(self, path: AnyPath):
-        self._coord = Coord(len(path))
-        self._steps = list(itertools.chain.from_iterable(self._make_steps(path)))
-        intervals = self._make_intervals(path)
-        segments = path.segments()
-        self._segments = [CSegment(self, i, h.hit) for i, h in zip(intervals, segments)]
+    def __init__(self, paths):
+        self._coord = Coord(sum([len(x.steps) for x in paths]))
+        self._steps = list(itertools.chain.from_iterable(self._make_steps(paths)))
+        intervals = self._make_intervals(paths)
+        self._segments = [CSegment(self, i, h.hit) for i, h in zip(intervals, paths)]
 
     @property
     def coord(self):
         return self._coord
 
-    def _make_steps(self, path: AnyPath):
+    def _make_steps(self, paths):
         coord = self._coord
         start = 0
-        for x in path.segments():
-            end = start + len(x)
-            steps = [CStep.make(y, Point(coord, start + i)) for i, y in enumerate(x)]
+        for x in paths:
+            end = start + len(x.steps)
+            steps = [
+                CStep.make(y, Point(coord, start + i)) for i, y in enumerate(x.steps)
+            ]
             yield steps
             start = end
 
-    def _make_intervals(self, path: AnyPath):
+    def _make_intervals(self, paths):
         start = 0
-        for x in path.segments():
-            end = start + len(x)
+        for x in paths:
+            end = start + len(x.steps)
             interval = Interval(self._coord, start, end)
             yield interval
             start = end

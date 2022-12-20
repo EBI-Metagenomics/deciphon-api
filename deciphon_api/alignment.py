@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import itertools
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
 from math import exp
 from typing import Iterator
 
-from deciphon_api.any_path import AnyPath, AnyStep
 from deciphon_api.coord_path import CPath, CSegment, CStep
 from deciphon_api.coordinates import Interval
 from deciphon_api.hmm_path import HMMPath, HMMSegment, HMMStep
@@ -40,14 +38,20 @@ def make_paths(
 
 
 def make_path_nonhit(segment: HMMSegment):
-    return AnyPath([AnyStep(y, None) for y in segment])
+    return MPath([CStep(y, None) for y in segment], False)
+
+
+class MPath:
+    def __init__(self, steps, hit):
+        self.steps = steps
+        self.hit = hit
 
 
 def make_step_hit(segment: HMMSegment, hmmer: HMMERPath, rjoin: RightJoin):
     a = iter(segment)
     b = iter(hmmer)
     for li, ri in zip(rjoin.left, rjoin.right):
-        step = AnyStep(None, None)
+        step = CStep()
         if li:
             step.hmm = next(a)
         if ri:
@@ -56,7 +60,7 @@ def make_step_hit(segment: HMMSegment, hmmer: HMMERPath, rjoin: RightJoin):
 
 
 def make_path_hit(segment: HMMSegment, hmmer: HMMERPath, rjoin: RightJoin):
-    return AnyPath(make_step_hit(segment, hmmer, rjoin))
+    return MPath(list(make_step_hit(segment, hmmer, rjoin)), True)
 
 
 def make_rjoins(hits: Sequence[HMMSegment], hmmers: Sequence[HMMERPath]):
@@ -85,9 +89,9 @@ class Alignment:
         rjoins = list(make_rjoins(hits, hmmers))
 
         paths = list(make_paths(segments, hmmers, rjoins))
-        path = AnyPath(itertools.chain.from_iterable([list(x) for x in paths]))
+        # path = AnyPath(itertools.chain.from_iterable([x.steps for x in paths]))
         evalue = exp(evalue_log)
-        return cls(profile, evalue, CPath(path))
+        return cls(profile, evalue, CPath(paths))
 
     @property
     def hits(self) -> list[Hit]:

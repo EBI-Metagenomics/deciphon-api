@@ -1,4 +1,3 @@
-import hashlib
 import os
 import tarfile
 
@@ -19,14 +18,6 @@ class HMMERFile:
     def __init__(self, fileobj):
         self._fileobj = fileobj
 
-    # @property
-    # def sha256(self) -> str:
-    #     self._fileobj.seek(0)
-    #     h = hashlib.sha256()
-    #     while content := self._fileobj.read(BUFSIZE):
-    #         h.update(content)
-    #     return h.hexdigest()
-
     @property
     def content(self):
         self._fileobj.seek(0)
@@ -41,13 +32,7 @@ class MatchFile:
         self._fileobj = fileobj
 
         self._fileobj.seek(0)
-        self._check_header()
         self._record_offset = self._fileobj.tell()
-
-    def _check_header(self):
-        header = self._fileobj.readline().strip()
-        # if header.split("\t") != MatchFile.fields:
-        #     raise ValueError("Invalid match file header")
 
     def read_records(self):
         self._rewind()

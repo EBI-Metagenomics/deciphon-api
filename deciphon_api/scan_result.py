@@ -4,7 +4,6 @@ import dataclasses
 import io
 from typing import List
 
-from BCBio import GFF
 from Bio import SeqIO
 from Bio.Seq import Seq as BioSeq
 from Bio.SeqFeature import FeatureLocation, SeqFeature

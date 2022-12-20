@@ -2,11 +2,11 @@ default_language_version:
   python: python3.10
 repos:
   - repo: https://github.com/ambv/black
-    rev: 22.10.0
+    rev: 22.12.0
     hooks:
       - id: black
   - repo: https://github.com/timothycrosley/isort
-    rev: 5.10.1
+    rev: v5.11.3
     hooks:
       - id: isort
         args: ["--profile", "black", "--filter-files"]
@@ -21,3 +21,8 @@ repos:
     rev: v0.0.4
     hooks:
       - id: check-version-equality
+        repos:
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.188
+    hooks:
+      - id: ruff

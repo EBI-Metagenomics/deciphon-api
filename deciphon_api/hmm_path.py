@@ -32,10 +32,8 @@ class HMMStepBase:
 
     @property
     def core(self) -> bool:
-        M = self.state.startswith("M")
-        I = self.state.startswith("I")
-        D = self.state.startswith("D")
-        return M or I or D
+        state = self.state.startswith
+        return state("M") or state("I") or state("D")
 
     @property
     def mute(self) -> bool:

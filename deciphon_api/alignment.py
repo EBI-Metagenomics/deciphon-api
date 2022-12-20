@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import dataclasses
+import itertools
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
 from math import exp
 from typing import Iterator
 
 from deciphon_api.coord_path import CPath, CSegment, CStep
-from deciphon_api.coordinates import Interval
+from deciphon_api.coordinates import Coord, Interval, Point
 from deciphon_api.hmm_path import HMMPath, HMMSegment, HMMStep
 from deciphon_api.hmmer_path import HMMERPath, HMMERStep
 from deciphon_api.right_join import RightJoin
@@ -32,35 +34,39 @@ def make_paths(
     rjoin_iter = iter(rjs)
     for segment in segs:
         if segment.hit:
-            yield make_path_hit(segment, next(hmmer_iter), next(rjoin_iter))
+            yield make_hits(segment, next(hmmer_iter), next(rjoin_iter))
         else:
-            yield make_path_nonhit(segment)
+            yield make_nonhits(segment)
 
 
-def make_path_nonhit(segment: HMMSegment):
-    return MPath([CStep(y, None) for y in segment], False)
+@dataclasses.dataclass
+class Bag:
+    steps: list[CStep]
+    hit: bool
 
 
-class MPath:
-    def __init__(self, steps, hit):
-        self.steps = steps
-        self.hit = hit
+def make_nonhits(segment: HMMSegment):
+    return Bag([CStep(y, None) for y in segment], False)
+
+
+def make_steps(coord: Coord, paths):
+    start = 0
+    for x in paths:
+        end = start + len(x.steps)
+        steps = [CStep.make(y, Point(coord, start + i)) for i, y in enumerate(x.steps)]
+        yield steps
+        start = end
 
 
 def make_step_hit(segment: HMMSegment, hmmer: HMMERPath, rjoin: RightJoin):
     a = iter(segment)
     b = iter(hmmer)
     for li, ri in zip(rjoin.left, rjoin.right):
-        step = CStep()
-        if li:
-            step.hmm = next(a)
-        if ri:
-            step.hmmer = next(b)
-        yield step
+        yield CStep(next(a) if li else None, next(b) if ri else None)
 
 
-def make_path_hit(segment: HMMSegment, hmmer: HMMERPath, rjoin: RightJoin):
-    return MPath(list(make_step_hit(segment, hmmer, rjoin)), True)
+def make_hits(segment: HMMSegment, hmmer: HMMERPath, rjoin: RightJoin):
+    return Bag(list(make_step_hit(segment, hmmer, rjoin)), True)
 
 
 def make_rjoins(hits: Sequence[HMMSegment], hmmers: Sequence[HMMERPath]):
@@ -68,6 +74,15 @@ def make_rjoins(hits: Sequence[HMMSegment], hmmers: Sequence[HMMERPath]):
         x = [i for i in hit]
         y = [i for i in hmmer]
         yield RightJoin(len(x), len(y), Checkpoint(x, y))
+
+
+def make_intervals(coord: Coord, paths):
+    start = 0
+    for x in paths:
+        end = start + len(x.steps)
+        interval = Interval(coord, start, end)
+        yield interval
+        start = end
 
 
 class Alignment:
@@ -85,12 +100,13 @@ class Alignment:
         segments = list(hmm.segments())
         hits = [i for i in segments if i.hit]
         assert len(hits) == len(hmmers)
-
         rjoins = list(make_rjoins(hits, hmmers))
-
         paths = list(make_paths(segments, hmmers, rjoins))
+        coord = Coord(sum([len(x.steps) for x in paths]))
+        steps = list(itertools.chain.from_iterable(make_steps(coord, paths)))
+        intervals = make_intervals(coord, paths)
         evalue = exp(evalue_log)
-        return cls(profile, evalue, CPath(paths))
+        return cls(profile, evalue, CPath(coord, steps, intervals, paths))
 
     @property
     def hits(self) -> list[Hit]:

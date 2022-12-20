@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
-import itertools
 
-from deciphon_api.coordinates import Coord, Interval, Point
+from deciphon_api.coordinates import Interval, Point
 from deciphon_api.hmm_path import HMMStep
 from deciphon_api.hmmer_path import HMMERStep
 from deciphon_api.viewport import Pixel
@@ -93,10 +92,9 @@ class CSegment:
 
 
 class CPath:
-    def __init__(self, paths):
-        self._coord = Coord(sum([len(x.steps) for x in paths]))
-        self._steps = list(itertools.chain.from_iterable(self._make_steps(paths)))
-        intervals = self._make_intervals(paths)
+    def __init__(self, coord, steps, intervals, paths):
+        self._coord = coord
+        self._steps = steps
         self._segments = [CSegment(self, i, h.hit) for i, h in zip(intervals, paths)]
 
     @property

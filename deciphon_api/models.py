@@ -7,10 +7,10 @@ from typing import Optional
 
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
-from deciphon_api.alignment import Align, Alignment
+from deciphon_api.align import Align
 from deciphon_api.exceptions import NotFoundException
 from deciphon_api.hmm_path import HMMPath as HMMPath
-from deciphon_api.hmmer_domains import read_hmmer_paths
+from deciphon_api.hmmer_domains import read_hmmer_headers, read_hmmer_paths
 from deciphon_api.hmmer_path import HMMERPath as HMMERPath
 from deciphon_api.hmmer_result import HMMERResult
 from deciphon_api.liner import mkliner
@@ -98,13 +98,9 @@ class Prod(Match, table=True):
 
     def align(self):
         hmm = HMMPath.make(self.match)
+        headers = read_hmmer_headers(mkliner(data=StringIO(self.hmmer().domains())))
         hmmers = read_hmmer_paths(mkliner(data=StringIO(self.hmmer().domains())))
-        return Align(hmm, hmmers)
-
-    def alignment(self):
-        hmm = HMMPath.make(self.match)
-        hmmers = read_hmmer_paths(mkliner(data=StringIO(self.hmmer().domains())))
-        return Alignment.make(self.profile, self.evalue_log, hmm, hmmers)
+        return Align(hmm, headers, hmmers)
 
     def _stream(self, name: str, idx: int):
         if name == "frag":

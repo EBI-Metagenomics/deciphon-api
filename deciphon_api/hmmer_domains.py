@@ -3,7 +3,7 @@ from __future__ import annotations
 from deciphon_api.hmmer_path import HMMERPath, HMMERStep
 from deciphon_api.liner import Liner
 
-__all__ = ["read_hmmer_paths"]
+__all__ = ["read_hmmer_paths", "read_hmmer_headers"]
 
 
 def is_header(row: str):
@@ -80,3 +80,12 @@ def pathit(data: Liner):
 
 def read_hmmer_paths(data: Liner):
     return [x for x in pathit(data)]
+
+
+def read_hmmer_headers(data: Liner):
+    for row in data:
+        row = row.strip()
+        if len(row) == 0:
+            continue
+        if is_header(row):
+            yield row.strip()

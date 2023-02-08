@@ -2,7 +2,8 @@ import tempfile
 from pathlib import Path
 from subprocess import check_output
 
-BIN = "/Users/horta/code/deciphon-api/deciphon_api/h3result-mac"
+# BIN = "/Users/horta/code/deciphon-api/deciphon_api/h3result-mac"
+BIN = "/home/ubuntu/h3client/build/h3result"
 
 __all__ = ["HMMERResult"]
 

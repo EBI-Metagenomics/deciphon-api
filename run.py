@@ -1,148 +1,131 @@
 from __future__ import annotations
 
-import pickle
-import textwrap
+import tabulate
+from sqlmodel import Session
 
-from tabulate import tabulate
+from deciphon_api.main import get_app
+from deciphon_api.models import Scan
+from deciphon_api.render import Viewport
+from deciphon_api.sched import get_sched
 
-from deciphon_api.alignment import Alignment
-from deciphon_api.hmm_path import HMMPath
-from deciphon_api.hmmer_domains import read_hmmer_paths
-from deciphon_api.liner import mkliner
-from deciphon_api.models import Prod
-from deciphon_api.painter import Painter, Stream, StreamName
-from deciphon_api.viewport import Viewport
+app = get_app()
 
 
-def wrap(txt: str) -> list[str]:
-    return textwrap.wrap(txt, 99, drop_whitespace=False, break_on_hyphens=False)
+with Session(get_sched()) as session:
+    scan = session.get(Scan, 14)
+    assert scan
+    prod = scan.prods[0]
+    seq = prod.seq
 
+seqid = seq.name
+align = prod.align()
+profile = prod.profile
+seqid = seq.name
+viewport = Viewport(align.coord, ".")
+txt = "Alignments for each domain:\n"
+for hdr, hit in zip(align.headers, align.hits):
+    table = []
+    COLS = 88
+    intervals = list(hit.interval.intervals(size=COLS))
+    width = intervals[0].length
+    txt += hdr + "\n"
+    for i in intervals:
+        v = viewport.cut(i)
+        h = hit.cut(i)
+        amino = [y for x in h.hmm if (y := x.amino())]
+        hmm_cs = [x.hmm_cs() for x in h.hmmer]
+        match = [x.match() for x in h.hmmer]
+        h3query = [x.query() for x in h.hmmer]
+        score = [x.score() for x in h.hmmer]
+        q0 = [y for x in h.hmm if (y := x.query(0))]
+        q1 = [y for x in h.hmm if (y := x.query(1))]
+        q2 = [y for x in h.hmm if (y := x.query(2))]
+        q3 = [y for x in h.hmm if (y := x.query(3))]
+        q4 = [y for x in h.hmm if (y := x.query(4))]
+        profile_left, profile_right = h.state_bounds
+        query_left, query_right = h.query_bounds
+        pad = "&" * (width - i.length)
+        row = [
+            [None, None, v.display(hmm_cs) + pad, "CS"],
+            [profile, profile_left, v.display(h3query) + pad, profile_right],
+            [None, None, v.display(match) + pad, None],
+            [seqid, query_left, v.display(amino) + pad, query_right],
+            [None, None, v.display(q0) + pad, None],
+            [None, None, v.display(q1) + pad, None],
+            [None, None, v.display(q2) + pad, None],
+            [None, None, v.display(q3) + pad, None],
+            [None, None, v.display(q4) + pad, None],
+            [None, None, v.display(score) + pad, "PP"],
+        ]
+        table += row + [[None, None, None]]
+    tablefmt = tabulate.simple_separated_format(" ")
+    txt += str(
+        tabulate.tabulate(
+            table, tablefmt=tablefmt, colalign=("right", "right", "left", "left")
+        )
+    )
+    txt = txt.replace("&", "") + "\n"
 
-prod = Prod(**pickle.load(open("prod.dict", "rb")))
-# seqid = prod.seq.name
-seqid = "AA_kinase-1"
-align = prod.alignment()
-hit = align.hits[0]
-steps = list(hit.path)
-paint = Painter()
-v = Viewport(hit.coord, "▒").cut(hit.path.interval)
+print(txt)
 
-
-def disp(stream: Stream):
-    return v.display(paint.draw(stream, steps))
-
-
-qsteps = [x if x.hmm and x.hmm.has_query(0) else None for x in steps]
-
-
-def index_bounds(steps):
-    indices = [x.hmm.index for x in steps if x]
-    return (indices[0], indices[-1])
-
-
-QUERY = [wrap(disp(Stream(name=StreamName("query"), level=i))) for i in range(5)]
-STATE = wrap(disp(Stream(name=StreamName("state"))))
-AMINO = wrap(disp(Stream(name=StreamName("amino"))))
-H3HMM_CS = wrap(disp(Stream(name=StreamName("h3hmm_cs"))))
-H3QUERY_CS = wrap(disp(Stream(name=StreamName("h3query_cs"))))
-H3MATCH = wrap(disp(Stream(name=StreamName("h3match"))))
-H3QUERY = wrap(disp(Stream(name=StreamName("h3query"))))
-H3SCORE = wrap(disp(Stream(name=StreamName("h3score"))))
-
-table = []
-offset = 0
-for i in range(len(STATE)):
-    # align._profile
-    bounds = index_bounds(qsteps[offset:offset+len(H3HMM_CS[i])])
-    row = [
-        [None, None, H3HMM_CS[i], "CS"],
-        [seqid, None, AMINO[i], None],
-        [None, None, H3MATCH[i], None],
-        [align._profile, None, H3QUERY[i], None],
-        [None, None, H3SCORE[i], "PP"],
-        [None, bounds[0] + 1, QUERY[0][i], bounds[1] + 1],
-        [None, None, QUERY[1][i], None],
-        [None, None, QUERY[2][i], None],
-        [None, None, QUERY[3][i], None],
-    ]
-    offset += len(H3HMM_CS[i])
-
-    table += row + [[None, None, None]]
-
-print(tabulate(table, tablefmt="plain"))
-
-# hmm = HMMPath.make(open("match.txt", "r").read().strip())
-# hmmers = read_hmmer_paths(mkliner(path="domains.txt"))
+# Domain annotation for each model (and alignments):
+# >> 2OG-FeII_Oxy_3  2OG-Fe(II) oxygenase superfamily
+#    #    score  bias  c-Evalue  i-Evalue hmmfrom  hmm to    alifrom  ali to    envfrom  env to     acc
+#  ---   ------ ----- --------- --------- ------- -------    ------- -------    ------- -------    ----
+#    1 !   50.3   0.1   1.7e-17   1.7e-17       2      99 ..       2     100 ..       1     101 [] 0.84
 #
+#   Alignments for each domain:
+#   == domain 1  score: 50.3 bits;  conditional E-value: 1.7e-17
+#           2OG-FeII_Oxy_3   2 qlnrygpggflspHvDnsesssrrltlllylndpew.eeeGGelelypsdr....segvakevedeevvpkpgrlvlFksdrslHrv 83
+#                              +l++ g+  + + H+D ++ ++ r++++ly  ++++  ++ Gel++yp ++    +   +++v d +++p++grlvlF s++s+H +
+#   2OG-FeII_Oxy_3-sample1   2 TLHHAGDQKETKKHADINSTGPSRFSAILYHDPASSpLAWDGELVVYPIQEgtvnF---QENVPDVRHKPRRGRLVLFASSESAHKA 85
+#                              789999**************************7777***********988444442...4444433445****************** PP
 #
-# align = Alignment.make(hmm, hmmers)
+#           2OG-FeII_Oxy_3  84 tpvgaqgrrlaitgwf 99
+#                                + +  r+ ++++++
+#   2OG-FeII_Oxy_3-sample1  86 LAA-QPARHASFNFYL 100
+#                              ***.888888888886 PP
+
+# == domain 1  score: 45.2 bits;  conditional E-value: 6.7e-16
+#         2OG-FeII_Oxy_3   2 qlnrygpggflspHvDnsesssrrltlllylndpew.eeeGGelelypsdr....segvakevedeevvpkpgrlvlFksdrslHrv 83
+#                            +l++ g+  + + H+D ++ ++ r++++ly  ++++  ++ Gel++yp ++    +   +++v d +++p++grlvlF s++s+H +
+# 2OG-FeII_Oxy_3-sample1   2 TLHHAGDQKETKKHADINSTGPSRFSAILYHDPASSpLAWDGELVVYPIQEgtvnF---QENVPDVRHKPRRGRLVLFASSESAHKA 85
+#                            789999**************************7777***********988444442...4444433445****************** PP
 #
-# paint = Painter()
-# v = Viewport(align.coord, "▒")
-# segs = align.segments
+#         2OG-FeII_Oxy_3  84 tpvgaqgrrlaitgwf 99
+#                              + +  r+ ++++++
+# 2OG-FeII_Oxy_3-sample1  86 LAA-QPARHASFNFYL 100
+#                            ***.888888888886 PP
 #
-# print("# User input")
-# print("Query: " + hmm.query)
-# print()
+# == domain 2  score: 45.2 bits;  conditional E-value: 6.7e-16
+#         2OG-FeII_Oxy_3   2 qlnrygpggflspHvDnsesssrrltlllylndpew.eeeGGelelypsdr....segvakevedeevvpkpgrlvlFksdrslHrv 83
+#                            +l++ g+  + + H+D ++ ++ r++++ly  ++++  ++ Gel++yp ++    +   +++v d +++p++grlvlF s++s+H +
+# 2OG-FeII_Oxy_3-sample1 103 TLHHAGDQKETKKHADINSTGPSRFSAILYHDPASSpLAWDGELVVYPIQEgtvnF---QENVPDVRHKPRRGRLVLFASSESAHKA 186
+#                            789999**************************7777***********988444442...4444433445****************** PP
 #
-# steps = align.steps
-# print("# Whole aligment")
-# print("State         : " + v.display(paint.state(steps)))
-# print("Amino         : " + v.display(paint.amino(steps)))
-# print("Query 0       : " + v.display(paint.query(steps, 0)))
-# print("Query 1       : " + v.display(paint.query(steps, 1)))
-# print("Query 2       : " + v.display(paint.query(steps, 2)))
-# print("Query 3       : " + v.display(paint.query(steps, 3)))
-# print("Query 4       : " + v.display(paint.query(steps, 4)))
-# print("Codon 0       : " + v.display(paint.codon(steps, 0)))
-# print("Codon 1       : " + v.display(paint.codon(steps, 1)))
-# print("Codon 2       : " + v.display(paint.codon(steps, 2)))
-# print("HMMER hmm_cs  : " + v.display(paint.h3hmm_cs(steps)))
-# print("HMMER query_cs: " + v.display(paint.h3query_cs(steps)))
-# print("HMMER match   : " + v.display(paint.h3match(steps)))
-# print("HMMER query   : " + v.display(paint.h3query(steps)))
-# print("HMMER score   : " + v.display(paint.h3score(steps)))
-# print()
+#         2OG-FeII_Oxy_3  84 tpvgaqgrrlaitgwf 99
+#                              + +  r+ ++++++
+# 2OG-FeII_Oxy_3-sample1 187 LAA-QPARHASFNFYL 201
+#                            ***.888888888886 PP
 #
-# print("# Aligment per segment")
-# for idx, seg in enumerate(segs):
-#     print(f"## Segment {idx}")
-#     i = seg.interval
-#     print("State         : " + v.cut(i).display(paint.state(steps)))
-#     print("Amino         : " + v.cut(i).display(paint.amino(steps)))
-#     print("Query 0       : " + v.cut(i).display(paint.query(steps, 0)))
-#     print("Query 1       : " + v.cut(i).display(paint.query(steps, 1)))
-#     print("Query 2       : " + v.cut(i).display(paint.query(steps, 2)))
-#     print("Query 3       : " + v.cut(i).display(paint.query(steps, 3)))
-#     print("Query 4       : " + v.cut(i).display(paint.query(steps, 4)))
-#     print("Codon 0       : " + v.cut(i).display(paint.codon(steps, 0)))
-#     print("Codon 1       : " + v.cut(i).display(paint.codon(steps, 1)))
-#     print("Codon 2       : " + v.cut(i).display(paint.codon(steps, 2)))
-#     print("HMMER hmm_cs  : " + v.cut(i).display(paint.h3hmm_cs(steps)))
-#     print("HMMER query_cs: " + v.cut(i).display(paint.h3query_cs(steps)))
-#     print("HMMER match   : " + v.cut(i).display(paint.h3match(steps)))
-#     print("HMMER query   : " + v.cut(i).display(paint.h3query(steps)))
-#     print("HMMER score   : " + v.cut(i).display(paint.h3score(steps)))
-#     print()
+# == domain 3  score: 45.2 bits;  conditional E-value: 6.7e-16
+#         2OG-FeII_Oxy_3   2 qlnrygpggflspHvDnsesssrrltlllylndpew.eeeGGelelypsdr....segvakevedeevvpkpgrlvlFksdrslHrv 83
+#                            +l++ g+  + + H+D ++ ++ r++++ly  ++++  ++ Gel++yp ++    +   +++v d +++p++grlvlF s++s+H +
+# 2OG-FeII_Oxy_3-sample1 204 TLHHAGDQKETKKHADINSTGPSRFSAILYHDPASSpLAWDGELVVYPIQEgtvnF---QENVPDVRHKPRRGRLVLFASSESAHKA 287
+#                            789999**************************7777***********988444442...4444433445****************** PP
 #
-# print("# Aligment per segment projected onto whole alignment coordinates")
-# print("")
-# for idx, seg in enumerate(segs):
-#     print(f"## Segment {idx}")
-#     i = seg.interval
-#     print("State         : " + v.mask(i).display(paint.state(steps)))
-#     print("Amino         : " + v.mask(i).display(paint.amino(steps)))
-#     print("Query 0       : " + v.mask(i).display(paint.query(steps, 0)))
-#     print("Query 1       : " + v.mask(i).display(paint.query(steps, 1)))
-#     print("Query 2       : " + v.mask(i).display(paint.query(steps, 2)))
-#     print("Query 3       : " + v.mask(i).display(paint.query(steps, 3)))
-#     print("Query 4       : " + v.mask(i).display(paint.query(steps, 4)))
-#     print("Codon 0       : " + v.mask(i).display(paint.codon(steps, 0)))
-#     print("Codon 1       : " + v.mask(i).display(paint.codon(steps, 1)))
-#     print("Codon 2       : " + v.mask(i).display(paint.codon(steps, 2)))
-#     print("HMMER hmm_cs  : " + v.mask(i).display(paint.h3hmm_cs(steps)))
-#     print("HMMER query_cs: " + v.mask(i).display(paint.h3query_cs(steps)))
-#     print("HMMER match   : " + v.mask(i).display(paint.h3match(steps)))
-#     print("HMMER query   : " + v.mask(i).display(paint.h3query(steps)))
-#     print("HMMER score   : " + v.mask(i).display(paint.h3score(steps)))
-#     print()
+#         2OG-FeII_Oxy_3  84 tpvgaqgrrlaitgwf 99
+#                              + +  r+ ++++++
+# 2OG-FeII_Oxy_3-sample1 288 LAA-QPARHASFNFYL 302
+#                            ***.888888888886 PP
+#
+# == domain 4  score: 45.2 bits;  conditional E-value: 6.7e-16
+#         2OG-FeII_Oxy_3   2 qlnrygpggflspHvDnsesssrrltlllylndpew.eeeGGelelypsdr....segvakevedeevvpkpgrlvlFksdrslHrv 83
+#                            +l++ g+  + + H+D ++ ++ r++++ly  ++++  ++ Gel++yp ++    +   +++v d +++p++grlvlF s++s+H +
+# 2OG-FeII_Oxy_3-sample1 305 TLHHAGDQKETKKHADINSTGPSRFSAILYHDPASSpLAWDGELVVYPIQEgtvnF---QENVPDVRHKPRRGRLVLFASSESAHKA 388
+#                            789999**************************7777***********988444442...4444433445****************** PP
+#
+#         2OG-FeII_Oxy_3  84 tpvgaqgrrlaitgwf 99
+#                              + +  r+ ++++++
+# 2OG-FeII_Oxy_3-sample1 389 LAA-QPARHASFNFYL 403
+#                            ***.888888888886 PP

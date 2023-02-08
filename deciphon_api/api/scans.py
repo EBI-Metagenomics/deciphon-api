@@ -3,13 +3,13 @@ import textwrap
 from datetime import datetime
 
 import sqlalchemy.exc
+import tabulate
 from fasta_reader import read_fasta
 from fastapi import APIRouter, Body, Depends, Form, Path, UploadFile
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlmodel import Session, col, select
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED
-from tabulate import tabulate
 
 from deciphon_api.api.files import FastaFile, ProdFile
 from deciphon_api.api.utils import AUTH, ID, IDX
@@ -19,11 +19,11 @@ from deciphon_api.depo import get_depo
 from deciphon_api.exceptions import ConflictException, NotFoundException
 from deciphon_api.hmmer_result import HMMERResult
 from deciphon_api.models import DB, Job, JobState, JobType, Prod, Scan, Seq
-from deciphon_api.painter import Painter, Stream, StreamName
+from deciphon_api.painter import Stream, StreamName
 from deciphon_api.prodfile import ProdFileReader
+from deciphon_api.render import Viewport
 from deciphon_api.scan_result import ScanResult
 from deciphon_api.sched import get_sched
-from deciphon_api.viewport import Viewport
 
 __all__ = ["router"]
 
@@ -423,12 +423,12 @@ async def get_prod_aligment(
         if not scan:
             raise NotFoundException(Scan)
         prod = scan.get_prod(prod_id)
-        align = prod.alignment()
-        steps = align.steps
-        paint = Painter()
-        v = Viewport(align.coord, "▒")
-        for stream in streams:
-            txt += [v.display(paint.draw(stream, steps))]
+        # align = prod.alignment()
+        # steps = align.steps
+        # paint = Painter()
+        # v = Viewport(align.coord, "▒")
+        # for stream in streams:
+        #     txt += [v.display(paint.draw(stream, steps))]
     return "\n".join(txt)
 
 
@@ -449,57 +449,90 @@ async def get_prod_hit(
         if not scan:
             raise NotFoundException(Scan)
         prod = scan.get_prod(prod_id)
-        align = prod.alignment()
-        hit = align.hits[hit_idx]
-        steps = list(hit.path)
-        paint = Painter()
-        v = Viewport(hit.coord, "▒").cut(hit.path.interval)
-        for stream in streams:
-            txt += [v.display(paint.draw(stream, steps))]
+        # align = prod.alignment()
+        # hit = align.hits[hit_idx]
+        # steps = list(hit.path)
+        # paint = Painter()
+        # v = Viewport(hit.coord, "▒").cut(hit.path.interval)
+        # for stream in streams:
+        #     txt += [v.display(paint.draw(stream, steps))]
     return "\n".join(txt)
 
 
-@router.get(
-    "/scans/{scan_id}/prods/{prod_id}/view",
-    response_class=PLAIN,
-    status_code=OK,
-)
-async def get_prod_view(
-    scan_id: int = ID(),
-    prod_id: int = ID(),
-):
-    table = []
-    state = Stream(name=StreamName("state"))
-    amino = Stream(name=StreamName("amino"))
+def view_table(prod, seq):
+    seqid = seq.name
+    align = prod.align()
+    profile = prod.profile
+    seqid = seq.name
+    viewport = Viewport(align.coord, ".")
+    txt = "Alignments for each domain:\n"
+    for hdr, hit in zip(align.headers, align.hits):
+        table = []
+        COLS = 88
+        intervals = list(hit.interval.intervals(size=COLS))
+        width = intervals[0].length
+        txt += hdr + "\n"
+        for i in intervals:
+            v = viewport.cut(i)
+            h = hit.cut(i)
+            amino = [y for x in h.hmm if (y := x.amino())]
+            hmm_cs = [x.hmm_cs() for x in h.hmmer]
+            match = [x.match() for x in h.hmmer]
+            h3query = [x.query() for x in h.hmmer]
+            score = [x.score() for x in h.hmmer]
+            q0 = [y for x in h.hmm if (y := x.query(0))]
+            q1 = [y for x in h.hmm if (y := x.query(1))]
+            q2 = [y for x in h.hmm if (y := x.query(2))]
+            q3 = [y for x in h.hmm if (y := x.query(3))]
+            q4 = [y for x in h.hmm if (y := x.query(4))]
+            profile_left, profile_right = h.state_bounds
+            query_left, query_right = h.query_bounds
+            pad = "&" * (width - i.length)
+            row = [
+                [None, None, v.display(hmm_cs) + pad, "CS"],
+                [profile, profile_left, v.display(h3query) + pad, profile_right],
+                [None, None, v.display(match) + pad, None],
+                [seqid, query_left, v.display(amino) + pad, query_right],
+                [None, None, v.display(q0) + pad, None],
+                [None, None, v.display(q1) + pad, None],
+                [None, None, v.display(q2) + pad, None],
+                [None, None, v.display(q3) + pad, None],
+                [None, None, v.display(q4) + pad, None],
+                [None, None, v.display(score) + pad, "PP"],
+            ]
+            table += row + [[None, None, None]]
+        tablefmt = tabulate.simple_separated_format(" ")
+        txt += str(
+            tabulate.tabulate(
+                table, tablefmt=tablefmt, colalign=("right", "right", "left", "left")
+            )
+        )
+        txt = txt.replace("&", "") + "\n"
+    return txt
 
+
+@router.get("/scans/{scan_id}/prods/align", response_class=PLAIN, status_code=OK)
+async def get_prod_align(scan_id: int = ID()):
+    with Session(get_sched()) as session:
+        scan = session.get(Scan, scan_id)
+        if not scan:
+            raise NotFoundException(Scan)
+        prod = scan.prods[0]
+        seq = prod.seq
+        return view_table(prod, seq)
+
+
+@router.get(
+    "/scans/{scan_id}/prods/{prod_id}/view", response_class=PLAIN, status_code=OK
+)
+async def get_prod_view(scan_id: int = ID(), prod_id: int = ID()):
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
             raise NotFoundException(Scan)
         prod = scan.get_prod(prod_id)
-        align = prod.alignment()
-        hit = align.hits[0]
-        steps = list(hit.path)
-        paint = Painter()
-        v = Viewport(hit.coord, "▒").cut(hit.path.interval)
-
-        kwargs = {"drop_whitespace": False, "break_on_hyphens": False}
-        states = textwrap.wrap(v.display(paint.draw(state, steps)), 99, **kwargs)
-        aminos = textwrap.wrap(v.display(paint.draw(amino, steps)), 99, **kwargs)
-
-        rows = []
-        for s, a in zip(states, aminos):
-            rows.append([align._profile, s])
-            rows.append(["", a])
-
-            rows.append(states)
-            table.append(rows)
-
-            rows = []
-            rows.append(v.display(paint.draw(amino, steps)))
-            table.append(rows)
-
-    return tabulate(table)
+        seq = prod.seq
+        return view_table(prod, seq)
 
 
 @router.get(

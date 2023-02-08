@@ -1,7 +1,7 @@
 import dataclasses
 from collections.abc import Iterable
 
-from deciphon_api.coordinates import Coord, Interval, Point
+from deciphon_api.coords import Coord, Interval, Point
 
 __all__ = ["Viewport", "Pixel", "PixelList"]
 

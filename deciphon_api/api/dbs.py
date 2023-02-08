@@ -81,7 +81,6 @@ async def delete_db(db_id: int = ID()):
 
 @router.post("/dbs/", response_model=DB, status_code=CREATED, dependencies=AUTH)
 async def upload_db(db_file: UploadFile = DBFile()):
-
     hmm_filename = db_file.filename.replace(".dcp", ".hmm")
     file = await get_depo().store_db(db_file)
 

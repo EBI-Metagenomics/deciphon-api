@@ -24,7 +24,6 @@ def safe_move(src, dst):
     try:
         os.rename(src, dst)
     except OSError as err:
-
         if err.errno == errno.EXDEV:
             # Generate a unique ID, and copy `<src>` to the target directory
             # with a temporary name `<dst>.<ID>.tmp`.  Because we're copying

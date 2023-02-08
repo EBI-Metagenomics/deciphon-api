@@ -19,7 +19,6 @@ class RightJoin:
         i, j = 0, 0
 
         while i < n and j < m:
-
             if chkpoint(i, j):
                 self._a.append(False)
                 j += 1

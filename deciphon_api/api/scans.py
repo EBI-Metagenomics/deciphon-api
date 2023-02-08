@@ -19,7 +19,7 @@ from deciphon_api.depo import get_depo
 from deciphon_api.exceptions import ConflictException, NotFoundException
 from deciphon_api.hmmer_result import HMMERResult
 from deciphon_api.models import DB, Job, JobState, JobType, Prod, Scan, Seq
-from deciphon_api.painter import Stream, StreamName
+from deciphon_api.painter import Stream
 from deciphon_api.prodfile import ProdFileReader
 from deciphon_api.render import Viewport
 from deciphon_api.scan_result import ScanResult
@@ -417,12 +417,13 @@ async def get_prod_path(scan_id: int = ID()):
 async def get_prod_aligment(
     scan_id: int = ID(), prod_id: int = ID(), streams: list[Stream] = Body()
 ):
+    del streams
     txt = []
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
             raise NotFoundException(Scan)
-        prod = scan.get_prod(prod_id)
+        scan.get_prod(prod_id)
         # align = prod.alignment()
         # steps = align.steps
         # paint = Painter()
@@ -443,12 +444,14 @@ async def get_prod_hit(
     streams: list[Stream] = Body(),
     hit_idx: int = IDX(),
 ):
+    del streams
+    del hit_idx
     txt = []
     with Session(get_sched()) as session:
         scan = session.get(Scan, scan_id)
         if not scan:
             raise NotFoundException(Scan)
-        prod = scan.get_prod(prod_id)
+        scan.get_prod(prod_id)
         # align = prod.alignment()
         # hit = align.hits[hit_idx]
         # steps = list(hit.path)
@@ -636,7 +639,6 @@ async def upload_prod(
     prod_file: UploadFile = ProdFile(),
     session: Session = Depends(get_session),
 ):
-
     with tempfile.NamedTemporaryFile("wb") as file:
         while content := await prod_file.read(BUFSIZE):
             file.write(content)

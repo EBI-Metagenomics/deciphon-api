@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 from starlette.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.utils import AUTH, ID
-from deciphon_api.exceptions import ConflictException, NotFoundException
+from deciphon_api.exceptions import ConflictError, NotFoundException
 from deciphon_api.models import HMM, Job, JobState, Scan
 from deciphon_api.sched import get_sched
 
@@ -92,7 +92,7 @@ async def delete_job(job_id: int = ID()):
         try:
             session.commit()
         except sqlalchemy.exc.IntegrityError as e:
-            raise ConflictException(str(e.orig))
+            raise ConflictError(str(e.orig))
 
 
 @router.patch(

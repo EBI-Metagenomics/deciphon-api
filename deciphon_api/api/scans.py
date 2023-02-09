@@ -16,7 +16,7 @@ from deciphon_api.api.utils import AUTH, ID, IDX
 from deciphon_api.broker import broker_publish_scan
 from deciphon_api.bufsize import BUFSIZE
 from deciphon_api.depo import get_depo
-from deciphon_api.exceptions import ConflictException, NotFoundException
+from deciphon_api.exceptions import ConflictError, NotFoundException
 from deciphon_api.hmmer_result import HMMERResult
 from deciphon_api.models import DB, Job, JobState, JobType, Prod, Scan, Seq
 from deciphon_api.painter import Stream
@@ -666,6 +666,6 @@ async def upload_prod(
             try:
                 session.commit()
             except sqlalchemy.exc.IntegrityError as e:
-                raise ConflictException(str(e.orig))
+                raise ConflictError(str(e.orig))
         session.refresh(scan)
         return scan.prods

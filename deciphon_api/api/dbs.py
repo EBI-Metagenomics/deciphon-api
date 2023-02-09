@@ -10,7 +10,7 @@ import deciphon_api.mime as mime
 from deciphon_api.api.files import DBFile
 from deciphon_api.api.utils import AUTH, ID
 from deciphon_api.depo import get_depo
-from deciphon_api.exceptions import ConflictException, NotFoundException
+from deciphon_api.exceptions import ConflictError, NotFoundException
 from deciphon_api.models import DB, HMM, JobState
 from deciphon_api.sched import get_sched
 
@@ -102,6 +102,6 @@ async def upload_db(db_file: UploadFile = DBFile()):
         try:
             session.commit()
         except sqlalchemy.exc.IntegrityError as e:
-            raise ConflictException(str(e.orig))
+            raise ConflictError(str(e.orig))
         session.refresh(db)
         return db

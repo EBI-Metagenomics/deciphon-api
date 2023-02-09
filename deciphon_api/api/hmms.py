@@ -1,17 +1,18 @@
-import sqlalchemy.exc
-from fastapi import APIRouter, UploadFile
-from fastapi.responses import FileResponse
-from sqlmodel import Session, select
+from sqlalchemy.exc import IntegrityError
+from fastapi import APIRouter
+from deciphon_api.storage import storage_has
+from deciphon_api.api.id import IDPath
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from typing import List
 
-import deciphon_api.mime as mime
-from deciphon_api.api.files import HMMFile
-from deciphon_api.api.utils import AUTH, ID
-from deciphon_api.broker import broker_publish_hmm
-from deciphon_api.depo import get_depo
-from deciphon_api.exceptions import ConflictException, NotFoundException
-from deciphon_api.models import HMM, Job, JobType
-from deciphon_api.sched import get_sched
+from deciphon_api.api.utils import AUTH
+from deciphon_api.errors import (
+    FileNotInStorageError,
+    ConflictError,
+    HMMNotFoundError,
+)
+from deciphon_api.models import HMM, HMMIn, Job, JobType
+from deciphon_api.sched import Sched, select
 
 __all__ = ["router"]
 
@@ -22,75 +23,44 @@ NO_CONTENT = HTTP_204_NO_CONTENT
 CREATED = HTTP_201_CREATED
 
 
+@router.post("/hmms/", response_model=HMM, status_code=CREATED, dependencies=AUTH)
+async def create_hmm(hmm: HMMIn):
+    if not storage_has(hmm.sha256):
+        raise FileNotInStorageError(hmm.sha256)
+
+    x = HMM(sha256=hmm.sha256, filename=hmm.filename, job=Job(type=JobType.hmm))
+
+    with Sched() as sched:
+        sched.add(x)
+        try:
+            sched.commit()
+        except IntegrityError as e:
+            raise ConflictError(str(e.orig))
+
+        sched.refresh(x)
+        return x
+
+
 @router.get("/hmms/{hmm_id}", response_model=HMM, status_code=OK)
-async def get_hmm_by_id(hmm_id: int = ID()):
-    with Session(get_sched()) as session:
-        hmm = session.get(HMM, hmm_id)
+async def get_hmm(hmm_id: int = IDPath()):
+    with Sched() as sched:
+        hmm = sched.get(HMM, hmm_id)
         if not hmm:
-            raise NotFoundException(HMM)
+            raise HMMNotFoundError()
         return hmm
 
 
-@router.get("/hmms/xxh3/{xxh3}", response_model=HMM, status_code=OK)
-async def get_hmm_by_xxh3(xxh3: int):
-    with Session(get_sched()) as session:
-        stmt = select(HMM).where(HMM.xxh3 == xxh3)
-        hmm = session.exec(stmt).one_or_none()
-        if not hmm:
-            raise NotFoundException(HMM)
-        return hmm
-
-
-@router.get("/hmms/filename/{filename}", response_model=HMM, status_code=OK)
-async def get_hmm_by_filename(filename: str):
-    with Session(get_sched()) as session:
-        stmt = select(HMM).where(HMM.filename == filename)
-        hmm = session.exec(stmt).one_or_none()
-        if not hmm:
-            raise NotFoundException(HMM)
-        return hmm
-
-
-@router.get("/hmms", response_model=list[HMM], status_code=OK)
-async def get_all_hmms():
-    with Session(get_sched()) as session:
-        return session.exec(select(HMM)).all()
-
-
-@router.get("/hmms/{hmm_id}/download", response_class=FileResponse, status_code=OK)
-async def download_hmm(hmm_id: int = ID()):
-    with Session(get_sched()) as session:
-        hmm = session.get(HMM, hmm_id)
-        if not hmm:
-            raise NotFoundException(HMM)
-        file = get_depo().fetch(hmm)
-        media_type = mime.TEXT
-        return FileResponse(file.path, media_type=media_type, filename=file.name)
+@router.get("/hmms", response_model=List[HMM], status_code=OK)
+async def list_hmms():
+    with Sched() as sched:
+        return sched.exec(select(HMM)).all()
 
 
 @router.delete("/hmms/{hmm_id}", status_code=NO_CONTENT, dependencies=AUTH)
-async def delete_hmm(hmm_id: int = ID()):
-    with Session(get_sched()) as session:
-        hmm = session.get(HMM, hmm_id)
+async def delete_hmm(hmm_id: int = IDPath()):
+    with Sched() as sched:
+        hmm = sched.get(HMM, hmm_id)
         if not hmm:
-            raise NotFoundException(HMM)
-        session.delete(hmm)
-        session.commit()
-
-
-@router.post("/hmms/", response_model=HMM, status_code=CREATED, dependencies=AUTH)
-async def upload_hmm(hmm_file: UploadFile = HMMFile()):
-    file = await get_depo().store_hmm(hmm_file)
-    job = Job(type=JobType.hmm)
-    hmm = HMM(xxh3=file.xxh3_64, filename=file.name, job=job)
-
-    with Session(get_sched()) as session:
-        session.add(hmm)
-        try:
-            session.commit()
-        except sqlalchemy.exc.IntegrityError as e:
-            raise ConflictException(str(e.orig))
-        session.refresh(hmm)
-
-        broker_publish_hmm(hmm.id, hmm.filename, hmm.job.id)
-        return hmm
+            raise HMMNotFoundError()
+        sched.delete(hmm)
+        sched.commit()

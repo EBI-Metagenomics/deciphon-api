@@ -11,7 +11,7 @@ keywords = ["deciphon", "api"]
 classifiers = ["License :: OSI Approved :: MIT License"]
 
 [tool.poetry.dependencies]
-fastapi = { extras = ["all"], version = "^0.88.0" }
+fastapi = { extras = ["all"], version = "^0.90.0" }
 fsspec = { extras = ["libarchive"], version = "^2022.11.0" }
 gunicorn = "^20.1.0"
 loguru = "^0.6.0"
@@ -27,6 +27,7 @@ bcbio-gff = "^0.6.9"
 kombu = "^5.2.4"
 uvicorn = "^0.20.0"
 tabulate = "^0.9.0"
+blx = ">=0.1.10"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"

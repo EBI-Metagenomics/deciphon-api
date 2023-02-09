@@ -2,18 +2,139 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from io import StringIO
-from typing import Optional
+from typing import List, Optional
 
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
-from deciphon_api.align import Align
-from deciphon_api.exceptions import NotFoundException
-from deciphon_api.hmm_path import HMMPath as HMMPath
-from deciphon_api.hmmer_domains import read_hmmer_headers, read_hmmer_paths
-from deciphon_api.hmmer_path import HMMERPath as HMMERPath
-from deciphon_api.hmmer_result import HMMERResult
-from deciphon_api.liner import mkliner
+__all__ = [
+    "HMMIn",
+    "HMM",
+    "DBIn",
+    "DB",
+    "JobType",
+    "JobState",
+    "Job",
+    "SeqIn",
+    "Seq",
+    "ScanIn",
+    "Scan",
+    "ProdIn",
+    "Prod",
+]
+
+PrimaryKeyType = Optional[int]
+ForeignKeyType = int
+
+
+def PrimaryKeyField():
+    return Field(default=None, primary_key=True, nullable=False)
+
+
+def ForeignKeyField(name: str):
+    return Field(foreign_key=name, nullable=False)
+
+
+def StringIndexField():
+    return Field(index=True, unique=True, nullable=False)
+
+
+def FilenameIndexField(ext: str):
+    return Field(
+        index=True,
+        unique=True,
+        nullable=False,
+        regex=r"^[0-9a-zA-Z_\-.][0-9a-zA-Z_\-. ]+\." + ext,
+    )
+
+
+def SHA256Field():
+    return Field(
+        index=True,
+        unique=True,
+        nullable=False,
+        regex=r"^[0123456789abcdef]{64}$",
+    )
+
+
+def SingleRelationship(name: str):
+    return Relationship(back_populates=name, sa_relationship_kwargs={"uselist": False})
+
+
+def ManyRelationship(name: str):
+    return Relationship(back_populates=name)
+
+
+class ProdIn(SQLModel):
+    scan_id: ForeignKeyType = ForeignKeyField("scan.id")
+    seq_id: ForeignKeyType = ForeignKeyField("seq.id")
+
+    profile: str = Field(nullable=False)
+    abc: str = Field(nullable=False)
+
+    alt_loglik: float = Field(nullable=False)
+    null_loglik: float = Field(nullable=False)
+    evalue_log: float = Field(nullable=False)
+
+    match: str = Field(nullable=False)
+
+    __table_args__ = (UniqueConstraint("scan_id", "seq_id", "profile"),)
+
+
+class Prod(ProdIn, table=True):
+    id: PrimaryKeyType = PrimaryKeyField()
+    seq: Seq = SingleRelationship("prod")
+    scan: Scan = SingleRelationship("prods")
+
+
+class SeqIn(SQLModel):
+    name: str = Field(nullable=False)
+    data: str = Field(nullable=False)
+
+
+class Seq(SeqIn, table=True):
+    id: PrimaryKeyType = PrimaryKeyField()
+    scan_id: ForeignKeyType = ForeignKeyField("scan.id")
+    scan: Scan = SingleRelationship("seqs")
+    prod: Optional[Prod] = SingleRelationship("seq")
+
+
+class ScanIn(SQLModel):
+    multi_hits: bool = Field(True, nullable=False)
+    hmmer3_compat: bool = Field(False, nullable=False)
+    db_id: ForeignKeyType = ForeignKeyField("db.id")
+
+
+class Scan(ScanIn, table=True):
+    id: PrimaryKeyType = PrimaryKeyField()
+    db: DB = SingleRelationship("scans")
+    job_id: ForeignKeyType = ForeignKeyField("job.id")
+    job: Job = SingleRelationship("scan")
+    seqs: List[Seq] = ManyRelationship("scan")
+    prods: List[Prod] = ManyRelationship("scan")
+
+
+class DBIn(SQLModel):
+    sha256: str = SHA256Field()
+    filename: str = FilenameIndexField("dcp")
+
+
+class DB(DBIn, table=True):
+    id: PrimaryKeyType = PrimaryKeyField()
+    hmm_id: ForeignKeyType = ForeignKeyField("hmm.id")
+    hmm: HMM = SingleRelationship("db")
+    scans: List[Scan] = ManyRelationship("db")
+
+
+class HMMIn(SQLModel):
+    sha256: str = SHA256Field()
+    filename: str = FilenameIndexField("hmm")
+
+
+class HMM(HMMIn, table=True):
+    id: PrimaryKeyType = PrimaryKeyField()
+    job_id: ForeignKeyType = ForeignKeyField("job.id")
+    job: Job = Relationship(back_populates="hmm")
+    db: Optional[DB] = SingleRelationship("hmm")
 
 
 class JobType(Enum):
@@ -28,182 +149,19 @@ class JobState(Enum):
     fail = "fail"
 
 
-SINGLE = {"sa_relationship_kwargs": {"uselist": False}}
-
-
 class Job(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    type: JobType
+    id: PrimaryKeyType = PrimaryKeyField()
 
-    state: JobState = JobState.pend
-    progress: int = Field(default=0, ge=0, le=100)
+    type: JobType = Field(nullable=False)
 
-    error: Optional[str] = None
+    state: JobState = Field(default=JobState.pend, nullable=False)
+    progress: int = Field(default=0, ge=0, le=100, nullable=False)
 
-    submission: datetime = Field(default_factory=datetime.now)
-    exec_started: Optional[datetime] = Field(default=None)
-    exec_ended: Optional[datetime] = Field(default=None)
+    error: str = Field(default="", nullable=False)
 
-    hmm: HMM = Relationship(back_populates="job", **SINGLE)
-    scan: Scan = Relationship(back_populates="job", **SINGLE)
+    submission: datetime = Field(default_factory=datetime.now, nullable=False)
+    exec_started: Optional[datetime] = Field(default=None, nullable=True)
+    exec_ended: Optional[datetime] = Field(default=None, nullable=True)
 
-
-class ProfileType(Enum):
-    standard = "stantard"
-    protein = "protein"
-
-
-class HMM(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-    xxh3: int = Field(..., title="XXH3 file hash")
-    filename: str = Field(..., index=True, unique=True, title="File name")
-
-    job_id: int = Field(default=None, foreign_key="job.id", nullable=False)
-    job: Job = Relationship(back_populates="hmm")
-
-    db: DB = Relationship(back_populates="hmm", **SINGLE)
-
-
-class Match(SQLModel):
-    scan_id: int = Field(default=None, foreign_key="scan.id", nullable=False)
-    seq_id: int = Field(default=None, foreign_key="seq.id", nullable=False)
-
-    profile: str
-    abc: str
-
-    alt_loglik: float
-    null_loglik: float
-    evalue_log: float
-
-    proftype: ProfileType
-    version: str
-
-    match: str
-
-    __table_args__ = (UniqueConstraint("scan_id", "seq_id", "profile"),)
-
-
-def is_core_state(state: str):
-    return state.startswith("M") or state.startswith("I") or state.startswith("D")
-
-
-class Prod(Match, table=True):
-    id: int = Field(default=None, primary_key=True)
-
-    hmmer_sha256: str
-
-    seq: Seq = Relationship(back_populates="prod", **SINGLE)
-    scan: Scan = Relationship(back_populates="prods", **SINGLE)
-
-    def align(self):
-        hmm = HMMPath.make(self.match)
-        headers = read_hmmer_headers(mkliner(data=StringIO(self.hmmer().domains())))
-        hmmers = read_hmmer_paths(mkliner(data=StringIO(self.hmmer().domains())))
-        return Align(hmm, headers, hmmers)
-
-    def _stream(self, name: str, idx: int):
-        if name == "frag":
-            name_idx = 0
-        elif name == "state":
-            name_idx = 1
-        elif name == "codon":
-            name_idx = 2
-        elif name == "amino":
-            name_idx = 3
-        else:
-            raise ValueError(f"Invalid stream name: {name}")
-
-        stream = []
-        for m in self.match.split(";"):
-            value = m.split(",")[name_idx]
-            stream.append(value[idx] if len(value) > idx else " ")
-        return "".join(stream)
-
-    def hit_bounds(self):
-        hit_start = 0
-        hit_end = 0
-        hit_bounds = []
-        offset = 0
-        hit_start_found = False
-        hit_end_found = False
-        for m in self.match.split(";"):
-            frag, state = m.split(",")[:2]
-            if not hit_start_found and is_core_state(state):
-                hit_start = offset
-                hit_start_found = True
-
-            if hit_start_found and not is_core_state(state):
-                hit_end = offset + len(frag)
-                hit_end_found = True
-
-            if hit_end_found:
-                hit_bounds.append((hit_start, hit_end))
-                hit_start_found = False
-                hit_end_found = False
-
-            offset += len(frag)
-        return hit_bounds
-
-    def frag_stream(self, idx: int):
-        return self._stream("frag", idx)
-
-    def state_stream(self, idx: int):
-        return self._stream("state", idx)
-
-    def codon_stream(self, idx: int):
-        return self._stream("codon", idx)
-
-    def amino_stream(self, idx: int):
-        return self._stream("amino", idx)
-
-    def hmmer(self):
-        from deciphon_api.depo import get_depo
-
-        return HMMERResult(get_depo().fetch_blob(self.hmmer_sha256))
-
-
-class Seq(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
-
-    scan_id: int = Field(default=None, foreign_key="scan.id", nullable=False)
-    scan: Scan = Relationship(back_populates="seqs", **SINGLE)
-
-    name: str
-    data: str
-
-    prod: Optional[Prod] = Relationship(back_populates="seq", **SINGLE)
-
-
-class Scan(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-    multi_hits: bool = Field(True)
-    hmmer3_compat: bool = Field(False)
-
-    db_id: int = Field(default=None, foreign_key="db.id", nullable=False)
-    db: DB = Relationship(back_populates="scans", **SINGLE)
-
-    job_id: int = Field(default=None, foreign_key="job.id", nullable=False)
-    job: Job = Relationship(back_populates="scan", **SINGLE)
-
-    seqs: list[Seq] = Relationship(back_populates="scan")
-    prods: list[Prod] = Relationship(back_populates="scan")
-
-    def get_prod(self, prod_id: int):
-        for prod in self.prods:
-            if prod.id == prod_id:
-                return prod
-        raise NotFoundException(Prod)
-
-
-class DB(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-    xxh3: int = Field(..., title="XXH3 file hash")
-    filename: str = Field(..., index=True, unique=True, title="File name")
-
-    hmm_id: int = Field(default=None, foreign_key="hmm.id", nullable=False)
-    hmm: HMM = Relationship(back_populates="db", **SINGLE)
-
-    scans: list[Scan] = Relationship(back_populates="db")
+    hmm: Optional[HMM] = SingleRelationship("job")
+    scan: Optional[Scan] = SingleRelationship("job")

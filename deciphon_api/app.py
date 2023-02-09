@@ -7,7 +7,7 @@ from sqlmodel import SQLModel
 
 from deciphon_api.config import get_config
 from deciphon_api.depo import get_depo
-from deciphon_api.sched import get_sched
+from deciphon_api.sched import get_engine
 
 __all__ = ["get_app", "App"]
 
@@ -16,7 +16,7 @@ App: TypeAlias = FastAPI
 
 def create_start_handler() -> Callable:
     async def start_app() -> None:
-        SQLModel.metadata.create_all(get_sched())
+        SQLModel.metadata.create_all(get_engine())
 
     return start_app
 
@@ -25,7 +25,7 @@ def create_stop_handler() -> Callable:
     @logger.catch
     async def stop_app() -> None:
         get_depo.cache_clear()
-        get_sched.cache_clear()
+        get_engine.cache_clear()
         get_config.cache_clear()
 
     return stop_app

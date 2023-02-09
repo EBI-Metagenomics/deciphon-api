@@ -32,7 +32,18 @@ def files_form(field: str, filepath: Path, mime: str):
 def test_no_access(app: FastAPI, minifam_hmm, minifam_dcp):
     with TestClient(app, backend=BACKEND) as client:
         files = files_form("hmm_file", minifam_hmm, TEXT)
-        response = client.post(url("/hmms/"), files=files, headers=HEADERS)
+        response = client.post(
+            url("/hmms/"),
+            json={
+                "filename": "minifam.hmm",
+                "hexsha256": (
+                    "fe305d9c09e123f987f49b9056e34c"
+                    + "374e085d8831f815cc73d8ea4cdec84960"
+                ),
+            },
+            headers=HEADERS,
+        )
+        # response = client.post(url("/hmms/"), files=files, headers=HEADERS)
         assert response.status_code == 201
 
         files = files_form("db_file", minifam_dcp, OCTET)

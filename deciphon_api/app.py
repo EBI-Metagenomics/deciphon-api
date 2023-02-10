@@ -8,6 +8,8 @@ from sqlmodel import SQLModel
 from deciphon_api.config import get_config
 from deciphon_api.depo import get_depo
 from deciphon_api.sched import get_engine
+from sqlalchemy.exc import IntegrityError
+from deciphon_api.errors import integrity_error_handler
 
 __all__ = ["get_app", "App"]
 
@@ -55,6 +57,8 @@ def get_app() -> App:
         "shutdown",
         create_stop_handler(),
     )
+
+    app.add_exception_handler(IntegrityError, integrity_error_handler)
 
     app.include_router(api_router, prefix=config.api_prefix)
 

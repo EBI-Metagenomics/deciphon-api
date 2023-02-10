@@ -6,7 +6,7 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from deciphon_api.api.utils import AUTH
 from deciphon_api.errors import (
     FileNotInStorageError,
-    NotFoundInDBError,
+    NotFoundInSchedError,
 )
 from deciphon_api.models import HMM, HMMCreate, HMMRead, Job, JobType
 from deciphon_api.sched import Sched, select
@@ -24,7 +24,7 @@ CREATED = HTTP_201_CREATED
 @router.get("/hmms", response_model=List[HMMRead], status_code=OK)
 async def read_hmms():
     with Sched() as sched:
-        return [HMMRead.parse_obj(x) for x in sched.exec(select(HMM)).all()]
+        return [HMMRead.from_orm(x) for x in sched.exec(select(HMM)).all()]
 
 
 @router.post("/hmms/", response_model=HMMRead, status_code=CREATED, dependencies=AUTH)
@@ -38,7 +38,7 @@ async def create_hmm(hmm: HMMCreate):
         sched.add(x)
         sched.commit()
         sched.refresh(x)
-        return HMMRead.parse_obj(x)
+        return HMMRead.from_orm(x)
 
 
 @router.get("/hmms/{hmm_id}", response_model=HMMRead, status_code=OK)
@@ -46,8 +46,8 @@ async def read_hmm(hmm_id: int):
     with Sched() as sched:
         hmm = sched.get(HMM, hmm_id)
         if not hmm:
-            raise NotFoundInDBError("HMM")
-        return hmm
+            raise NotFoundInSchedError("HMM")
+        return HMMRead.from_orm(hmm)
 
 
 @router.delete("/hmms/{hmm_id}", status_code=NO_CONTENT, dependencies=AUTH)
@@ -55,6 +55,6 @@ async def delete_hmm(hmm_id: int):
     with Sched() as sched:
         hmm = sched.get(HMM, hmm_id)
         if not hmm:
-            raise NotFoundInDBError("HMM")
+            raise NotFoundInSchedError("HMM")
         sched.delete(hmm)
         sched.commit()

@@ -1,19 +1,16 @@
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 from starlette.status import (
     HTTP_404_NOT_FOUND,
     HTTP_422_UNPROCESSABLE_ENTITY,
 )
-from sqlalchemy.exc import IntegrityError
-from starlette.requests import Request
-from starlette.responses import JSONResponse
 
 __all__ = [
-    "integrity_error_handler",
-    "HMMNotFoundError",
-    "JobNotFoundError",
-    "DBNotFoundError",
     "FileNotInStorageError",
-    "NotFoundInDBError",
+    "NotFoundInSchedError",
+    "integrity_error_handler",
 ]
 
 
@@ -23,24 +20,9 @@ async def integrity_error_handler(_: Request, exc: IntegrityError):
     )
 
 
-class NotFoundInDBError(HTTPException):
+class NotFoundInSchedError(HTTPException):
     def __init__(self, name: str):
-        super().__init__(HTTP_404_NOT_FOUND, f"{name} not found")
-
-
-class HMMNotFoundError(HTTPException):
-    def __init__(self):
-        super().__init__(HTTP_404_NOT_FOUND, "HMM not found")
-
-
-class JobNotFoundError(HTTPException):
-    def __init__(self):
-        super().__init__(HTTP_404_NOT_FOUND, "Job not found")
-
-
-class DBNotFoundError(HTTPException):
-    def __init__(self):
-        super().__init__(HTTP_404_NOT_FOUND, "DB not found")
+        super().__init__(HTTP_404_NOT_FOUND, f"{name} not found in the scheduler")
 
 
 class FileNotInStorageError(HTTPException):

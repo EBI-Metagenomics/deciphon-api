@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from sqlmodel import Field, SQLModel, UniqueConstraint
+from deciphon_api.filename import filename_regex
+from deciphon_api.sha256 import SHA256_REGEX
 
 
 class ProdBase(SQLModel):
@@ -16,11 +18,15 @@ class ProdBase(SQLModel):
 
     match: str = Field(nullable=False)
 
+    sha256: str = Field(index=True, unique=True, regex=SHA256_REGEX)
+    filename: str = Field(index=True, unique=True, regex=filename_regex("dcs"))
+
     __table_args__ = (UniqueConstraint("scan_id", "seq_id", "profile"),)
 
 
-class ProdCreate(ProdBase):
-    ...
+class ProdCreate(SQLModel):
+    sha256: str = Field(regex=SHA256_REGEX)
+    filename: str = Field(regex=filename_regex("dcs"))
 
 
 class ProdRead(ProdBase):

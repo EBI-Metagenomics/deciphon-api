@@ -6,7 +6,7 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from deciphon_api.api.utils import AUTH
 from deciphon_api.errors import (
     FileNotInStorageError,
-    NotFoundInDBError,
+    NotFoundInSchedError,
 )
 from deciphon_api.models import (
     DB,
@@ -29,7 +29,7 @@ CREATED = HTTP_201_CREATED
 @router.get("/dbs", response_model=List[DBRead], status_code=OK)
 async def read_dbs():
     with Sched() as sched:
-        return [DBRead.parse_obj(x) for x in sched.exec(select(DB)).all()]
+        return [DBRead.from_orm(x) for x in sched.exec(select(DB)).all()]
 
 
 @router.post("/dbs/", response_model=DBRead, status_code=CREATED, dependencies=AUTH)
@@ -41,7 +41,7 @@ async def create_db(db: DBCreate):
         stmt = select(HMM).where(HMM.filename == db.expected_hmm_filename)
         hmm = sched.exec(stmt).one_or_none()
         if not hmm:
-            raise NotFoundInDBError("HMM")
+            raise NotFoundInSchedError("HMM")
 
         hmm.job.set_done()
 
@@ -50,7 +50,7 @@ async def create_db(db: DBCreate):
         sched.add(x)
         sched.commit()
         sched.refresh(x)
-        return DBRead.parse_obj(x)
+        return DBRead.from_orm(x)
 
 
 @router.get("/dbs/{db_id}", response_model=DBRead, status_code=OK)
@@ -58,8 +58,8 @@ async def read_db(db_id: int):
     with Sched() as sched:
         db = sched.get(DB, db_id)
         if not db:
-            raise NotFoundInDBError("DB")
-        return db
+            raise NotFoundInSchedError("DB")
+        return DBRead.from_orm(db)
 
 
 @router.delete("/dbs/{db_id}", status_code=NO_CONTENT, dependencies=AUTH)
@@ -67,6 +67,6 @@ async def delete_db(db_id: int):
     with Sched() as sched:
         db = sched.get(DB, db_id)
         if not db:
-            raise NotFoundInDBError("DB")
+            raise NotFoundInSchedError("DB")
         sched.delete(db)
         sched.commit()

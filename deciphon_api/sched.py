@@ -2,7 +2,7 @@ from functools import lru_cache
 
 from sqlalchemy.future import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
-from typing import Type
+from typing import Type, TypeVar, Optional
 
 from deciphon_api.config import get_config
 
@@ -15,6 +15,9 @@ def get_engine() -> Engine:
     uri = f"sqlite:///{config.sched_filename}"
     connect_args = {"check_same_thread": False}
     return create_engine(uri, echo=config.sql_echo, connect_args=connect_args)
+
+
+_TSelectParam = TypeVar("_TSelectParam")
 
 
 class Sched:
@@ -30,7 +33,7 @@ class Sched:
     def add(self, x: SQLModel):
         self._session.add(x)
 
-    def get(self, x: Type[SQLModel], ident):
+    def get(self, x: Type[_TSelectParam], ident) -> Optional[_TSelectParam]:
         return self._session.get(x, ident)
 
     def exec(self, stmt):

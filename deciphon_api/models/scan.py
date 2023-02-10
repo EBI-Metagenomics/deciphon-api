@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from typing import List
+
 from sqlmodel import Field, SQLModel
+
+from deciphon_api.models.seq import SeqCreate, SeqRead
 
 
 class ScanBase(SQLModel):
@@ -10,11 +14,12 @@ class ScanBase(SQLModel):
 
 
 class ScanCreate(ScanBase):
-    ...
+    seqs: List[SeqCreate]
 
 
 class ScanRead(ScanBase):
-    ...
+    id: int
+    seqs: List[SeqRead]
 
 
 class ScanUpdate(SQLModel):

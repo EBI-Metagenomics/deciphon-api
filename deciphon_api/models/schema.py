@@ -12,6 +12,8 @@ from deciphon_api.models.scan import ScanBase
 from deciphon_api.models.seq import SeqBase
 
 NOLIST = {"sa_relationship_kwargs": {"uselist": False}}
+CASCADE = {"sa_relationship_kwargs": {"cascade": "all,delete,delete-orphan"}}
+NOLIST_CASCADE = {"sa_relationship_kwargs": {"uselist": False, "cascade": "all,delete"}}
 
 
 class Prod(ProdBase, table=True):
@@ -34,9 +36,9 @@ class Scan(ScanBase, table=True):
     job_id: Optional[int] = Field(default=None, foreign_key="job.id")
 
     db: DB = Relationship(back_populates="scans", **NOLIST)
-    job: Job = Relationship(back_populates="scan", **NOLIST)
-    seqs: List[Seq] = Relationship(back_populates="scan")
-    prods: List[Prod] = Relationship(back_populates="scan")
+    job: Job = Relationship(back_populates="scan", **NOLIST_CASCADE)
+    seqs: List[Seq] = Relationship(back_populates="scan", **CASCADE)
+    prods: List[Prod] = Relationship(back_populates="scan", **CASCADE)
 
 
 class DB(DBBase, table=True):
@@ -51,12 +53,12 @@ class HMM(HMMBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     job_id: Optional[int] = Field(default=None, foreign_key="job.id")
 
-    job: Job = Relationship(back_populates="hmm", **NOLIST)
-    db: Optional[DB] = Relationship(back_populates="hmm", **NOLIST)
+    job: Job = Relationship(back_populates="hmm", **NOLIST_CASCADE)
+    db: Optional[DB] = Relationship(back_populates="hmm", **NOLIST_CASCADE)
 
 
 class Job(JobBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
-    hmm: Optional[HMM] = Relationship(back_populates="job", **NOLIST)
-    scan: Optional[Scan] = Relationship(back_populates="job", **NOLIST)
+    hmm: Optional[HMM] = Relationship(back_populates="job", **NOLIST_CASCADE)
+    scan: Optional[Scan] = Relationship(back_populates="job", **NOLIST_CASCADE)

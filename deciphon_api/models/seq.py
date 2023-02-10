@@ -13,7 +13,7 @@ class SeqCreate(SeqBase):
 
 
 class SeqRead(SeqBase):
-    ...
+    id: int
 
 
 class SeqUpdate(SQLModel):

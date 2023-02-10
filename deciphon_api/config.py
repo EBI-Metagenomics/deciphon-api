@@ -35,6 +35,9 @@ class Config(BaseSettings):
 
     allowed_hosts: List[str] = ["*"]
 
+    mqtt_host = "127.0.0.1"
+    mqtt_port = 1883
+
     sql_echo: bool = False
     logging_level: LoggingLevel = LoggingLevel("info")
     loggers: Tuple[str, str] = ("uvicorn.asgi", "uvicorn.access")

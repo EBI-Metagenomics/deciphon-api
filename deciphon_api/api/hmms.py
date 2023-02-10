@@ -8,6 +8,7 @@ from deciphon_api.errors import (
     FileNotInStorageError,
     NotFoundInSchedError,
 )
+from deciphon_api.journal import get_journal
 from deciphon_api.models import HMM, HMMCreate, HMMRead, Job, JobType
 from deciphon_api.sched import Sched, select
 from deciphon_api.storage import storage_has
@@ -38,7 +39,9 @@ async def create_hmm(hmm: HMMCreate):
         sched.add(x)
         sched.commit()
         sched.refresh(x)
-        return HMMRead.from_orm(x)
+        y = HMMRead.from_orm(x)
+        await get_journal().publish_hmm(y.id)
+        return y
 
 
 @router.get("/hmms/{hmm_id}", response_model=HMMRead, status_code=OK)

@@ -3,13 +3,13 @@ from typing import Callable, TypeAlias
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel
 
 from deciphon_api.config import get_config
-from deciphon_api.depo import get_depo
-from deciphon_api.sched import get_engine
-from sqlalchemy.exc import IntegrityError
 from deciphon_api.errors import integrity_error_handler
+from deciphon_api.journal import get_journal
+from deciphon_api.sched import get_sched
 
 __all__ = ["get_app", "App"]
 
@@ -18,7 +18,7 @@ App: TypeAlias = FastAPI
 
 def create_start_handler() -> Callable:
     async def start_app() -> None:
-        SQLModel.metadata.create_all(get_engine())
+        SQLModel.metadata.create_all(get_sched().engine)
 
     return start_app
 
@@ -26,8 +26,8 @@ def create_start_handler() -> Callable:
 def create_stop_handler() -> Callable:
     @logger.catch
     async def stop_app() -> None:
-        get_depo.cache_clear()
-        get_engine.cache_clear()
+        get_sched.cache_clear()
+        get_journal.cache_clear()
         get_config.cache_clear()
 
     return stop_app
@@ -61,5 +61,7 @@ def get_app() -> App:
     app.add_exception_handler(IntegrityError, integrity_error_handler)
 
     app.include_router(api_router, prefix=config.api_prefix)
+
+    get_journal().mqtt.init_app(app)
 
     return app

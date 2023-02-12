@@ -10,6 +10,7 @@ from deciphon_api.models.job import JobBase
 from deciphon_api.models.prod import ProdBase
 from deciphon_api.models.scan import ScanBase
 from deciphon_api.models.seq import SeqBase
+from deciphon_api.models.snap import SnapBase
 
 NOLIST = {"sa_relationship_kwargs": {"uselist": False}}
 CASCADE = {"sa_relationship_kwargs": {"cascade": "all,delete,delete-orphan"}}
@@ -19,8 +20,15 @@ NOLIST_CASCADE = {"sa_relationship_kwargs": {"uselist": False, "cascade": "all,d
 class Prod(ProdBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
+    snap: Snap = Relationship(back_populates="prods", **NOLIST)
     seq: Seq = Relationship(back_populates="prod", **NOLIST)
-    scan: Scan = Relationship(back_populates="prods", **NOLIST)
+
+
+class Snap(SnapBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    scan: Scan = Relationship(back_populates="snap", **NOLIST)
+    prods: List[Prod] = Relationship(back_populates="snap", **CASCADE)
 
 
 class Seq(SeqBase, table=True):
@@ -38,7 +46,7 @@ class Scan(ScanBase, table=True):
     db: DB = Relationship(back_populates="scans", **NOLIST)
     job: Job = Relationship(back_populates="scan", **NOLIST_CASCADE)
     seqs: List[Seq] = Relationship(back_populates="scan", **CASCADE)
-    prods: List[Prod] = Relationship(back_populates="scan", **CASCADE)
+    snap: Snap = Relationship(back_populates="scan", **NOLIST_CASCADE)
 
 
 class DB(DBBase, table=True):

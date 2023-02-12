@@ -3,8 +3,9 @@ from .hmm import HMMCreate, HMMRead
 from .job import JobCreate, JobRead, JobState, JobType, JobUpdate
 from .prod import ProdCreate, ProdRead, ProdUpdate
 from .scan import ScanCreate, ScanRead, ScanUpdate
-from .schema import DB, HMM, Job, Prod, Scan, Seq
+from .schema import DB, HMM, Job, Prod, Scan, Seq, Snap
 from .seq import SeqCreate, SeqRead, SeqUpdate
+from .snap import SnapCreate, SnapRead, SnapUpdate
 
 __all__ = [
     "DB",
@@ -31,4 +32,8 @@ __all__ = [
     "SeqCreate",
     "SeqRead",
     "SeqUpdate",
+    "Snap",
+    "SnapCreate",
+    "SnapRead",
+    "SnapUpdate",
 ]

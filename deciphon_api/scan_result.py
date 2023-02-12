@@ -190,7 +190,6 @@ class ScanResult:
 
     def hmmer_targets(self):
         for prod in self.scan.prods:
-            # get_depo().fetch()
             prod.hmmer_sha256
         pass
         # h3result_targets

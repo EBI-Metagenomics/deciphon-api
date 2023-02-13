@@ -1,6 +1,9 @@
 name: Test
 
 on: push
+env:
+  DCP_API_S3_HOST: ${{ secrets.DCP_API_S3_HOST }}
+  DCP_API_S3_BUCKET: ${{ secrets.DCP_API_S3_BUCKET }}
 
 jobs:
   test:

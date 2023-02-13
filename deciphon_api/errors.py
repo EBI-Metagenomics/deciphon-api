@@ -9,6 +9,7 @@ from starlette.status import (
 
 __all__ = [
     "FileNotInStorageError",
+    "InvalidSnapFileError",
     "NotFoundInSchedError",
     "integrity_error_handler",
 ]
@@ -30,4 +31,11 @@ class FileNotInStorageError(HTTPException):
         super().__init__(
             HTTP_422_UNPROCESSABLE_ENTITY,
             f"File (SHA256: {sha256}) not found in storage",
+        )
+
+
+class InvalidSnapFileError(HTTPException):
+    def __init__(self, sha256: str):
+        super().__init__(
+            HTTP_422_UNPROCESSABLE_ENTITY, f"Invalid Snap file (SHA256: {sha256})"
         )

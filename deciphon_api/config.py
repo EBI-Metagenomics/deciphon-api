@@ -1,3 +1,4 @@
+import importlib.metadata
 import logging
 from functools import lru_cache
 from typing import Any, Dict, List, Tuple
@@ -5,7 +6,6 @@ from typing import Any, Dict, List, Tuple
 from loguru import logger
 from pydantic import BaseSettings
 
-from deciphon_api import __version__
 from deciphon_api.logging import InterceptHandler, LoggingLevel, RepeatMessageHandler
 
 __all__ = ["Config", "get_config"]
@@ -25,10 +25,10 @@ class Config(BaseSettings):
     openapi_url: str = "/openapi.json"
     redoc_url: str = "/redoc"
     title: str = "Deciphon API"
-    version: str = __version__
+    version: str = importlib.metadata.version(__package__)
 
-    api_prefix: str = ""
-    api_key: str = "change-me"
+    prefix: str = ""
+    key: str = "change-me"
 
     host: str = "127.0.0.1"
     port: int = 49329
@@ -51,6 +51,7 @@ class Config(BaseSettings):
     reload: bool = False
 
     class Config:
+        env_prefix = "dcp_api_"
         env_file = ".env"
         env_file_encoding = "utf-8"
         validate_assignment = True

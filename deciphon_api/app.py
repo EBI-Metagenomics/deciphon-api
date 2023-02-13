@@ -65,7 +65,7 @@ def get_app() -> App:
 
     app.add_exception_handler(IntegrityError, integrity_error_handler)
 
-    app.include_router(api_router, prefix=config.api_prefix)
+    app.include_router(api_router, prefix=config.prefix)
 
     get_journal().mqtt.init_app(app)
 

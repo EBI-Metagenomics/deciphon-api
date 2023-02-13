@@ -13,6 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Start Mosquitto
+        uses: namoshek/mosquitto-github-action@v1
+
       - name: Test it
         run: |
           pipx install poetry

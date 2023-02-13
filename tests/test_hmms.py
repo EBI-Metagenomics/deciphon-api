@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from deciphon_api.config import get_config
 
 pytestmark = [pytest.mark.usefixtures("cleandir")]
-HEADERS = {"X-API-Key": f"{get_config().api_key}"}
+HEADERS = {"X-API-Key": f"{get_config().key}"}
 
 
 MINIFAM_HMM = {
@@ -15,7 +15,7 @@ MINIFAM_HMM = {
 
 
 def url(path: str):
-    return f"{get_config().api_prefix}{path}"
+    return f"{get_config().prefix}{path}"
 
 
 def test_no_auth_to_create_hmm(app: FastAPI):

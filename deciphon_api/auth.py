@@ -7,5 +7,5 @@ __all__ = ["auth_request"]
 
 
 def auth_request(token: str = Depends(APIKeyHeader(name="X-API-Key"))) -> bool:
-    authenticated = token == get_config().api_key
+    authenticated = token == get_config().key
     return authenticated

@@ -38,6 +38,9 @@ class Config(BaseSettings):
     mqtt_host = "127.0.0.1"
     mqtt_port = 1883
 
+    s3_host = "s3.danilohorta.me"
+    s3_bucket = "blx"
+
     sql_echo: bool = False
     logging_level: LoggingLevel = LoggingLevel("info")
     loggers: Tuple[str, str] = ("uvicorn.asgi", "uvicorn.access")

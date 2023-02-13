@@ -19,7 +19,7 @@ from deciphon_api.models import (
     SnapCreate,
     SnapRead,
 )
-from deciphon_api.sched import Sched, select
+from deciphon_api.sched import get_sched, select
 from deciphon_api.snap_validate import snap_validate
 from deciphon_api.storage import storage_has
 
@@ -34,13 +34,13 @@ CREATED = HTTP_201_CREATED
 
 @router.get("/scans", response_model=List[ScanRead], status_code=OK)
 async def read_scans():
-    with Sched() as sched:
+    with get_sched() as sched:
         return [ScanRead.from_orm(x) for x in sched.exec(select(Scan)).all()]
 
 
 @router.post("/scans/", response_model=ScanRead, status_code=CREATED)
 async def create_scan(scan: ScanCreate):
-    with Sched() as sched:
+    with get_sched() as sched:
         sched.get(DB, scan.db_id)
 
         x = Scan.from_orm(scan)
@@ -56,20 +56,20 @@ async def create_scan(scan: ScanCreate):
 
 @router.get("/scans/{scan_id}", response_model=ScanRead, status_code=OK)
 async def read_scan(scan_id: int):
-    with Sched() as sched:
+    with get_sched() as sched:
         return ScanRead.from_orm(sched.get(Scan, scan_id))
 
 
 @router.delete("/scans/{scan_id}", status_code=NO_CONTENT, dependencies=AUTH)
 async def delete_scan(scan_id: int):
-    with Sched() as sched:
+    with get_sched() as sched:
         sched.delete(sched.get(Scan, scan_id))
         sched.commit()
 
 
 @router.get("/scans/{scan_id}/seqs", response_model=List[SeqRead], status_code=OK)
 async def read_seqs(scan_id: int):
-    with Sched() as sched:
+    with get_sched() as sched:
         scan = sched.get(Scan, scan_id)
         return [SeqRead.from_orm(i) for i in scan.seqs]
 
@@ -79,7 +79,7 @@ async def create_snap(scan_id: int, snap: SnapCreate):
     if not storage_has(snap.sha256):
         raise FileNotInStorageError(snap.sha256)
 
-    with Sched() as sched:
+    with get_sched() as sched:
         scan = sched.get(Scan, scan_id)
         snap_validate(scan_id, scan.seqs, snap)
         x = Snap.from_orm(snap, update={"scan_id": scan_id})
@@ -92,6 +92,6 @@ async def create_snap(scan_id: int, snap: SnapCreate):
 
 @router.get("/scans/{scan_id}/snap.dcs", response_model=SnapRead, status_code=OK)
 async def read_snap(scan_id: int):
-    with Sched() as sched:
+    with get_sched() as sched:
         scan = sched.get(Scan, scan_id)
         return SnapRead.from_orm(scan.snap)

@@ -7,7 +7,7 @@ from deciphon_api.api.utils import AUTH
 from deciphon_api.errors import FileNotInStorageError
 from deciphon_api.journal import get_journal
 from deciphon_api.models import HMM, HMMCreate, HMMRead, Job, JobType
-from deciphon_api.sched import Sched, select
+from deciphon_api.sched import get_sched, select
 from deciphon_api.storage import storage_has
 
 __all__ = ["router"]
@@ -21,7 +21,7 @@ CREATED = HTTP_201_CREATED
 
 @router.get("/hmms", response_model=List[HMMRead], status_code=OK)
 async def read_hmms():
-    with Sched() as sched:
+    with get_sched() as sched:
         return [HMMRead.from_orm(x) for x in sched.exec(select(HMM)).all()]
 
 
@@ -30,7 +30,7 @@ async def create_hmm(hmm: HMMCreate):
     if not storage_has(hmm.sha256):
         raise FileNotInStorageError(hmm.sha256)
 
-    with Sched() as sched:
+    with get_sched() as sched:
         x = HMM.from_orm(hmm)
         x.job = Job(type=JobType.hmm)
         sched.add(x)
@@ -43,12 +43,12 @@ async def create_hmm(hmm: HMMCreate):
 
 @router.get("/hmms/{hmm_id}", response_model=HMMRead, status_code=OK)
 async def read_hmm(hmm_id: int):
-    with Sched() as sched:
+    with get_sched() as sched:
         return HMMRead.from_orm(sched.get(HMM, hmm_id))
 
 
 @router.delete("/hmms/{hmm_id}", status_code=NO_CONTENT, dependencies=AUTH)
 async def delete_hmm(hmm_id: int):
-    with Sched() as sched:
+    with get_sched() as sched:
         sched.delete(sched.get(HMM, hmm_id))
         sched.commit()

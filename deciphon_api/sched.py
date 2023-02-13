@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Optional, Type, TypeVar
+from typing import Type, TypeVar
 
 from sqlalchemy.future import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from deciphon_api.config import get_config
+from deciphon_api.errors import NotFoundInSchedError
 
 __all__ = ["Sched", "select", "get_sched"]
 
@@ -45,8 +46,11 @@ class Sched:
     def add(self, x: SQLModel):
         self._session.add(x)
 
-    def get(self, x: Type[_TSelectParam], ident) -> Optional[_TSelectParam]:
-        return self._session.get(x, ident)
+    def get(self, x: Type[_TSelectParam], ident) -> _TSelectParam:
+        i = self._session.get(x, ident)
+        if not i:
+            raise NotFoundInSchedError(i.__class__.__name__)
+        return i
 
     def exec(self, stmt):
         return self._session.exec(stmt)

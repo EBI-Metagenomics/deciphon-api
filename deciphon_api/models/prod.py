@@ -4,7 +4,6 @@ from sqlmodel import Field, SQLModel, UniqueConstraint
 
 
 class ProdBase(SQLModel):
-    snap_id: int = Field(foreign_key="snap.id")
     seq_id: int = Field(foreign_key="seq.id")
 
     profile: str = Field(nullable=False)

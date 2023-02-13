@@ -19,6 +19,7 @@ NOLIST_CASCADE = {"sa_relationship_kwargs": {"uselist": False, "cascade": "all,d
 
 class Prod(ProdBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    snap_id: Optional[int] = Field(default=None, foreign_key="snap.id")
 
     snap: Snap = Relationship(back_populates="prods", **NOLIST)
     seq: Seq = Relationship(back_populates="prod", **NOLIST)

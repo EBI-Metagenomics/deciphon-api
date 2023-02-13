@@ -4,10 +4,7 @@ from fastapi import APIRouter
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.utils import AUTH
-from deciphon_api.errors import (
-    FileNotInStorageError,
-    NotFoundInSchedError,
-)
+from deciphon_api.errors import FileNotInStorageError
 from deciphon_api.journal import get_journal
 from deciphon_api.models import HMM, HMMCreate, HMMRead, Job, JobType
 from deciphon_api.sched import Sched, select
@@ -47,17 +44,11 @@ async def create_hmm(hmm: HMMCreate):
 @router.get("/hmms/{hmm_id}", response_model=HMMRead, status_code=OK)
 async def read_hmm(hmm_id: int):
     with Sched() as sched:
-        hmm = sched.get(HMM, hmm_id)
-        if not hmm:
-            raise NotFoundInSchedError("HMM")
-        return HMMRead.from_orm(hmm)
+        return HMMRead.from_orm(sched.get(HMM, hmm_id))
 
 
 @router.delete("/hmms/{hmm_id}", status_code=NO_CONTENT, dependencies=AUTH)
 async def delete_hmm(hmm_id: int):
     with Sched() as sched:
-        hmm = sched.get(HMM, hmm_id)
-        if not hmm:
-            raise NotFoundInSchedError("HMM")
-        sched.delete(hmm)
+        sched.delete(sched.get(HMM, hmm_id))
         sched.commit()

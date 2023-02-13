@@ -1,9 +1,12 @@
 from typing import List
 
 from fastapi import APIRouter
+from fastapi.responses import PlainTextResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.utils import AUTH
+from deciphon_api.create_products import create_products
+from deciphon_api.create_snap import create_snap as build_snap
 from deciphon_api.errors import FileNotInStorageError
 from deciphon_api.journal import get_journal
 from deciphon_api.models import (
@@ -15,12 +18,11 @@ from deciphon_api.models import (
     ScanRead,
     Seq,
     SeqRead,
-    Snap,
     SnapCreate,
     SnapRead,
 )
 from deciphon_api.sched import get_sched, select
-from deciphon_api.snap_validate import snap_validate
+from deciphon_api.snap_gff import snap_gff
 from deciphon_api.storage import storage_has
 
 __all__ = ["router"]
@@ -30,6 +32,7 @@ router = APIRouter()
 OK = HTTP_200_OK
 NO_CONTENT = HTTP_204_NO_CONTENT
 CREATED = HTTP_201_CREATED
+PLAIN = PlainTextResponse
 
 
 @router.get("/scans", response_model=List[ScanRead], status_code=OK)
@@ -81,12 +84,18 @@ async def create_snap(scan_id: int, snap: SnapCreate):
 
     with get_sched() as sched:
         scan = sched.get(Scan, scan_id)
-        snap_validate(scan_id, scan.seqs, snap)
-        x = Snap.from_orm(snap, update={"scan_id": scan_id})
-        x.scan_id = scan_id
+
+        x = build_snap(scan_id, scan.seqs, snap)
         sched.add(x)
         sched.commit()
         sched.refresh(x)
+
+        prods = create_products(scan_id, x)
+        for prod in prods:
+            sched.add(prod)
+            sched.commit()
+            sched.refresh(x)
+
         return SnapRead.from_orm(x)
 
 
@@ -95,3 +104,10 @@ async def read_snap(scan_id: int):
     with get_sched() as sched:
         scan = sched.get(Scan, scan_id)
         return SnapRead.from_orm(scan.snap)
+
+
+@router.get("/scans/{scan_id}/gff", response_class=PLAIN, status_code=OK)
+async def read_gff(scan_id: int):
+    with get_sched() as sched:
+        scan = sched.get(Scan, scan_id)
+        return snap_gff(scan.snap)

@@ -1,9 +1,10 @@
-from deciphon_api.models import SnapCreate, ProdCreate, Seq
 from pathlib import Path
-import csv
-from typing import Union, List
-from deciphon_api.snap_fs import snap_fs
+from typing import List
+
 from deciphon_api.errors import InvalidSnapFileError
+from deciphon_api.models import Seq, SnapCreate
+from deciphon_api.read_products import read_products
+from deciphon_api.snap_fs import snap_fs
 
 __all__ = ["snap_validate"]
 
@@ -24,7 +25,7 @@ def snap_validate(scan_id: int, seqs: List[Seq], snap: SnapCreate):
 
     with fs.open("snap/products.tsv", "rb") as file:
         try:
-            validate_products(scan_id, file)
+            read_products(scan_id, file)
         except Exception:
             raise InvalidSnapFileError(snap.sha256)
 
@@ -37,16 +38,3 @@ def snap_validate(scan_id: int, seqs: List[Seq], snap: SnapCreate):
             seq_ids.remove(int(Path(i).name))
         except KeyError:
             raise InvalidSnapFileError(snap.sha256)
-
-
-def stringify(x: Union[bytes, str]):
-    if isinstance(x, bytes):
-        return x.decode()
-    return x
-
-
-def validate_products(scan_id: int, file):
-    for row in csv.DictReader((stringify(i) for i in file), delimiter="\t"):
-        assert scan_id == int(row["scan_id"])
-        del row["scan_id"]
-        ProdCreate.parse_obj(row)

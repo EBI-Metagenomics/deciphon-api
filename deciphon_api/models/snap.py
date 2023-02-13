@@ -13,8 +13,9 @@ class SnapBase(SQLModel):
     filename: str = Field(regex=filename_regex("dcs"))
 
 
-class SnapCreate(SnapBase):
-    ...
+class SnapCreate(SQLModel):
+    sha256: str = Field(regex=SHA256_REGEX)
+    filename: str = Field(regex=r"^snap\.dcs$")
 
 
 class SnapRead(SnapBase):

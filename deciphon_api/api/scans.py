@@ -4,21 +4,23 @@ from fastapi import APIRouter
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from deciphon_api.api.utils import AUTH
-from deciphon_api.errors import FileNotInStorageError, NotFoundInSchedError
+from deciphon_api.errors import FileNotInStorageError
 from deciphon_api.journal import get_journal
 from deciphon_api.models import (
     DB,
     Job,
     JobType,
-    ProdCreate,
-    ProdRead,
     Scan,
     ScanCreate,
     ScanRead,
     Seq,
     SeqRead,
+    Snap,
+    SnapCreate,
+    SnapRead,
 )
 from deciphon_api.sched import Sched, select
+from deciphon_api.snap_validate import snap_validate
 from deciphon_api.storage import storage_has
 
 __all__ = ["router"]
@@ -39,8 +41,7 @@ async def read_scans():
 @router.post("/scans/", response_model=ScanRead, status_code=CREATED)
 async def create_scan(scan: ScanCreate):
     with Sched() as sched:
-        if not sched.get(DB, scan.db_id):
-            raise NotFoundInSchedError("DB")
+        sched.get(DB, scan.db_id)
 
         x = Scan.from_orm(scan)
         x.job = Job(type=JobType.scan)
@@ -56,19 +57,13 @@ async def create_scan(scan: ScanCreate):
 @router.get("/scans/{scan_id}", response_model=ScanRead, status_code=OK)
 async def read_scan(scan_id: int):
     with Sched() as sched:
-        scan = sched.get(Scan, scan_id)
-        if not scan:
-            raise NotFoundInSchedError("Scan")
-        return ScanRead.from_orm(scan)
+        return ScanRead.from_orm(sched.get(Scan, scan_id))
 
 
 @router.delete("/scans/{scan_id}", status_code=NO_CONTENT, dependencies=AUTH)
 async def delete_scan(scan_id: int):
     with Sched() as sched:
-        scan = sched.get(Scan, scan_id)
-        if not scan:
-            raise NotFoundInSchedError("Scan")
-        sched.delete(scan)
+        sched.delete(sched.get(Scan, scan_id))
         sched.commit()
 
 
@@ -76,28 +71,27 @@ async def delete_scan(scan_id: int):
 async def read_seqs(scan_id: int):
     with Sched() as sched:
         scan = sched.get(Scan, scan_id)
-        if not scan:
-            raise NotFoundInSchedError("Scan")
         return [SeqRead.from_orm(i) for i in scan.seqs]
 
 
-@router.get("/scans/{scan_id}/prods", response_model=List[ProdRead], status_code=OK)
-async def read_prods(scan_id: int):
-    with Sched() as sched:
-        scan = sched.get(Scan, scan_id)
-        if not scan:
-            raise NotFoundInSchedError("Scan")
-        return [ProdRead.from_orm(i) for i in scan.prods]
-
-
-@router.get("/scans/{scan_id}/prods", response_model=List[ProdRead], status_code=OK)
-async def create_prods(scan_id: int, prods: ProdCreate):
-    if not storage_has(prods.sha256):
-        raise FileNotInStorageError(prods.sha256)
+@router.put("/scans/{scan_id}/snap.dcs", response_model=SnapRead, status_code=CREATED)
+async def create_snap(scan_id: int, snap: SnapCreate):
+    if not storage_has(snap.sha256):
+        raise FileNotInStorageError(snap.sha256)
 
     with Sched() as sched:
         scan = sched.get(Scan, scan_id)
-        if not scan:
-            raise NotFoundInSchedError("Scan")
-        # TODO: aqui
-        return [ProdRead.from_orm(i) for i in scan.prods]
+        snap_validate(scan_id, scan.seqs, snap)
+        x = Snap.from_orm(snap, update={"scan_id": scan_id})
+        x.scan_id = scan_id
+        sched.add(x)
+        sched.commit()
+        sched.refresh(x)
+        return SnapRead.from_orm(x)
+
+
+@router.get("/scans/{scan_id}/snap.dcs", response_model=SnapRead, status_code=OK)
+async def read_snap(scan_id: int):
+    with Sched() as sched:
+        scan = sched.get(Scan, scan_id)
+        return SnapRead.from_orm(scan.snap)

@@ -5,10 +5,10 @@ from typing import Union, List
 from deciphon_api.snap_fs import snap_fs
 from deciphon_api.errors import InvalidSnapFileError
 
-__all__ = ["snap_validator"]
+__all__ = ["snap_validate"]
 
 
-def snap_validator(scan_id: int, seqs: List[Seq], snap: SnapCreate):
+def snap_validate(scan_id: int, seqs: List[Seq], snap: SnapCreate):
     fs = snap_fs(snap.sha256)
     if not fs.isdir("snap"):
         raise InvalidSnapFileError(snap.sha256)

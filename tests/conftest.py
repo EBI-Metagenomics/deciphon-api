@@ -1,12 +1,11 @@
-import json
+# import json
 import os
 import shutil
 import tempfile
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
-
-from deciphon_api.blob import get_blob
 
 
 @pytest.fixture
@@ -18,69 +17,10 @@ def app() -> FastAPI:
 
 @pytest.fixture
 def cleandir():
-    old_cwd = os.getcwd()
-    newpath = tempfile.mkdtemp()
+    oldcwd = Path(os.getcwd())
+    newpath = Path(tempfile.mkdtemp())
     os.chdir(newpath)
+    shutil.copy(oldcwd / ".env", newpath / ".env")
     yield
-    os.chdir(old_cwd)
+    os.chdir(oldcwd)
     shutil.rmtree(newpath)
-
-
-@pytest.fixture
-def minifam_hmm():
-    return get_blob("minifam.hmm")
-
-
-@pytest.fixture
-def minifam_dcp():
-    return get_blob("minifam.dcp")
-
-
-@pytest.fixture
-def consensus_fna():
-    return get_blob("consensus.fna")
-
-
-@pytest.fixture
-def pfam1_hmm():
-    return get_blob("pfam1.hmm")
-
-
-@pytest.fixture
-def pfam1_dcp():
-    return get_blob("pfam1.dcp")
-
-
-@pytest.fixture
-def prod_tar_gz():
-    return get_blob("prod.tar.gz")
-
-
-@pytest.fixture
-def prod_json():
-    return json.load(open(get_blob("prod.json")))
-
-
-@pytest.fixture
-def prod_gff():
-    return open(get_blob("prod.gff"), "r").read()
-
-
-@pytest.fixture
-def prod_amino():
-    return open(get_blob("prod.amino.faa"), "r").read()
-
-
-@pytest.fixture
-def prod_codon():
-    return open(get_blob("prod.codon.fna"), "r").read()
-
-
-@pytest.fixture
-def prod_query():
-    return open(get_blob("prod.query.fna"), "r").read()
-
-
-@pytest.fixture
-def prod_path():
-    return open(get_blob("prod.path.fxx"), "r").read()

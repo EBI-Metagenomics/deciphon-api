@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from functools import lru_cache
 from typing import Callable, TypeAlias
 
 from fastapi import FastAPI
@@ -29,10 +32,12 @@ def create_stop_handler() -> Callable:
         get_sched.cache_clear()
         get_journal.cache_clear()
         get_config.cache_clear()
+        get_app.cache_clear()
 
     return stop_app
 
 
+@lru_cache
 def get_app() -> App:
     from deciphon_api.api.api import router as api_router
 

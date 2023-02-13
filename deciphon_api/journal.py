@@ -10,20 +10,15 @@ __all__ = ["get_journal", "Journal"]
 
 
 @lru_cache
-def get_mqtt() -> FastMQTT:
+def get_journal() -> Journal:
     cfg = get_config()
     x = MQTTConfig(host=cfg.mqtt_host, port=cfg.mqtt_port)
-    return FastMQTT(config=x)
-
-
-@lru_cache
-def get_journal() -> Journal:
-    return Journal()
+    return Journal(FastMQTT(config=x))
 
 
 class Journal:
-    def __init__(self):
-        self._mqtt = get_mqtt()
+    def __init__(self, mqtt):
+        self._mqtt = mqtt
 
     @property
     def mqtt(self):

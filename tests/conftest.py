@@ -20,7 +20,10 @@ def cleandir():
     oldcwd = Path(os.getcwd())
     newpath = Path(tempfile.mkdtemp())
     os.chdir(newpath)
-    shutil.copy(oldcwd / ".env", newpath / ".env")
+    oldenv = oldcwd / ".env"
+    newenv = newpath / ".env"
+    if oldenv.exists():
+        shutil.copy(oldenv, newenv)
     yield
     os.chdir(oldcwd)
     shutil.rmtree(newpath)

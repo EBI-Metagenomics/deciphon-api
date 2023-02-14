@@ -25,6 +25,7 @@ from deciphon_api.models import (
 from deciphon_api.sched import get_sched, select
 from deciphon_api.snap_gff import snap_gff
 from deciphon_api.storage import storage_has
+from deciphon_api.view_table import view_table
 
 __all__ = ["router"]
 
@@ -143,3 +144,11 @@ async def read_query(scan_id: int):
     with get_sched() as sched:
         scan = sched.get(Scan, scan_id)
         return create_fasta(scan.snap.prods, "query")
+
+
+@router.get("/scans/{scan_id}/align", response_class=PLAIN, status_code=OK)
+async def read_align(scan_id: int):
+    with get_sched() as sched:
+        scan = sched.get(Scan, scan_id)
+        prods = scan.snap.prods
+        return "\n".join(view_table(prod) for prod in prods)

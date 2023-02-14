@@ -38,11 +38,13 @@ def stepit(data: Liner):
         if is_header(row):
             break
 
-        last = row.rfind(" ")
-        assert row[last:].strip() == "CS"
-        hmm_cs = row[:last].strip()
+        if row[row.rfind(" ") :].strip() == "CS":
+            last = row.rfind(" ")
+            hmm_cs = row[:last].strip()
+            row = next(i)
+        else:
+            hmm_cs = ""
 
-        row = next(i)
         acc, start = row.split(maxsplit=2)[:2]
         offset = row.find(acc) + len(acc)
         offset = row.find(start, offset) + len(start)
@@ -63,6 +65,8 @@ def stepit(data: Liner):
         assert row[last:].strip() == "PP"
         score = row[:last].strip()
 
+        if len(hmm_cs) == 0:
+            hmm_cs = "?" * len(tgt_cs)
         assert len(hmm_cs) == len(tgt_cs) == len(match) == len(tgt) == len(score)
         for x in zip(hmm_cs, tgt_cs, match, tgt, score):
             yield HMMERStep(*x)

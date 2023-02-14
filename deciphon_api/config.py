@@ -41,6 +41,8 @@ class Config(BaseSettings):
     s3_host = "s3.example.com"
     s3_bucket = "blx"
 
+    h3result = "/path/to/h3client"
+
     sql_echo: bool = False
     logging_level: LoggingLevel = LoggingLevel("info")
     loggers: Tuple[str, str] = ("uvicorn.asgi", "uvicorn.access")

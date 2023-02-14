@@ -5,6 +5,7 @@ from fastapi.responses import PlainTextResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from deciphon_api.auth import auth_request
+from deciphon_api.create_fasta import create_fasta
 from deciphon_api.create_products import create_products
 from deciphon_api.create_snap import create_snap as build_snap
 from deciphon_api.errors import FileNotInStorageError
@@ -114,3 +115,31 @@ async def read_gff(scan_id: int):
     with get_sched() as sched:
         scan = sched.get(Scan, scan_id)
         return snap_gff(scan.snap)
+
+
+@router.get("/scans/{scan_id}/codon", response_class=PLAIN, status_code=OK)
+async def read_codon(scan_id: int):
+    with get_sched() as sched:
+        scan = sched.get(Scan, scan_id)
+        return create_fasta(scan.snap.prods, "codon")
+
+
+@router.get("/scans/{scan_id}/amino", response_class=PLAIN, status_code=OK)
+async def read_amino(scan_id: int):
+    with get_sched() as sched:
+        scan = sched.get(Scan, scan_id)
+        return create_fasta(scan.snap.prods, "amino")
+
+
+@router.get("/scans/{scan_id}/state", response_class=PLAIN, status_code=OK)
+async def read_state(scan_id: int):
+    with get_sched() as sched:
+        scan = sched.get(Scan, scan_id)
+        return create_fasta(scan.snap.prods, "state")
+
+
+@router.get("/scans/{scan_id}/query", response_class=PLAIN, status_code=OK)
+async def read_query(scan_id: int):
+    with get_sched() as sched:
+        scan = sched.get(Scan, scan_id)
+        return create_fasta(scan.snap.prods, "query")

@@ -84,8 +84,10 @@ async def create_snap(scan_id: int, snap: SnapCreate):
 
     with get_sched() as sched:
         scan = sched.get(Scan, scan_id)
+        scan.job.set_done()
 
         x = build_snap(scan_id, scan.seqs, snap)
+        x.scan = scan
         sched.add(x)
         sched.commit()
         sched.refresh(x)

@@ -33,7 +33,7 @@ class Hit:
     id: int
     name: str
     prod_id: int
-    evalue_log: float
+    evalue: float
     matchs: List[Match] = dataclasses.field(default_factory=lambda: [])
     feature_start: int = 0
     feature_end: int = 0
@@ -115,9 +115,9 @@ class ScanResult:
             if not hit_start_found and is_core_state(state):
                 hit_start = offset
                 hit_start_found = True
-                evalue_log = prod.evalue_log
+                evalue = prod.evalue
                 name = self.get_seq(prod.seq_id).name
-                self.hits.append(Hit(len(self.hits) + 1, name, prod.id, evalue_log))
+                self.hits.append(Hit(len(self.hits) + 1, name, prod.id, evalue))
 
             if hit_start_found and not is_core_state(state):
                 hit_end = offset + len(query)
@@ -146,10 +146,10 @@ class ScanResult:
             seq = BioSeq(self.get_seq(prod.seq_id).data)
             rec = SeqRecord(seq, self.get_seq(prod.seq_id).name)
 
-            evalue_log = hits[0].evalue_log
+            evalue = hits[0].evalue
             qualifiers = {
                 "source": f"deciphon:{prod.version}",
-                "score": f"{evalue_log:.17g}",
+                "score": f"{evalue:.17g}",
                 "Target_alph": prod.abc,
                 "Profile_acc": prod.profile,
                 "Epsilon": EPSILON,

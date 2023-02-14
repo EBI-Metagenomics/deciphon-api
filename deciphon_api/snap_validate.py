@@ -30,8 +30,6 @@ def snap_validate(seqs: List[Seq], snap: SnapCreate):
             raise InvalidSnapFileError(snap.sha256, "invalid `snap/products.tsv` file")
 
     seq_ids = set([i.id for i in seqs])
-    if len(seq_ids) != len(fs.ls("snap/hmmer")):
-        raise InvalidSnapFileError(snap.sha256, "wrong number of sequence directories")
 
     for i in fs.ls("snap/hmmer"):
         try:

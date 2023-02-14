@@ -88,7 +88,7 @@ class AlignSlice:
     # inclusive on both sizes, one-based numbering
     @property
     def query_bounds(self) -> tuple[int, int]:
-        indices = [x.hmm.index for x in self._positions if x.hmm]
+        indices = [x.hmm.query_index for x in self._positions if x.hmm]
         if len(indices) == 0:
             # TODO: tell the user this is an error?
             return (0, 0)
@@ -102,6 +102,15 @@ class AlignSlice:
             # TODO: tell the user this is an error?
             return (0, 0)
         return (pos[0], pos[-1])
+
+    # inclusive on both sizes, one-based numbering
+    @property
+    def amino_bounds(self) -> tuple[int, int]:
+        indices = [x.hmm.amino_index for x in self._positions if x.hmm]
+        if len(indices) == 0:
+            # TODO: tell the user this is an error?
+            return (0, 0)
+        return (indices[0] + 1, indices[-1] + 1)
 
     @property
     def hmm(self):

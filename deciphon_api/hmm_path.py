@@ -15,7 +15,8 @@ class HMMStep:
     state: str
     codon: str
     amino: str
-    index: int
+    query_index: int
+    amino_index: int
 
     def has_query(self, level: int):
         return len(self.query) > level
@@ -74,11 +75,19 @@ class HMMPath(PathView):
 
     @classmethod
     def make(cls, data: str):
-        steps = [HMMStep(*m.split(","), index=0) for m in data.split(";")]
-        index = [0]
+        y = data.split(";")
+        steps = [HMMStep(*m.split(","), query_index=0, amino_index=0) for m in y]
+        qidx = [0]
+        aidx = [0]
         for x in steps[:-1]:
-            index += [len(x.query) + index[-1]]
-        return cls([x.replace({"index": i}) for x, i in zip(steps, index)])
+            qidx += [len(x.query) + qidx[-1]]
+            aidx += [len(x.amino) + aidx[-1]]
+        return cls(
+            [
+                x.replace({"query_index": i, "amino_index": j})
+                for x, i, j in zip(steps, qidx, aidx)
+            ]
+        )
 
     @property
     def intervals(self):

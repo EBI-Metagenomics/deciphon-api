@@ -33,13 +33,14 @@ def view_table(prod: Prod):
             q4 = [y for x in h.hmm if (y := x.query(4))]
             profile_left, profile_right = h.state_bounds
             query_left, query_right = h.query_bounds
+            amino_left, amino_right = h.amino_bounds
             pad = "&" * (width - i.length)
             row = [
                 [None, None, v.display(hmm_cs) + pad, "CS"],
                 [profile, profile_left, v.display(h3query) + pad, profile_right],
                 [None, None, v.display(match) + pad, None],
-                [seqid, query_left, v.display(amino) + pad, query_right],
-                [None, None, v.display(q0) + pad, None],
+                [seqid, amino_left, v.display(amino) + pad, amino_right],
+                [None, query_left, v.display(q0) + pad, query_right],
                 [None, None, v.display(q1) + pad, None],
                 [None, None, v.display(q2) + pad, None],
                 [None, None, v.display(q3) + pad, None],

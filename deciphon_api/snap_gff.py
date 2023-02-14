@@ -12,7 +12,7 @@ __all__ = ["snap_gff"]
 
 
 def snap_gff(snap: Snap):
-    hits = [i for prod in snap.prods for i in make_hits(prod)]
+    all_hits = [i for prod in snap.prods for i in make_hits(prod)]
 
     if len(snap.prods) == 0:
         return "##gff-version 3\n"
@@ -20,15 +20,15 @@ def snap_gff(snap: Snap):
     gff = GFFWriter()
 
     for prod in snap.prods:
-        hits = [hit for hit in hits if hit.prod_id == prod.id]
+        hits = [hit for hit in all_hits if hit.prod_id == prod.id]
 
         seq = BioSeq(prod.seq.data)
         rec = SeqRecord(seq, prod.seq.name)
 
-        evalue_log = hits[0].evalue_log
+        evalue = hits[0].evalue
         qualifiers = {
             "source": "deciphon",
-            "score": f"{evalue_log:.17g}",
+            "score": f"{evalue:.17g}",
             "Target_alph": prod.abc,
             "Profile_acc": prod.profile,
             "Epsilon": EPSILON,

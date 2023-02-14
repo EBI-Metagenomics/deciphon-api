@@ -35,7 +35,8 @@ class FileNotInStorageError(HTTPException):
 
 
 class InvalidSnapFileError(HTTPException):
-    def __init__(self, sha256: str):
+    def __init__(self, sha256: str, reason: str):
         super().__init__(
-            HTTP_422_UNPROCESSABLE_ENTITY, f"Invalid Snap file (SHA256: {sha256})"
+            HTTP_422_UNPROCESSABLE_ENTITY,
+            f"Invalid Snap file (SHA256: {sha256}). Reason: {reason}.",
         )

@@ -9,9 +9,9 @@ class ProdBase(SQLModel):
     profile: str = Field(nullable=False)
     abc: str = Field(nullable=False)
 
-    alt_loglik: float = Field(nullable=False)
-    null_loglik: float = Field(nullable=False)
-    evalue_log: float = Field(nullable=False)
+    alt: float = Field(nullable=False)
+    null: float = Field(nullable=False)
+    evalue: float = Field(nullable=False)
 
     match: str = Field(nullable=False)
 

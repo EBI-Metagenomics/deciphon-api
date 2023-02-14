@@ -22,7 +22,7 @@ class Hit:
     id: int
     name: str
     prod_id: int
-    evalue_log: float
+    evalue: float
     matchs: List[Match] = dataclasses.field(default_factory=lambda: [])
     feature_start: int = 0
     feature_end: int = 0
@@ -47,10 +47,10 @@ def make_hits(prod: Prod) -> List[Hit]:
         if not hit_start_found and is_core_state(state):
             hit_start = offset
             hit_start_found = True
-            evalue_log = prod.evalue_log
+            evalue = prod.evalue
             name = prod.seq.name
             assert prod.id
-            hits.append(Hit(len(hits) + 1, name, prod.id, evalue_log))
+            hits.append(Hit(len(hits) + 1, name, prod.id, evalue))
 
         if hit_start_found and not is_core_state(state):
             hit_end = offset + len(query)

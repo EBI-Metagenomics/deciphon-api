@@ -12,10 +12,8 @@ def stringify(x: Union[bytes, str]):
     return x
 
 
-def read_products(scan_id: int, file):
+def read_products(file):
     prods: List[ProdCreate] = []
     for row in csv.DictReader((stringify(i) for i in file), delimiter="\t"):
-        assert scan_id == int(row["scan_id"])
-        del row["scan_id"]
         prods.append(ProdCreate.parse_obj(row))
     return prods

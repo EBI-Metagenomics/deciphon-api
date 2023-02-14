@@ -90,7 +90,7 @@ async def create_snap(scan_id: int, snap: SnapCreate):
         sched.commit()
         sched.refresh(x)
 
-        prods = create_products(scan_id, x)
+        prods = create_products(x)
         for prod in prods:
             sched.add(prod)
             sched.commit()

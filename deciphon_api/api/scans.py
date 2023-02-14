@@ -1,10 +1,10 @@
 from typing import List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from deciphon_api.api.utils import AUTH
+from deciphon_api.auth import auth_request
 from deciphon_api.create_products import create_products
 from deciphon_api.create_snap import create_snap as build_snap
 from deciphon_api.errors import FileNotInStorageError
@@ -32,6 +32,7 @@ router = APIRouter()
 OK = HTTP_200_OK
 NO_CONTENT = HTTP_204_NO_CONTENT
 CREATED = HTTP_201_CREATED
+AUTH = [Depends(auth_request)]
 PLAIN = PlainTextResponse
 
 

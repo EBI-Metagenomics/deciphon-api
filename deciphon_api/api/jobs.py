@@ -1,9 +1,9 @@
 from typing import List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from starlette.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
-from deciphon_api.api.utils import AUTH
+from deciphon_api.auth import auth_request
 from deciphon_api.errors import NotFoundInSchedError
 from deciphon_api.models import Job, JobRead, JobUpdate
 from deciphon_api.sched import get_sched, select
@@ -14,6 +14,7 @@ router = APIRouter()
 
 OK = HTTP_200_OK
 NO_CONTENT = HTTP_204_NO_CONTENT
+AUTH = [Depends(auth_request)]
 
 
 @router.get("/jobs", response_model=List[JobRead], status_code=OK)

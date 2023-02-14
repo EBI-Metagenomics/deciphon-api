@@ -1,9 +1,9 @@
 from typing import List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
-from deciphon_api.api.utils import AUTH
+from deciphon_api.auth import auth_request
 from deciphon_api.errors import FileNotInStorageError
 from deciphon_api.models import (
     DB,
@@ -21,6 +21,7 @@ router = APIRouter()
 OK = HTTP_200_OK
 NO_CONTENT = HTTP_204_NO_CONTENT
 CREATED = HTTP_201_CREATED
+AUTH = [Depends(auth_request)]
 
 
 @router.get("/dbs", response_model=List[DBRead], status_code=OK)
